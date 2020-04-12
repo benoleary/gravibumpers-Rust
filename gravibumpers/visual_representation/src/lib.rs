@@ -1,5 +1,26 @@
 extern crate apng_encoder;
 
+pub struct ColorDensityPixel {
+    pub red_density: f64,
+    pub green_density: f64,
+    pub blue_density: f64,
+}
+
+pub trait ColorDensityMap {
+    fn color_density_for_pixel_at(
+        &self,
+        horizontal_coordinate: i32,
+        vertical_coordinate: i32,
+    ) -> ColorDensityPixel;
+}
+
+pub fn animate_sequence(
+    color_density_map_sequence: &[Box<dyn ColorDensityMap>],
+    milliseconds_per_frame: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
+}
+
 pub fn hold_place(input_int: i32) -> i32 {
     println!(
         "visual_representation::hold_place(input_int = {input_int})",
