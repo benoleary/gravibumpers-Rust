@@ -10,3 +10,5 @@ gravibumpers/Cargo.lock
 **/*.rs.bk
 
 gravibumpers/.vscode
+**/*.png
+
