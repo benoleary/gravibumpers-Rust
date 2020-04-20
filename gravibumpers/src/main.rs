@@ -1,3 +1,6 @@
+extern crate data_structure;
+extern crate visual_representation;
+
 fn main() {
     println!("This will become GraviBumpers!");
 
@@ -13,9 +16,6 @@ fn main() {
         time_evolution_placeholder
     );
 
-    let visual_representation_placeholder = visual_representation::hold_place(34);
-    println!(
-        "visual_representation_placeholder = {}",
-        visual_representation_placeholder
-    );
+    let test_animator = visual_representation::apng::new();
+    test_animator.animate_sequence(&vec![], 250).unwrap()
 }
