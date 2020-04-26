@@ -88,7 +88,9 @@ fn flattened_color_bytes_from(
 
     for vertical_index in 0..height_in_pixels {
         for horizontal_index in 0..width_in_pixels {
-            let red_index = (vertical_index * height_in_pixels) + horizontal_index;
+            // At this point we have already written sets of 3 colors for vertical_index whole
+            // *rows* plus horizontal_index pixels in this row.
+            let red_index = 3 * ((vertical_index * width_in_pixels) + horizontal_index);
             let green_index = red_index + 1;
             let blue_index = green_index + 1;
 
