@@ -1,3 +1,5 @@
+/// There is has no #[cfg(test)] in the main part of the library because it just introduces traits
+/// and structs.
 extern crate data_structure;
 pub mod apng;
 pub mod particles_to_pixels;
@@ -40,15 +42,4 @@ pub trait ColoredPixelMatrix {
 
     fn width_in_pixels(&self) -> HorizontalPixelAmount;
     fn height_in_pixels(&self) -> VerticalPixelAmount;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_animate_returns_ok() -> Result<(), String> {
-        let test_animator = apng::new();
-        test_animator.animate_sequence(vec![], 250)
-    }
 }

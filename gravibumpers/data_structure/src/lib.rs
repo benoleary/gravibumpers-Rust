@@ -4,10 +4,10 @@
 /// As such it does not implement any logic and thus has no #[cfg(test)].
 
 /// First we have some structs for dimensional parameters.
-pub struct InertialMassUnit(f64);
-pub struct AttractiveChargeUnit(f64);
-pub struct RepulsiveChargeUnit(f64);
-pub struct ColorUnit(f64);
+pub struct InertialMassUnit(pub f64);
+pub struct AttractiveChargeUnit(pub f64);
+pub struct RepulsiveChargeUnit(pub f64);
+pub struct ColorUnit(pub f64);
 
 /// The particles have 3 intrinsic qualities which do not change, unlike their
 /// positions and velocities.

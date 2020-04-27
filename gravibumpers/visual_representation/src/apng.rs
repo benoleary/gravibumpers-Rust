@@ -1,4 +1,5 @@
 extern crate apng_encoder;
+extern crate data_structure;
 
 use super::particles_to_pixels::ParticleToPixelMapper;
 use super::ColoredPixelMatrix;
@@ -59,12 +60,13 @@ impl SequenceAnimator for ApngAnimator {
             .aggregate_particle_colors_to_pixels(particle_map_sequence)?;
 
         for pixel_matrix in matrix_sequence.colored_pixel_matrices {
+            let flattened_color_bytes = &flattened_color_bytes_from(
+                &*pixel_matrix,
+                &matrix_sequence.maximum_color_intensity,
+            )?;
             output_encoder
                 .write_frame(
-                    &flattened_color_bytes_from(
-                        &*pixel_matrix,
-                        &matrix_sequence.maximum_color_intensity,
-                    )?,
+                    flattened_color_bytes,
                     Some(&common_frame_information),
                     None,
                     None,
@@ -77,6 +79,8 @@ impl SequenceAnimator for ApngAnimator {
     }
 }
 
+// This function creates the byte array specific to APNG representing the rectangle of triplets of
+// floating-point numbers representing red-green-blue quantities.
 fn flattened_color_bytes_from(
     pixel_matrix: &dyn ColoredPixelMatrix,
     maximum_color_intensity: &RedGreenBlueIntensity,
@@ -87,6 +91,10 @@ fn flattened_color_bytes_from(
     let flattened_bytes = vec![0x00; flattened_length.try_into()?];
 
     for vertical_index in 0..height_in_pixels {
+        // I prefer to think of drawing from the bottom-left to the right and up, but APNG lists the
+        // bytes from top-left to right and down.
+        let pixels_up = VerticalPixelAmount(height_in_pixels - vertical_index - 1);
+
         for horizontal_index in 0..width_in_pixels {
             // At this point we have already written sets of 3 colors for vertical_index whole
             // *rows* plus horizontal_index pixels in this row.
@@ -97,7 +105,7 @@ fn flattened_color_bytes_from(
             let color_fractions_at_pixel = pixel_matrix.color_fractions_at(
                 maximum_color_intensity,
                 &HorizontalPixelAmount(horizontal_index),
-                &VerticalPixelAmount(vertical_index),
+                &pixels_up,
             );
         }
     }
@@ -121,4 +129,84 @@ fn flattened_color_bytes_from(
     */
     // Still to do: actually fill the bytes, obviously. The above should guide me.
     Ok(flattened_bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::ColorFraction;
+    use super::super::RedGreenBlueFraction;
+    use super::super::RedGreenBlueIntensity;
+    use super::*;
+    use data_structure::ColorUnit;
+
+    struct MockColoredPixelMatrix {}
+    impl ColoredPixelMatrix for MockColoredPixelMatrix {
+        fn color_fractions_at(
+            &self,
+            reference_intensity: &RedGreenBlueIntensity,
+            horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
+            vertical_pixels_from_bottom_left: &VerticalPixelAmount,
+        ) -> Result<RedGreenBlueFraction, Box<dyn std::error::Error>> {
+            match (
+                horizontal_pixels_from_bottom_left,
+                vertical_pixels_from_bottom_left,
+            ) {
+                (HorizontalPixelAmount(0), VerticalPixelAmount(y)) => Ok(RedGreenBlueFraction {
+                    red_fraction: ColorFraction(0.5 * (*y as f64)),
+                    green_fraction: ColorFraction(0.5 * (*y as f64)),
+                    blue_fraction: ColorFraction(0.5 * (*y as f64)),
+                }),
+                (HorizontalPixelAmount(1), VerticalPixelAmount(y)) => Ok(RedGreenBlueFraction {
+                    red_fraction: ColorFraction(0.5 * (*y as f64)),
+                    green_fraction: ColorFraction(0.0),
+                    blue_fraction: ColorFraction(0.5 * (*y as f64)),
+                }),
+                (HorizontalPixelAmount(2), VerticalPixelAmount(y)) => Ok(RedGreenBlueFraction {
+                    red_fraction: ColorFraction(0.5 * (*y as f64)),
+                    green_fraction: ColorFraction(0.5 * (*y as f64)),
+                    blue_fraction: ColorFraction(0.0),
+                }),
+                _ => Ok(RedGreenBlueFraction {
+                    red_fraction: ColorFraction(0.0),
+                    green_fraction: ColorFraction(0.0),
+                    blue_fraction: ColorFraction(0.0),
+                }),
+            }
+        }
+        fn width_in_pixels(&self) -> HorizontalPixelAmount {
+            HorizontalPixelAmount(4)
+        }
+        fn height_in_pixels(&self) -> VerticalPixelAmount {
+            VerticalPixelAmount(3)
+        }
+    }
+
+    #[test]
+    fn test_flattened_color_bytes_from() {
+        let mock_matrix = MockColoredPixelMatrix {};
+
+        let full_intensity = RedGreenBlueIntensity {
+            red_density: ColorUnit(1.0),
+            green_density: ColorUnit(1.0),
+            blue_density: ColorUnit(1.0),
+        };
+
+        #[rustfmt::skip]
+        let expected_bytes: Vec<u8> = vec![
+            // 0r    0g    0b    1r    1g    1b    2r    2g    2b    3r    3g    3b
+            0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,
+            // 0r    0g    0b    1r    1g    1b    2r    2g    2b    3r    3g    3b
+            0x7F, 0x7F, 0x7F, 0x7F, 0x00, 0x7F, 0x7F, 0x7F, 0x00, 0x00, 0x00, 0x00,
+            // 0r    0g    0b    1r    1g    1b    2r    2g    2b    3r    3g    3b
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+
+        let flattened_color_bytes = flattened_color_bytes_from(&mock_matrix, &full_intensity)
+            .expect("Mock should always return Ok(...)");
+
+        assert_eq!(
+            expected_bytes, flattened_color_bytes,
+            "APNG bytes for a test frame, left is expected, right is actual"
+        );
+    }
 }
