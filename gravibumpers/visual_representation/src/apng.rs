@@ -8,6 +8,32 @@ use super::RedGreenBlueIntensity;
 use super::SequenceAnimator;
 use super::VerticalPixelAmount;
 use std::convert::TryInto;
+use std::error::Error;
+
+#[derive(Debug)]
+struct OutOfBoundsError {
+    error_message: String,
+}
+
+impl OutOfBoundsError {
+    fn new(error_message: &str) -> OutOfBoundsError {
+        OutOfBoundsError {
+            error_message: error_message.to_string(),
+        }
+    }
+}
+
+impl Error for OutOfBoundsError {
+    fn description(&self) -> &str {
+        &self.error_message
+    }
+}
+
+impl std::fmt::Display for OutOfBoundsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Out of bounds: {}", self.error_message)
+    }
+}
 
 pub fn new(particle_to_pixel_mapper: Box<dyn ParticleToPixelMapper>) -> Box<dyn SequenceAnimator> {
     // I am sticking with the color palette from the apng_encoder example. It should be good enough
@@ -139,6 +165,10 @@ mod tests {
     use super::*;
     use data_structure::ColorUnit;
 
+    const MAX_BYTE: u8 = 0xFF;
+    const HALF_BYTE: u8 = 0x80;
+    const ZERO_BYTE: u8 = 0x00;
+
     struct MockColoredPixelMatrix {}
     impl ColoredPixelMatrix for MockColoredPixelMatrix {
         fn color_fractions_at(
@@ -166,11 +196,15 @@ mod tests {
                     green_fraction: ColorFraction(0.5 * (*y as f64)),
                     blue_fraction: ColorFraction(0.0),
                 }),
-                _ => Ok(RedGreenBlueFraction {
+                (HorizontalPixelAmount(3), VerticalPixelAmount(_)) => Ok(RedGreenBlueFraction {
                     red_fraction: ColorFraction(0.0),
                     green_fraction: ColorFraction(0.0),
                     blue_fraction: ColorFraction(0.0),
                 }),
+                _ => Err(Box::new(OutOfBoundsError::new(&format!(
+                    "horizontal_pixels_from_bottom_left {}, vertical_pixels_from_bottom_left {}",
+                    horizontal_pixels_from_bottom_left.0, vertical_pixels_from_bottom_left.0
+                )))),
             }
         }
         fn width_in_pixels(&self) -> HorizontalPixelAmount {
@@ -193,12 +227,18 @@ mod tests {
 
         #[rustfmt::skip]
         let expected_bytes: Vec<u8> = vec![
-            // 0r    0g    0b    1r    1g    1b    2r    2g    2b    3r    3g    3b
-            0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,
-            // 0r    0g    0b    1r    1g    1b    2r    2g    2b    3r    3g    3b
-            0x7F, 0x7F, 0x7F, 0x7F, 0x00, 0x7F, 0x7F, 0x7F, 0x00, 0x00, 0x00, 0x00,
-            // 0r    0g    0b    1r    1g    1b    2r    2g    2b    3r    3g    3b
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            //    0r        0g        0b        1r         1g        1b
+            //        2r        2g         2b         3r         3g         3b
+            MAX_BYTE, MAX_BYTE, MAX_BYTE, MAX_BYTE, ZERO_BYTE, MAX_BYTE,
+                MAX_BYTE, MAX_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE,
+            //     0r         0g         0b         1r         1g         1b
+            //         2r         2g         2b         3r         3g         3b
+            HALF_BYTE, HALF_BYTE, HALF_BYTE, HALF_BYTE, ZERO_BYTE, HALF_BYTE,
+                HALF_BYTE, HALF_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE,
+            //     0r         0g         0b         1r         1g         1b
+            //         2r         2g         2b         3r         3g         3b
+            ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE,
+                ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE,
         ];
 
         let flattened_color_bytes = flattened_color_bytes_from(&mock_matrix, &full_intensity)
