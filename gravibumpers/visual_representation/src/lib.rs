@@ -3,6 +3,32 @@
 extern crate data_structure;
 pub mod apng;
 pub mod particles_to_pixels;
+use std::error::Error;
+
+#[derive(Debug)]
+pub struct OutOfBoundsError {
+    error_message: String,
+}
+
+impl OutOfBoundsError {
+    pub fn new(error_message: &str) -> OutOfBoundsError {
+        OutOfBoundsError {
+            error_message: error_message.to_string(),
+        }
+    }
+}
+
+impl Error for OutOfBoundsError {
+    fn description(&self) -> &str {
+        &self.error_message
+    }
+}
+
+impl std::fmt::Display for OutOfBoundsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Out of bounds: {}", self.error_message)
+    }
+}
 
 pub trait SequenceAnimator {
     fn animate_sequence(
@@ -19,7 +45,15 @@ pub struct RedGreenBlueIntensity {
     pub blue_density: data_structure::ColorUnit,
 }
 
-pub struct ColorFraction(f64);
+pub struct ColorFraction(pub f64);
+
+impl std::ops::Mul<&data_structure::ColorUnit> for ColorFraction {
+    type Output = data_structure::ColorUnit;
+
+    fn mul(self, color_with_unit: &data_structure::ColorUnit) -> data_structure::ColorUnit {
+        data_structure::ColorUnit(self.0 * color_with_unit.0)
+    }
+}
 
 pub struct RedGreenBlueFraction {
     pub red_fraction: ColorFraction,
@@ -27,10 +61,22 @@ pub struct RedGreenBlueFraction {
     pub blue_fraction: ColorFraction,
 }
 
+impl std::ops::Mul<&RedGreenBlueIntensity> for RedGreenBlueFraction {
+    type Output = RedGreenBlueIntensity;
+
+    fn mul(self, intensity_triplet: &RedGreenBlueIntensity) -> RedGreenBlueIntensity {
+        RedGreenBlueIntensity {
+            red_density: (self.red_fraction * &intensity_triplet.red_density),
+            green_density: (self.green_fraction * &intensity_triplet.green_density),
+            blue_density: (self.blue_fraction * &intensity_triplet.blue_density),
+        }
+    }
+}
+
 /// The pixel co-ordinates are taken as from the bottom-left of the picture because that is how
 /// I find it easiest to visualize.
-pub struct HorizontalPixelAmount(u32);
-pub struct VerticalPixelAmount(u32);
+pub struct HorizontalPixelAmount(pub u32);
+pub struct VerticalPixelAmount(pub u32);
 
 pub trait ColoredPixelMatrix {
     fn color_fractions_at(

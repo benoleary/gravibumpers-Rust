@@ -8,43 +8,21 @@ use super::RedGreenBlueIntensity;
 use super::SequenceAnimator;
 use super::VerticalPixelAmount;
 use std::convert::TryInto;
-use std::error::Error;
 
-#[derive(Debug)]
-struct OutOfBoundsError {
-    error_message: String,
-}
+const MILLISECONDS_PER_SECOND: u16 = 1000;
 
-impl OutOfBoundsError {
-    fn new(error_message: &str) -> OutOfBoundsError {
-        OutOfBoundsError {
-            error_message: error_message.to_string(),
-        }
-    }
-}
+const COLOR_DEPTH: apng_encoder::Color = apng_encoder::Color::RGB(8);
 
-impl Error for OutOfBoundsError {
-    fn description(&self) -> &str {
-        &self.error_message
-    }
-}
-
-impl std::fmt::Display for OutOfBoundsError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Out of bounds: {}", self.error_message)
-    }
-}
+const MAXIMUM_COLOR_BYTE: u8 = 0xFF;
 
 pub fn new(particle_to_pixel_mapper: Box<dyn ParticleToPixelMapper>) -> Box<dyn SequenceAnimator> {
     // I am sticking with the color palette from the apng_encoder example. It should be good enough
     // for my purposes.
     Box::new(ApngAnimator {
-        color_palette: apng_encoder::Color::RGB(8),
+        color_palette: COLOR_DEPTH,
         particle_to_pixel_mapper: particle_to_pixel_mapper,
     })
 }
-
-const MILLISECONDS_PER_SECOND: u16 = 1000;
 
 struct ApngAnimator {
     color_palette: apng_encoder::Color,
@@ -105,6 +83,10 @@ impl SequenceAnimator for ApngAnimator {
     }
 }
 
+fn ceiling_as_byte(color_intensity: data_structure::ColorUnit) -> u8 {
+    (color_intensity.0 * (MAXIMUM_COLOR_BYTE as f64)).ceil() as u8
+}
+
 // This function creates the byte array specific to APNG representing the rectangle of triplets of
 // floating-point numbers representing red-green-blue quantities.
 fn flattened_color_bytes_from(
@@ -114,7 +96,7 @@ fn flattened_color_bytes_from(
     let width_in_pixels = pixel_matrix.width_in_pixels().0;
     let height_in_pixels = pixel_matrix.height_in_pixels().0;
     let flattened_length = 3 * width_in_pixels * height_in_pixels;
-    let flattened_bytes = vec![0x00; flattened_length.try_into()?];
+    let mut flattened_bytes = vec![0x00; flattened_length.try_into()?];
 
     for vertical_index in 0..height_in_pixels {
         // I prefer to think of drawing from the bottom-left to the right and up, but APNG lists the
@@ -124,7 +106,7 @@ fn flattened_color_bytes_from(
         for horizontal_index in 0..width_in_pixels {
             // At this point we have already written sets of 3 colors for vertical_index whole
             // *rows* plus horizontal_index pixels in this row.
-            let red_index = 3 * ((vertical_index * width_in_pixels) + horizontal_index);
+            let red_index = 3 * ((vertical_index * width_in_pixels) + horizontal_index) as usize;
             let green_index = red_index + 1;
             let blue_index = green_index + 1;
 
@@ -132,34 +114,22 @@ fn flattened_color_bytes_from(
                 maximum_color_intensity,
                 &HorizontalPixelAmount(horizontal_index),
                 &pixels_up,
-            );
+            )?;
+
+            let color_triplet = color_fractions_at_pixel * maximum_color_intensity;
+
+            flattened_bytes[red_index] = ceiling_as_byte(color_triplet.red_density);
+            flattened_bytes[green_index] = ceiling_as_byte(color_triplet.green_density);
+            flattened_bytes[blue_index] = ceiling_as_byte(color_triplet.blue_density);
         }
     }
-
-    /*
-        // RED   GREEN
-        // BLACK BLUE
-        test_encoder
-            .write_frame(
-                &[
-                    // (x=0,y=0)            (x=1,y=0)
-                    0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00,
-                    // (x=0,y=1)            (x=1,y=1)
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-                ],
-                Some(&test_frame),
-                None,
-                None,
-            )
-            .unwrap();
-    */
-    // Still to do: actually fill the bytes, obviously. The above should guide me.
     Ok(flattened_bytes)
 }
 
 #[cfg(test)]
 mod tests {
     use super::super::ColorFraction;
+    use super::super::OutOfBoundsError;
     use super::super::RedGreenBlueFraction;
     use super::super::RedGreenBlueIntensity;
     use super::*;
