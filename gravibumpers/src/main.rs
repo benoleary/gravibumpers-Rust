@@ -28,11 +28,25 @@ mod animation_experiment {
     use visual_representation::RedGreenBlueIntensity;
     use visual_representation::VerticalPixelAmount;
 
-    const HEIGHT_IN_PIXELS: u32 = 50;
-    const WIDTH_IN_PIXELS: u32 = 100;
+    const HEIGHT_IN_PIXELS: VerticalPixelAmount = VerticalPixelAmount(50);
+    const WIDTH_IN_PIXELS: HorizontalPixelAmount = HorizontalPixelAmount(100);
+
+    pub fn new_matrix(time_index: u32) -> ExperimentalColoredPixelMatrix {
+        ExperimentalColoredPixelMatrix {
+            red_upper_edge: VerticalPixelAmount(time_index),
+            red_lower_edge: VerticalPixelAmount(time_index),
+            red_left_edge: HorizontalPixelAmount(time_index),
+            red_peak_line: HorizontalPixelAmount(time_index),
+            red_right_edge: HorizontalPixelAmount(time_index),
+        }
+    }
 
     struct ExperimentalColoredPixelMatrix {
-        time_index: u8,
+        red_upper_edge: VerticalPixelAmount,
+        red_lower_edge: VerticalPixelAmount,
+        red_left_edge: HorizontalPixelAmount,
+        red_peak_line: HorizontalPixelAmount,
+        red_right_edge: HorizontalPixelAmount,
     }
 
     impl visual_representation::ColoredPixelMatrix for ExperimentalColoredPixelMatrix {
@@ -42,11 +56,8 @@ mod animation_experiment {
             horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
             vertical_pixels_from_bottom_left: &VerticalPixelAmount,
         ) -> Result<RedGreenBlueFraction, Box<dyn std::error::Error>> {
-            let horizontal_coordinate = horizontal_pixels_from_bottom_left.0;
-            let vertical_coordinate = vertical_pixels_from_bottom_left.0;
-
-            if (horizontal_coordinate >= WIDTH_IN_PIXELS)
-                || (vertical_coordinate >= HEIGHT_IN_PIXELS)
+            if (horizontal_pixels_from_bottom_left >= self.width_in_pixels())
+                || (vertical_pixels_from_bottom_left >= self.height_in_pixels())
             {
                 return Err(Box::new(OutOfBoundsError::new(&format!(
                     "horizontal_pixels_from_bottom_left {}, vertical_pixels_from_bottom_left {}",
@@ -55,19 +66,23 @@ mod animation_experiment {
             }
 
             let mut color_fraction_triplet = RedGreenBlueFraction {
-                red_fraction: ColorFraction(0.5 * (self.time_index as f64)),
-                green_fraction: ColorFraction(0.5 * (self.time_index as f64)),
-                blue_fraction: ColorFraction(0.5 * (self.time_index as f64)),
+                red_fraction: ColorFraction(0.0),
+                green_fraction: ColorFraction(0.0),
+                blue_fraction: ColorFraction(0.0),
+            };
+
+            if vertical_pixels_from_bottom_left < &VerticalPixelAmount(30) {
+                //if horizontal_pixels_from_bottom_left > HorizontalPixelAmount(t)
             };
 
             Ok(color_fraction_triplet)
         }
 
-        fn width_in_pixels(&self) -> HorizontalPixelAmount {
-            HorizontalPixelAmount(WIDTH_IN_PIXELS)
+        fn width_in_pixels(&self) -> &HorizontalPixelAmount {
+            &WIDTH_IN_PIXELS
         }
-        fn height_in_pixels(&self) -> VerticalPixelAmount {
-            VerticalPixelAmount(HEIGHT_IN_PIXELS)
+        fn height_in_pixels(&self) -> &VerticalPixelAmount {
+            &HEIGHT_IN_PIXELS
         }
     }
 }

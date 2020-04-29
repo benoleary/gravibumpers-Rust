@@ -75,8 +75,47 @@ impl std::ops::Mul<&RedGreenBlueIntensity> for RedGreenBlueFraction {
 
 /// The pixel co-ordinates are taken as from the bottom-left of the picture because that is how
 /// I find it easiest to visualize.
+#[derive(Eq)]
 pub struct HorizontalPixelAmount(pub u32);
+
+impl std::cmp::Ord for HorizontalPixelAmount {
+    fn cmp(&self, other: &HorizontalPixelAmount) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl std::cmp::PartialOrd for HorizontalPixelAmount {
+    fn partial_cmp(&self, other: &HorizontalPixelAmount) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl std::cmp::PartialEq for HorizontalPixelAmount {
+    fn eq(&self, other: &HorizontalPixelAmount) -> bool {
+        self.0 == other.0
+    }
+}
+
+#[derive(Eq)]
 pub struct VerticalPixelAmount(pub u32);
+
+impl std::cmp::Ord for VerticalPixelAmount {
+    fn cmp(&self, other: &VerticalPixelAmount) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl std::cmp::PartialOrd for VerticalPixelAmount {
+    fn partial_cmp(&self, other: &VerticalPixelAmount) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl std::cmp::PartialEq for VerticalPixelAmount {
+    fn eq(&self, other: &VerticalPixelAmount) -> bool {
+        self.0 == other.0
+    }
+}
 
 pub trait ColoredPixelMatrix {
     fn color_fractions_at(
@@ -86,6 +125,6 @@ pub trait ColoredPixelMatrix {
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<RedGreenBlueFraction, Box<dyn std::error::Error>>;
 
-    fn width_in_pixels(&self) -> HorizontalPixelAmount;
-    fn height_in_pixels(&self) -> VerticalPixelAmount;
+    fn width_in_pixels(&self) -> &HorizontalPixelAmount;
+    fn height_in_pixels(&self) -> &VerticalPixelAmount;
 }
