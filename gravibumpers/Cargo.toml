@@ -11,3 +11,12 @@ data_structure = { path = "data_structure" }
 initial_conditions = { path = "initial_conditions" }
 time_evolution = { path = "time_evolution" }
 visual_representation = { path = "visual_representation" }
+
+[workspace]
+
+members = [
+    "data_structure",
+    "initial_conditions",
+    "time_evolution",
+    "visual_representation",
+]

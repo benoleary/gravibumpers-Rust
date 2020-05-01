@@ -47,8 +47,16 @@ impl SequenceAnimator for ApngAnimator {
         let number_of_frames = particle_map_sequence.len();
 
         let meta_information = apng_encoder::Meta {
-            width: self.particle_to_pixel_mapper.width_in_pixels().0,
-            height: self.particle_to_pixel_mapper.height_in_pixels().0,
+            width: self
+                .particle_to_pixel_mapper
+                .width_in_pixels()
+                .0
+                .try_into()?,
+            height: self
+                .particle_to_pixel_mapper
+                .height_in_pixels()
+                .0
+                .try_into()?,
             color: self.color_palette,
             frames: number_of_frames.try_into()?,
             plays: Some(1),
@@ -177,11 +185,11 @@ mod tests {
                 )))),
             }
         }
-        fn width_in_pixels(&self) -> HorizontalPixelAmount {
-            HorizontalPixelAmount(4)
+        fn width_in_pixels(&self) -> &HorizontalPixelAmount {
+            &HorizontalPixelAmount(4)
         }
-        fn height_in_pixels(&self) -> VerticalPixelAmount {
-            VerticalPixelAmount(3)
+        fn height_in_pixels(&self) -> &VerticalPixelAmount {
+            &VerticalPixelAmount(3)
         }
     }
 

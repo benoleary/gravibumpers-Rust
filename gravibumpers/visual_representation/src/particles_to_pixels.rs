@@ -14,6 +14,6 @@ pub trait ParticleToPixelMapper {
         particle_map_sequence: &[Box<dyn data_structure::ParticleCollection>],
     ) -> Result<ColoredPixelMatrixSequence, Box<dyn std::error::Error>>;
 
-    fn width_in_pixels(&self) -> HorizontalPixelAmount;
-    fn height_in_pixels(&self) -> VerticalPixelAmount;
+    fn width_in_pixels(&self) -> &HorizontalPixelAmount;
+    fn height_in_pixels(&self) -> &VerticalPixelAmount;
 }
