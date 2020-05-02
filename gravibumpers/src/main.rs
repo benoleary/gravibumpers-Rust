@@ -19,9 +19,13 @@ fn main() {
     let test_animator = visual_representation::apng::new(Box::new(
         visual_representation::demonstration::DemonstrationMapper {},
     ));
+    let mut dummy_sequence: Vec<Box<dyn data_structure::ParticleCollection>> = Vec::new();
+    for _ in 0..40 {
+        let dummy_collection: Box<dyn data_structure::ParticleCollection> =
+            Box::new(visual_representation::demonstration::DummyParticleCollection {});
+        dummy_sequence.push(dummy_collection);
+    }
     test_animator
-        .animate_sequence(&vec![], 250, "demonstration.apng")
+        .animate_sequence(&dummy_sequence, 250, "demonstration.apng")
         .unwrap()
 }
-
-mod animation_experiment {}

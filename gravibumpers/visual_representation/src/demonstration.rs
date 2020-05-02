@@ -10,6 +10,7 @@ const FRAME_HEIGHT: VerticalPixelAmount = VerticalPixelAmount(50);
 const FRAME_WIDTH: HorizontalPixelAmount = HorizontalPixelAmount(100);
 const HORIZONTAL_PERIOD: i32 = 2 * FRAME_WIDTH.0;
 const RED_HALF_WIDTH: HorizontalPixelAmount = HorizontalPixelAmount(5);
+const COLOR_NORMALIZATION: f64 = 0.2;
 
 fn new_pixel_matrix(time_index: i32) -> DemonstrationPixelMatrix {
     let time_within_period = time_index % HORIZONTAL_PERIOD;
@@ -52,9 +53,15 @@ impl DemonstrationPixelMatrix {
             ColorFraction(0.0)
         } else {
             if horizontal_pixels_from_bottom_left < &self.red_peak_line {
-                ColorFraction((*horizontal_pixels_from_bottom_left - self.red_left_edge).0 as f64)
+                ColorFraction(
+                    ((*horizontal_pixels_from_bottom_left - self.red_left_edge).0 as f64)
+                        * COLOR_NORMALIZATION,
+                )
             } else {
-                ColorFraction((self.red_right_edge - *horizontal_pixels_from_bottom_left).0 as f64)
+                ColorFraction(
+                    ((self.red_right_edge - *horizontal_pixels_from_bottom_left).0 as f64)
+                        * COLOR_NORMALIZATION,
+                )
             }
         }
     }
@@ -120,6 +127,11 @@ pub struct DemonstrationMapper {}
 type PixelMatrixBox = Box<dyn super::ColoredPixelMatrix>;
 type PixelMatrixSequence = super::particles_to_pixels::ColoredPixelMatrixSequence;
 
+#[derive(Copy, Clone, Debug)]
+pub struct DummyParticleCollection {}
+
+impl data_structure::ParticleCollection for DummyParticleCollection {}
+
 impl ParticleToPixelMapper for DemonstrationMapper {
     fn aggregate_particle_colors_to_pixels(
         &self,
@@ -128,15 +140,15 @@ impl ParticleToPixelMapper for DemonstrationMapper {
         let mut matrix_sequence: Vec<PixelMatrixBox> =
             Vec::with_capacity(particle_map_sequence.len());
         for (time_index, _) in particle_map_sequence.iter().enumerate() {
-            matrix_sequence.push(Box::new(new_pixel_matrix(time_index as i32)))
+            matrix_sequence.push(Box::new(new_pixel_matrix(10 * time_index as i32)))
         }
 
         Ok(PixelMatrixSequence {
             colored_pixel_matrices: matrix_sequence,
             maximum_color_intensity: RedGreenBlueIntensity {
-                red_density: data_structure::ColorUnit(10.0),
-                green_density: data_structure::ColorUnit(10.0),
-                blue_density: data_structure::ColorUnit(10.0),
+                red_density: data_structure::ColorUnit(1.0),
+                green_density: data_structure::ColorUnit(1.0),
+                blue_density: data_structure::ColorUnit(1.0),
             },
         })
     }

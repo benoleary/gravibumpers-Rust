@@ -11,4 +11,5 @@ gravibumpers/Cargo.lock
 
 gravibumpers/.vscode
 **/*.png
+**/*.apng
 
