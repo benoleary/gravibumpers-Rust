@@ -32,7 +32,7 @@ struct ApngAnimator {
 impl SequenceAnimator for ApngAnimator {
     fn animate_sequence(
         &self,
-        particle_map_sequence: &[Box<dyn data_structure::ParticleCollection>],
+        particle_map_sequence: data_structure::ParticleSetIterator,
         milliseconds_per_frame: u32,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {

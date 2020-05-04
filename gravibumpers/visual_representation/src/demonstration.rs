@@ -135,11 +135,11 @@ impl data_structure::ParticleCollection for DummyParticleCollection {}
 impl ParticleToPixelMapper for DemonstrationMapper {
     fn aggregate_particle_colors_to_pixels(
         &self,
-        particle_map_sequence: &[Box<dyn data_structure::ParticleCollection>],
+        particle_map_sequence: data_structure::ParticleSetIterator,
     ) -> Result<PixelMatrixSequence, Box<dyn std::error::Error>> {
         let mut matrix_sequence: Vec<PixelMatrixBox> =
             Vec::with_capacity(particle_map_sequence.len());
-        for (time_index, _) in particle_map_sequence.iter().enumerate() {
+        for (time_index, _) in particle_map_sequence.enumerate() {
             matrix_sequence.push(Box::new(new_pixel_matrix(10 * time_index as i32)))
         }
 

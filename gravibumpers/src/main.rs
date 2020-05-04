@@ -26,6 +26,6 @@ fn main() {
         dummy_sequence.push(dummy_collection);
     }
     test_animator
-        .animate_sequence(&dummy_sequence, 250, "demonstration.apng")
+        .animate_sequence(&mut dummy_sequence.into_iter(), 250, "demonstration.apng")
         .unwrap()
 }
