@@ -15,7 +15,7 @@ const COLOR_DEPTH: apng_encoder::Color = apng_encoder::Color::RGB(8);
 
 const MAXIMUM_COLOR_BYTE: u8 = 0xFF;
 
-pub fn new(particle_to_pixel_mapper: Box<dyn ParticleToPixelMapper>) -> Box<dyn SequenceAnimator> {
+pub fn new<T: ParticleToPixelMapper>(particle_to_pixel_mapper: Box<T>) -> Box<ApngAnimator<T>> {
     // I am sticking with the color palette from the apng_encoder example. It should be good enough
     // for my purposes.
     Box::new(ApngAnimator {
@@ -24,15 +24,15 @@ pub fn new(particle_to_pixel_mapper: Box<dyn ParticleToPixelMapper>) -> Box<dyn 
     })
 }
 
-struct ApngAnimator {
+pub struct ApngAnimator<T: ParticleToPixelMapper> {
     color_palette: apng_encoder::Color,
-    particle_to_pixel_mapper: Box<dyn ParticleToPixelMapper>,
+    particle_to_pixel_mapper: Box<T>,
 }
 
-impl SequenceAnimator for ApngAnimator {
-    fn aggregate_particle_colors_to_pixels<T: data_structure::ParticleCollection>(
+impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
+    fn animate_sequence<U: data_structure::ParticleCollection>(
         &self,
-        particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &T>,
+        particle_map_sequence: &mut dyn std::iter::Iterator<Item = &U>,
         milliseconds_per_frame: u32,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -44,7 +44,12 @@ impl SequenceAnimator for ApngAnimator {
             ..Default::default()
         };
 
-        let number_of_frames = particle_map_sequence.len();
+        let mut output_file = std::fs::File::create(output_filename).unwrap();
+
+        let matrix_sequence = self
+            .particle_to_pixel_mapper
+            .aggregate_particle_colors_to_pixels(particle_map_sequence)?;
+        let number_of_frames = matrix_sequence.colored_pixel_matrices.len();
 
         let meta_information = apng_encoder::Meta {
             width: self
@@ -62,14 +67,8 @@ impl SequenceAnimator for ApngAnimator {
             plays: Some(1),
         };
 
-        let mut output_file = std::fs::File::create(output_filename).unwrap();
-
         let mut output_encoder =
             apng_encoder::Encoder::create(&mut output_file, meta_information).unwrap();
-
-        let matrix_sequence = self
-            .particle_to_pixel_mapper
-            .aggregate_particle_colors_to_pixels(particle_map_sequence)?;
 
         for pixel_matrix in matrix_sequence.colored_pixel_matrices {
             let flattened_color_bytes = &flattened_color_bytes_from(
