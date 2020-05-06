@@ -20,6 +20,3 @@ pub struct ParticleIntrinsics {
 /// All the particles are encapsulated behind a ParticleCollection.
 /// This definition is going to change a lot.
 pub trait ParticleCollection {}
-
-pub type ParticleSetIterator<'a> =
-    &'a mut dyn std::iter::ExactSizeIterator<Item = &'a dyn ParticleCollection>;

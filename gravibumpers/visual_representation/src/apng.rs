@@ -30,9 +30,9 @@ struct ApngAnimator {
 }
 
 impl SequenceAnimator for ApngAnimator {
-    fn animate_sequence(
+    fn aggregate_particle_colors_to_pixels<T: data_structure::ParticleCollection>(
         &self,
-        particle_map_sequence: data_structure::ParticleSetIterator,
+        particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &T>,
         milliseconds_per_frame: u32,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {

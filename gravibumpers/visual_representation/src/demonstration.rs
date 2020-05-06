@@ -133,9 +133,9 @@ pub struct DummyParticleCollection {}
 impl data_structure::ParticleCollection for DummyParticleCollection {}
 
 impl ParticleToPixelMapper for DemonstrationMapper {
-    fn aggregate_particle_colors_to_pixels(
+    fn aggregate_particle_colors_to_pixels<T: data_structure::ParticleCollection>(
         &self,
-        particle_map_sequence: data_structure::ParticleSetIterator,
+        particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &T>,
     ) -> Result<PixelMatrixSequence, Box<dyn std::error::Error>> {
         let mut matrix_sequence: Vec<PixelMatrixBox> =
             Vec::with_capacity(particle_map_sequence.len());

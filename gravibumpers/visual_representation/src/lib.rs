@@ -32,9 +32,9 @@ impl std::fmt::Display for OutOfBoundsError {
 }
 
 pub trait SequenceAnimator {
-    fn animate_sequence(
+    fn animate_sequence<T: data_structure::ParticleCollection>(
         &self,
-        particle_map_sequence: data_structure::ParticleSetIterator,
+        particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &T>,
         milliseconds_per_frame: u32,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>>;
