@@ -15,18 +15,23 @@ const COLOR_DEPTH: apng_encoder::Color = apng_encoder::Color::RGB(8);
 
 const MAXIMUM_COLOR_BYTE: u8 = 0xFF;
 
-pub fn new<T: ParticleToPixelMapper>(particle_to_pixel_mapper: Box<T>) -> Box<ApngAnimator<T>> {
+pub fn new<T: ParticleToPixelMapper>(
+    particle_to_pixel_mapper: Box<T>,
+    number_of_plays: u32,
+) -> Box<ApngAnimator<T>> {
     // I am sticking with the color palette from the apng_encoder example. It should be good enough
     // for my purposes.
     Box::new(ApngAnimator {
         color_palette: COLOR_DEPTH,
         particle_to_pixel_mapper: particle_to_pixel_mapper,
+        number_of_plays: number_of_plays,
     })
 }
 
 pub struct ApngAnimator<T: ParticleToPixelMapper> {
     color_palette: apng_encoder::Color,
     particle_to_pixel_mapper: Box<T>,
+    number_of_plays: u32,
 }
 
 impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
@@ -64,7 +69,7 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
                 .try_into()?,
             color: self.color_palette,
             frames: number_of_frames.try_into()?,
-            plays: Some(1),
+            plays: Some(self.number_of_plays),
         };
 
         let mut output_encoder =

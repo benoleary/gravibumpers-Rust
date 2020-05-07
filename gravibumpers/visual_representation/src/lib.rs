@@ -99,6 +99,14 @@ impl std::ops::Sub<HorizontalPixelAmount> for HorizontalPixelAmount {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct VerticalPixelAmount(pub i32);
 
+impl std::ops::Sub<VerticalPixelAmount> for VerticalPixelAmount {
+    type Output = VerticalPixelAmount;
+
+    fn sub(self, other_amount: VerticalPixelAmount) -> VerticalPixelAmount {
+        VerticalPixelAmount(self.0 - other_amount.0)
+    }
+}
+
 pub trait ColoredPixelMatrix {
     fn color_fractions_at(
         &self,

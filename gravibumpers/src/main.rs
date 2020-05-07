@@ -18,9 +18,10 @@ fn main() {
         time_evolution_placeholder
     );
 
-    let test_animator = visual_representation::apng::new(Box::new(
-        visual_representation::demonstration::DemonstrationMapper {},
-    ));
+    let test_animator = visual_representation::apng::new(
+        Box::new(visual_representation::demonstration::DemonstrationMapper {}),
+        0,
+    );
     let mut dummy_sequence: Vec<visual_representation::demonstration::DummyParticleCollection> =
         Vec::new();
     for _ in 0..100 {
