@@ -119,7 +119,7 @@ impl DemonstrationPixelMatrix {
 impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
     fn color_fractions_at(
         &self,
-        reference_intensity: &RedGreenBlueIntensity,
+        _reference_intensity: &RedGreenBlueIntensity,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<RedGreenBlueFraction, Box<dyn std::error::Error>> {
@@ -165,7 +165,7 @@ pub struct DemonstrationMapper {}
 impl ParticleToPixelMapper for DemonstrationMapper {
     fn aggregate_particle_colors_to_pixels<T: data_structure::ParticleCollection>(
         &self,
-        particle_map_sequence: &mut dyn std::iter::Iterator<Item = &T>,
+        particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &T>,
     ) -> Result<PixelMatrixSequence, Box<dyn std::error::Error>> {
         let mut matrix_sequence: Vec<PixelMatrixBox> = Vec::new();
         for (time_index, _) in particle_map_sequence.enumerate() {

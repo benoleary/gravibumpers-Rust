@@ -11,7 +11,7 @@ pub struct ColoredPixelMatrixSequence {
 pub trait ParticleToPixelMapper {
     fn aggregate_particle_colors_to_pixels<T: data_structure::ParticleCollection>(
         &self,
-        particle_map_sequence: &mut dyn std::iter::Iterator<Item = &T>,
+        particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &T>,
     ) -> Result<ColoredPixelMatrixSequence, Box<dyn std::error::Error>>;
 
     fn width_in_pixels(&self) -> &HorizontalPixelAmount;

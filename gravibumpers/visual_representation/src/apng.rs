@@ -37,7 +37,7 @@ pub struct ApngAnimator<T: ParticleToPixelMapper> {
 impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
     fn animate_sequence<U: data_structure::ParticleCollection>(
         &self,
-        particle_map_sequence: &mut dyn std::iter::Iterator<Item = &U>,
+        particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &U>,
         milliseconds_per_frame: u32,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -49,12 +49,7 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
             ..Default::default()
         };
 
-        let mut output_file = std::fs::File::create(output_filename).unwrap();
-
-        let matrix_sequence = self
-            .particle_to_pixel_mapper
-            .aggregate_particle_colors_to_pixels(particle_map_sequence)?;
-        let number_of_frames = matrix_sequence.colored_pixel_matrices.len();
+        let number_of_frames = particle_map_sequence.len();
 
         let meta_information = apng_encoder::Meta {
             width: self
@@ -72,8 +67,13 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
             plays: Some(self.number_of_plays),
         };
 
+        let mut output_file = std::fs::File::create(output_filename).unwrap();
         let mut output_encoder =
             apng_encoder::Encoder::create(&mut output_file, meta_information).unwrap();
+
+        let matrix_sequence = self
+            .particle_to_pixel_mapper
+            .aggregate_particle_colors_to_pixels(particle_map_sequence)?;
 
         for pixel_matrix in matrix_sequence.colored_pixel_matrices {
             let flattened_color_bytes = &flattened_color_bytes_from(
@@ -155,7 +155,7 @@ mod tests {
     impl ColoredPixelMatrix for MockColoredPixelMatrix {
         fn color_fractions_at(
             &self,
-            reference_intensity: &RedGreenBlueIntensity,
+            _reference_intensity: &RedGreenBlueIntensity,
             horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
             vertical_pixels_from_bottom_left: &VerticalPixelAmount,
         ) -> Result<RedGreenBlueFraction, Box<dyn std::error::Error>> {
