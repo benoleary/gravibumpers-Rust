@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     return match command_line_arguments[1].as_str() {
         "rgb_demo" => create_rgb_demonstration(&command_line_arguments),
-        "no_op" => hold_place(&command_line_arguments),
+        "read_file" => run_from_configuration_file(&command_line_arguments),
         _ => print_help(),
     };
 }
@@ -21,7 +21,7 @@ fn print_help() -> Result<(), Box<dyn std::error::Error>> {
     println!("GraviBumpers!");
     println!("The first argument should be the mode. Currently implemented: rgb_demo, no_op");
     println!("rgb_demo expects 1 further argument: the filename for the output APNG.");
-    println!("no_op expects nothing and gives nothing.");
+    println!("read_file expects 1 further argument: the filename of the configuration.");
     Ok(())
 }
 
@@ -45,11 +45,17 @@ fn create_rgb_demonstration(
     (*demonstration_animator).animate_sequence(&mut dummy_sequence.iter(), 100, output_filename)
 }
 
-fn hold_place(command_line_arguments: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+fn run_from_configuration_file(
+    command_line_arguments: &[String],
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("This will become GraviBumpers!");
-    if command_line_arguments.len() != 2 {
+    if command_line_arguments.len() != 3 {
         return print_help();
     }
+
+    let input_filename = &command_line_arguments[2];
+    println!("reading configuration from {}", input_filename);
+
     let initial_conditions_placeholder = initial_conditions::hold_place(12);
     println!(
         "initial_conditions_placeholder = {}",
