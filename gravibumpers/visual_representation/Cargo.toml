@@ -7,5 +7,5 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-data_structure = { path = "../data_structure" }
 apng-encoder = "0.3.0"
+data_structure = { path = "../data_structure" }

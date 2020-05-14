@@ -1,0 +1,8 @@
+{
+  "type": "circle",
+  "configuration":
+  {
+    "radius": 4,
+    "population": 100
+  }
+}

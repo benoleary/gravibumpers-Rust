@@ -56,11 +56,7 @@ fn run_from_configuration_file(
     let input_filename = &command_line_arguments[2];
     println!("reading configuration from {}", input_filename);
 
-    let initial_conditions_placeholder = initial_conditions::hold_place(12);
-    println!(
-        "initial_conditions_placeholder = {}",
-        initial_conditions_placeholder
-    );
+    let configuration_json = std::fs::read_to_string(input_filename)?;
 
     let time_evolution_placeholder = time_evolution::hold_place(23);
     println!(
