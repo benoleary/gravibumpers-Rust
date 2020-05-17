@@ -1,5 +1,6 @@
 extern crate data_structure;
 extern crate serde_json;
+mod circle;
 use std::error::Error;
 
 #[derive(Debug)]
@@ -31,15 +32,25 @@ pub fn generate_from_configuration_string(
     configuration_json: &str,
 ) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>> {
     let json_value: serde_json::Value = serde_json::from_str(configuration_json)?;
-
-    if let serde_json::Value::String(configuration_type) = &json_value["type"] {
-        generate_from_type_and_configuration(&configuration_type, &json_value["configuration"])
-    } else {
-        Err(Box::new(ConfigurationParseError::new(&format!(
-            "Type \"{}\" is not a known type of configuration",
-            json_value["type"]
-        ))))
-    }
+    let configuration_type = match json_value["type"].as_str() {
+        Some(parsed_string) => parsed_string,
+        _ => {
+            return Err(Box::new(ConfigurationParseError::new(&format!(
+                "Could not parse \"type\" from {}",
+                configuration_json
+            ))))
+        }
+    };
+    let configuration_body = match json_value.get("configuration") {
+        Some(parsed_value) => parsed_value,
+        _ => {
+            return Err(Box::new(ConfigurationParseError::new(&format!(
+                "Could not parse \"configuration\" from {}",
+                configuration_json
+            ))))
+        }
+    };
+    generate_from_type_and_configuration(&configuration_type, &configuration_body)
 }
 
 pub fn generate_from_type_and_configuration(
@@ -47,7 +58,7 @@ pub fn generate_from_type_and_configuration(
     configuration_body: &serde_json::Value,
 ) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>> {
     return match configuration_type {
-        "circle" => generate_circle(configuration_body),
+        "circle" => circle::from_json(configuration_body),
         _ => Err(Box::new(ConfigurationParseError::new(&format!(
             "Type \"{}\" is not a known type of configuration",
             configuration_type
@@ -55,18 +66,32 @@ pub fn generate_from_type_and_configuration(
     };
 }
 
-fn generate_circle(
-    given_configuration: &serde_json::Value,
-) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>> {
-    Err(Box::new(ConfigurationParseError::new(&format!(
-        "Not yet implemented"
-    ))))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn check_generate_circle() {}
+    fn check_reject_when_no_type() -> Result<(), String> {
+        Err(String::from("not implemented"))
+    }
+
+    #[test]
+    fn check_reject_when_malformed_type() -> Result<(), String> {
+        Err(String::from("not implemented"))
+    }
+
+    #[test]
+    fn check_reject_when_unknown_type() -> Result<(), String> {
+        Err(String::from("not implemented"))
+    }
+
+    #[test]
+    fn check_reject_when_no_configuration() -> Result<(), String> {
+        Err(String::from("not implemented"))
+    }
+
+    #[test]
+    fn check_reject_when_malformed_configuration() -> Result<(), String> {
+        Err(String::from("not implemented"))
+    }
 }
