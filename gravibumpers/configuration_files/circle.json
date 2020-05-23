@@ -1,6 +1,6 @@
 {
-  "type": "circle",
-  "configuration":
+  "generatorName": "circle",
+  "generatorConfiguration":
   {
     "radius": 4,
     "population": 100

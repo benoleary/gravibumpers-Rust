@@ -1,7 +1,10 @@
 extern crate data_structure;
 extern crate serde_json;
-mod circle;
+pub mod circle;
 use std::error::Error;
+
+const GENERATOR_NAME_LABEL: &str = "generatorName";
+const GENERATOR_CONFIGURATION_LABEL: &str = "generatorName";
 
 #[derive(Debug)]
 pub struct ConfigurationParseError {
@@ -28,58 +31,36 @@ impl std::fmt::Display for ConfigurationParseError {
     }
 }
 
-pub trait ParticleCollectionFactory {
-    fn create_from_configuration(
-        &self,
-        configuration_json: &serde_json::Value,
-    ) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>>;
+pub struct ParsedConfiguration<'a> {
+    pub generator_name: &'a str,
+    pub generator_configuration: &'a serde_json::Value,
 }
 
-pub struct ParticleCollectionFactoryCoordinator {
-    configurations_to_factories:
-        std::collections::HashMap<String, Box<dyn ParticleCollectionFactory>>,
-}
-
-impl ParticleCollectionFactoryCoordinator {
-    pub fn generate_from_configuration_string(
-        &self,
-        configuration_json: &str,
-    ) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>> {
-        let json_value: serde_json::Value = serde_json::from_str(configuration_json)?;
-        let configuration_type = match json_value["type"].as_str() {
-            Some(parsed_string) => parsed_string,
-            _ => {
-                return Err(Box::new(ConfigurationParseError::new(&format!(
-                    "Could not parse \"type\" from {}",
-                    configuration_json
-                ))))
-            }
-        };
-        let configuration_body = match json_value.get("configuration") {
-            Some(parsed_value) => parsed_value,
-            _ => {
-                return Err(Box::new(ConfigurationParseError::new(&format!(
-                    "Could not parse \"configuration\" from {}",
-                    configuration_json
-                ))))
-            }
-        };
-        self.generate_from_type_and_configuration(&configuration_type, &configuration_body)
-    }
-
-    pub fn generate_from_type_and_configuration(
-        &self,
-        configuration_type: &str,
-        configuration_body: &serde_json::Value,
-    ) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>> {
-        return match configuration_type {
-            "circle" => circle::from_json(configuration_body),
-            _ => Err(Box::new(ConfigurationParseError::new(&format!(
-                "Type \"{}\" is not a known type of configuration",
-                configuration_type
-            )))),
-        };
-    }
+pub fn parse_deserialized_configuration<'a>(
+    deserialized_configuration: &'a serde_json::Value,
+) -> Result<ParsedConfiguration, Box<dyn std::error::Error>> {
+    let generator_name = match deserialized_configuration[GENERATOR_NAME_LABEL].as_str() {
+        Some(parsed_string) => parsed_string,
+        _ => {
+            return Err(Box::new(ConfigurationParseError::new(&format!(
+                "Could not parse \"{}\" from {}",
+                GENERATOR_NAME_LABEL, deserialized_configuration
+            ))))
+        }
+    };
+    let generator_configuration = match deserialized_configuration.get("configuration") {
+        Some(parsed_value) => parsed_value,
+        _ => {
+            return Err(Box::new(ConfigurationParseError::new(&format!(
+                "Could not parse \"{}\" from {}",
+                GENERATOR_CONFIGURATION_LABEL, deserialized_configuration
+            ))))
+        }
+    };
+    Ok(ParsedConfiguration {
+        generator_name: generator_name,
+        generator_configuration: generator_configuration,
+    })
 }
 
 #[cfg(test)]
@@ -87,27 +68,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn check_reject_when_no_type() -> Result<(), String> {
+    fn check_reject_when_no_generator_name() -> Result<(), String> {
+        let nameless_configuration = serde_json::json!({
+            "gneratrNmae": "typo",
+            GENERATOR_CONFIGURATION_LABEL: {
+                "internalNumber": 9001,
+                "internalStringArray": ["we're", "the", "kids", "in", "America"]
+            }
+        });
+        let parsing_result = parse_deserialized_configuration(&nameless_configuration);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
+    }
+
+    #[test]
+    fn check_reject_when_malformed_generator_name() -> Result<(), String> {
         Err(String::from("not implemented"))
     }
 
     #[test]
-    fn check_reject_when_malformed_type() -> Result<(), String> {
+    fn check_reject_when_no_generator_configuration() -> Result<(), String> {
         Err(String::from("not implemented"))
     }
 
     #[test]
-    fn check_reject_when_unknown_type() -> Result<(), String> {
+    fn check_reject_when_malformed_generator_configuration() -> Result<(), String> {
         Err(String::from("not implemented"))
     }
 
     #[test]
-    fn check_reject_when_no_configuration() -> Result<(), String> {
-        Err(String::from("not implemented"))
-    }
-
-    #[test]
-    fn check_reject_when_malformed_configuration() -> Result<(), String> {
+    fn check_parse_valid_configuration() -> Result<(), String> {
         Err(String::from("not implemented"))
     }
 }
