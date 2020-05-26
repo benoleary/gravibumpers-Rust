@@ -86,17 +86,36 @@ mod tests {
 
     #[test]
     fn check_reject_when_malformed_generator_name() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let nameless_configuration = serde_json::json!({
+            "generatorName": [],
+            GENERATOR_CONFIGURATION_LABEL: {
+                "internalNumber": 9001,
+                "internalStringArray": ["we're", "the", "kids", "in", "America"]
+            }
+        });
+        let parsing_result = parse_deserialized_configuration(&nameless_configuration);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
     }
 
     #[test]
     fn check_reject_when_no_generator_configuration() -> Result<(), String> {
-        Err(String::from("not implemented"))
-    }
-
-    #[test]
-    fn check_reject_when_malformed_generator_configuration() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let configurationless_configuration = serde_json::json!({
+            "generatorName": "acceptable",
+            format!("{}{}", GENERATOR_CONFIGURATION_LABEL, "x"): {
+                "internalNumber": 9001,
+                "internalStringArray": ["we're", "the", "kids", "in", "America"]
+            }
+        });
+        let parsing_result = parse_deserialized_configuration(&configurationless_configuration);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
     }
 
     #[test]
