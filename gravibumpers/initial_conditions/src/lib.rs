@@ -4,7 +4,7 @@ pub mod circle;
 use std::error::Error;
 
 const GENERATOR_NAME_LABEL: &str = "generatorName";
-const GENERATOR_CONFIGURATION_LABEL: &str = "generatorName";
+const GENERATOR_CONFIGURATION_LABEL: &str = "generatorConfiguration";
 
 #[derive(Debug)]
 pub struct ConfigurationParseError {
@@ -31,6 +31,7 @@ impl std::fmt::Display for ConfigurationParseError {
     }
 }
 
+#[derive(Debug)]
 pub struct ParsedConfiguration<'a> {
     pub generator_name: &'a str,
     pub generator_configuration: &'a serde_json::Value,
@@ -48,15 +49,16 @@ pub fn parse_deserialized_configuration<'a>(
             ))))
         }
     };
-    let generator_configuration = match deserialized_configuration.get("configuration") {
-        Some(parsed_value) => parsed_value,
-        _ => {
-            return Err(Box::new(ConfigurationParseError::new(&format!(
-                "Could not parse \"{}\" from {}",
-                GENERATOR_CONFIGURATION_LABEL, deserialized_configuration
-            ))))
-        }
-    };
+    let generator_configuration =
+        match deserialized_configuration.get(GENERATOR_CONFIGURATION_LABEL) {
+            Some(parsed_value) => parsed_value,
+            _ => {
+                return Err(Box::new(ConfigurationParseError::new(&format!(
+                    "Could not parse \"{}\" from {}",
+                    GENERATOR_CONFIGURATION_LABEL, deserialized_configuration
+                ))))
+            }
+        };
     Ok(ParsedConfiguration {
         generator_name: generator_name,
         generator_configuration: generator_configuration,
@@ -87,7 +89,7 @@ mod tests {
     #[test]
     fn check_reject_when_malformed_generator_name() -> Result<(), String> {
         let nameless_configuration = serde_json::json!({
-            "generatorName": [],
+            GENERATOR_NAME_LABEL: [],
             GENERATOR_CONFIGURATION_LABEL: {
                 "internalNumber": 9001,
                 "internalStringArray": ["we're", "the", "kids", "in", "America"]
@@ -104,7 +106,7 @@ mod tests {
     #[test]
     fn check_reject_when_no_generator_configuration() -> Result<(), String> {
         let configurationless_configuration = serde_json::json!({
-            "generatorName": "acceptable",
+            GENERATOR_NAME_LABEL: "acceptable",
             format!("{}{}", GENERATOR_CONFIGURATION_LABEL, "x"): {
                 "internalNumber": 9001,
                 "internalStringArray": ["we're", "the", "kids", "in", "America"]
@@ -120,6 +122,26 @@ mod tests {
 
     #[test]
     fn check_parse_valid_configuration() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let expected_name = "acceptable";
+        let expected_configuration = serde_json::json!({
+            "internalNumber": 9001,
+            "internalStringArray": ["we're", "the", "kids", "in", "America"],
+        });
+        let valid_configuration = serde_json::json!({
+            GENERATOR_NAME_LABEL: expected_name,
+            GENERATOR_CONFIGURATION_LABEL: expected_configuration,
+        });
+        let parsing_result = parse_deserialized_configuration(&valid_configuration)
+            .expect("Should parse valid JSON object");
+        if (parsing_result.generator_name == expected_name)
+            && (parsing_result.generator_name == expected_configuration)
+        {
+            Ok(())
+        } else {
+            Err(String::from(format!(
+                "Expected name = {}, configuration = {}, actually parsed {:?}",
+                expected_name, expected_configuration, parsing_result
+            )))
+        }
     }
 }
