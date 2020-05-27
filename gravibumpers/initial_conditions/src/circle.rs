@@ -95,7 +95,45 @@ mod tests {
     }
 
     #[test]
-    fn check_parse_valid_configuration() -> Result<(), String> {
+    fn check_reject_when_zero_population() -> Result<(), String> {
+        let configuration_with_array_population = serde_json::json!({
+            RADIUS_LABEL: 9001.0,
+            POPULATION_LABEL: 0,
+        });
+        let parsing_result = from_json(&configuration_with_array_population);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
+    }
+
+    #[test]
+    fn check_reject_when_population_is_one() -> Result<(), String> {
+        let configuration_with_array_population = serde_json::json!({
+            RADIUS_LABEL: 9001.0,
+            POPULATION_LABEL: 1,
+        });
+        let parsing_result = from_json(&configuration_with_array_population);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
+    }
+
+    #[test]
+    fn check_parse_two_points() -> Result<(), String> {
+        Err(String::from("not implemented"))
+    }
+
+    #[test]
+    fn check_parse_three_points() -> Result<(), String> {
+        Err(String::from("not implemented"))
+    }
+
+    #[test]
+    fn check_parse_four_points() -> Result<(), String> {
         Err(String::from("not implemented"))
     }
 }
