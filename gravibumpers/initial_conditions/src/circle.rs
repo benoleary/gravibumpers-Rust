@@ -1,23 +1,26 @@
 use super::ConfigurationParseError;
 
+const RADIUS_LABEL: &str = "radius";
+const POPULATION_LABEL: &str = "population";
+
 pub fn from_json(
     given_configuration: &serde_json::Value,
 ) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>> {
-    let circle_radius = match given_configuration["radius"].as_f64() {
+    let circle_radius = match given_configuration[RADIUS_LABEL].as_f64() {
         Some(parsed_number) => parsed_number,
         _ => {
             return Err(Box::new(ConfigurationParseError::new(&format!(
-                "Could not parse \"radius\" from {}",
-                given_configuration
+                "Could not parse \"{}\" from {}",
+                RADIUS_LABEL, given_configuration
             ))))
         }
     };
-    let circle_population = match given_configuration["population"].as_i64() {
+    let circle_population = match given_configuration[POPULATION_LABEL].as_i64() {
         Some(parsed_number) => parsed_number,
         _ => {
             return Err(Box::new(ConfigurationParseError::new(&format!(
-                "Could not parse \"population\" from {}",
-                given_configuration
+                "Could not parse \"{}\" from {}",
+                POPULATION_LABEL, given_configuration
             ))))
         }
     };
@@ -39,21 +42,60 @@ mod tests {
 
     #[test]
     fn check_reject_when_no_radius() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let configuration_without_radius = serde_json::json!({
+            POPULATION_LABEL: 9001
+        });
+        let parsing_result = from_json(&configuration_without_radius);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
     }
 
     #[test]
     fn check_reject_when_malformed_radius() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let configuration_with_string_radius = serde_json::json!({
+            RADIUS_LABEL: "over nine thousand",
+            POPULATION_LABEL: 9001
+        });
+        let parsing_result = from_json(&configuration_with_string_radius);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
     }
 
     #[test]
     fn check_reject_when_no_population() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let configuration_without_population = serde_json::json!({
+            RADIUS_LABEL: 9001.0
+        });
+        let parsing_result = from_json(&configuration_without_population);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
     }
 
     #[test]
     fn check_reject_when_malformed_population() -> Result<(), String> {
+        let configuration_with_array_population = serde_json::json!({
+            RADIUS_LABEL: 9001.0,
+            POPULATION_LABEL: [9001.0, 9002.0]
+        });
+        let parsing_result = from_json(&configuration_with_array_population);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
+    }
+
+    #[test]
+    fn check_parse_valid_configuration() -> Result<(), String> {
         Err(String::from("not implemented"))
     }
 }
