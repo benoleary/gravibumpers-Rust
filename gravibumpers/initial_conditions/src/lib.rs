@@ -134,7 +134,7 @@ mod tests {
         let parsing_result = parse_deserialized_configuration(&valid_configuration)
             .expect("Should parse valid JSON object");
         if (parsing_result.generator_name == expected_name)
-            && (parsing_result.generator_name == expected_configuration)
+            && (parsing_result.generator_configuration == &expected_configuration)
         {
             Ok(())
         } else {
