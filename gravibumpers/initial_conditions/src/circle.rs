@@ -5,7 +5,7 @@ const POPULATION_LABEL: &str = "population";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
-) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>> {
+) -> Result<Box<data_structure::ParticleIterator>, Box<dyn std::error::Error>> {
     let circle_radius = match given_configuration[RADIUS_LABEL].as_f64() {
         Some(parsed_number) => parsed_number,
         _ => {
@@ -30,7 +30,7 @@ pub fn from_json(
 fn from_numbers(
     circle_radius: f64,
     circle_population: i64,
-) -> Result<Box<dyn data_structure::ParticleCollection>, Box<dyn std::error::Error>> {
+) -> Result<Box<data_structure::ParticleIterator>, Box<dyn std::error::Error>> {
     Err(Box::new(ConfigurationParseError::new(&format!(
         "Not yet implemented"
     ))))
@@ -124,16 +124,58 @@ mod tests {
 
     #[test]
     fn check_parse_two_points() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let two_point_configuration = serde_json::json!({
+            RADIUS_LABEL: 1.0,
+            POPULATION_LABEL: 2,
+        });
+        let generated_particles =
+            from_json(&two_point_configuration).expect("Valid configuration should be parsed.");
+        let number_of_particles = (*generated_particles).len();
+        if number_of_particles != 2 {
+            return Err(String::from(format!(
+                "Expected 2 points, got {}",
+                number_of_particles
+            )));
+        }
+
+        Ok(())
     }
 
     #[test]
     fn check_parse_three_points() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let three_point_configuration = serde_json::json!({
+            RADIUS_LABEL: 1.0,
+            POPULATION_LABEL: 3,
+        });
+        let generated_particles =
+            from_json(&three_point_configuration).expect("Valid configuration should be parsed.");
+        let number_of_particles = (*generated_particles).len();
+        if number_of_particles != 2 {
+            return Err(String::from(format!(
+                "Expected 3 points, got {}",
+                number_of_particles
+            )));
+        }
+
+        Ok(())
     }
 
     #[test]
     fn check_parse_four_points() -> Result<(), String> {
-        Err(String::from("not implemented"))
+        let four_point_configuration = serde_json::json!({
+            RADIUS_LABEL: 1.0,
+            POPULATION_LABEL: 4,
+        });
+        let generated_particles =
+            from_json(&four_point_configuration).expect("Valid configuration should be parsed.");
+        let number_of_particles = (*generated_particles).len();
+        if number_of_particles != 2 {
+            return Err(String::from(format!(
+                "Expected 4 points, got {}",
+                number_of_particles
+            )));
+        }
+
+        Ok(())
     }
 }

@@ -1,10 +1,10 @@
 extern crate apng_encoder;
 extern crate data_structure;
 
+use super::color::BrightnessTriplet as ColorBrightness;
 use super::particles_to_pixels::ParticleToPixelMapper;
 use super::ColoredPixelMatrix;
 use super::HorizontalPixelAmount;
-use super::RedGreenBlueIntensity;
 use super::SequenceAnimator;
 use super::VerticalPixelAmount;
 use std::convert::TryInto;
@@ -35,7 +35,7 @@ pub struct ApngAnimator<T: ParticleToPixelMapper> {
 }
 
 impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
-    fn animate_sequence<U: data_structure::ParticleCollection>(
+    fn animate_sequence<U: data_structure::ParticleIteratorProvider>(
         &self,
         particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &U>,
         milliseconds_per_frame: u32,
@@ -78,7 +78,7 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
         for pixel_matrix in matrix_sequence.colored_pixel_matrices {
             let flattened_color_bytes = &flattened_color_bytes_from(
                 &*pixel_matrix,
-                &matrix_sequence.maximum_color_intensity,
+                &matrix_sequence.maximum_brightness_per_color,
             )?;
             output_encoder
                 .write_frame(
@@ -95,15 +95,15 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
     }
 }
 
-fn ceiling_as_byte(color_intensity: data_structure::ColorUnit) -> u8 {
-    (color_intensity.0 * (MAXIMUM_COLOR_BYTE as f64)).ceil() as u8
+fn ceiling_as_byte(color_intensity: f64) -> u8 {
+    (color_intensity * (MAXIMUM_COLOR_BYTE as f64)).ceil() as u8
 }
 
 // This function creates the byte array specific to APNG representing the rectangle of triplets of
 // floating-point numbers representing red-green-blue quantities.
 fn flattened_color_bytes_from(
     pixel_matrix: &dyn ColoredPixelMatrix,
-    maximum_color_intensity: &RedGreenBlueIntensity,
+    maximum_color_intensity: &ColorBrightness,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let width_in_pixels = pixel_matrix.width_in_pixels().0;
     let height_in_pixels = pixel_matrix.height_in_pixels().0;
@@ -130,9 +130,9 @@ fn flattened_color_bytes_from(
 
             let color_triplet = color_fractions_at_pixel * maximum_color_intensity;
 
-            flattened_bytes[red_index] = ceiling_as_byte(color_triplet.red_density);
-            flattened_bytes[green_index] = ceiling_as_byte(color_triplet.green_density);
-            flattened_bytes[blue_index] = ceiling_as_byte(color_triplet.blue_density);
+            flattened_bytes[red_index] = ceiling_as_byte(color_triplet.get_red().0);
+            flattened_bytes[green_index] = ceiling_as_byte(color_triplet.get_green().0);
+            flattened_bytes[blue_index] = ceiling_as_byte(color_triplet.get_blue().0);
         }
     }
     Ok(flattened_bytes)
@@ -140,12 +140,13 @@ fn flattened_color_bytes_from(
 
 #[cfg(test)]
 mod tests {
-    use super::super::ColorFraction;
+    use super::super::color::BrightnessTriplet as ColorBrightness;
+    use super::super::color::FractionTriplet as ColorFraction;
     use super::super::OutOfBoundsError;
-    use super::super::RedGreenBlueFraction;
-    use super::super::RedGreenBlueIntensity;
     use super::*;
-    use data_structure::ColorUnit;
+    use data_structure::BlueColorUnit;
+    use data_structure::GreenColorUnit;
+    use data_structure::RedColorUnit;
 
     const MAX_BYTE: u8 = 0xFF;
     const HALF_BYTE: u8 = 0x80;
@@ -155,34 +156,30 @@ mod tests {
     impl ColoredPixelMatrix for MockColoredPixelMatrix {
         fn color_fractions_at(
             &self,
-            _reference_intensity: &RedGreenBlueIntensity,
+            _reference_intensity: &ColorBrightness,
             horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
             vertical_pixels_from_bottom_left: &VerticalPixelAmount,
-        ) -> Result<RedGreenBlueFraction, Box<dyn std::error::Error>> {
+        ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
             match (
                 horizontal_pixels_from_bottom_left,
                 vertical_pixels_from_bottom_left,
             ) {
-                (HorizontalPixelAmount(0), VerticalPixelAmount(y)) => Ok(RedGreenBlueFraction {
-                    red_fraction: ColorFraction(0.5 * (*y as f64)),
-                    green_fraction: ColorFraction(0.5 * (*y as f64)),
-                    blue_fraction: ColorFraction(0.5 * (*y as f64)),
-                }),
-                (HorizontalPixelAmount(1), VerticalPixelAmount(y)) => Ok(RedGreenBlueFraction {
-                    red_fraction: ColorFraction(0.5 * (*y as f64)),
-                    green_fraction: ColorFraction(0.0),
-                    blue_fraction: ColorFraction(0.5 * (*y as f64)),
-                }),
-                (HorizontalPixelAmount(2), VerticalPixelAmount(y)) => Ok(RedGreenBlueFraction {
-                    red_fraction: ColorFraction(0.5 * (*y as f64)),
-                    green_fraction: ColorFraction(0.5 * (*y as f64)),
-                    blue_fraction: ColorFraction(0.0),
-                }),
-                (HorizontalPixelAmount(3), VerticalPixelAmount(_)) => Ok(RedGreenBlueFraction {
-                    red_fraction: ColorFraction(0.0),
-                    green_fraction: ColorFraction(0.0),
-                    blue_fraction: ColorFraction(0.0),
-                }),
+                (HorizontalPixelAmount(0), VerticalPixelAmount(y)) => {
+                    Ok(super::super::color::fraction_from(
+                        0.5 * (*y as f64),
+                        0.5 * (*y as f64),
+                        0.5 * (*y as f64),
+                    ))
+                }
+                (HorizontalPixelAmount(1), VerticalPixelAmount(y)) => Ok(
+                    super::super::color::fraction_from(0.5 * (*y as f64), 0.0, 0.5 * (*y as f64)),
+                ),
+                (HorizontalPixelAmount(2), VerticalPixelAmount(y)) => Ok(
+                    super::super::color::fraction_from(0.5 * (*y as f64), 0.5 * (*y as f64), 0.0),
+                ),
+                (HorizontalPixelAmount(3), VerticalPixelAmount(_)) => {
+                    Ok(super::super::color::fraction_from(0.0, 0.0, 0.0))
+                }
                 _ => Err(Box::new(OutOfBoundsError::new(&format!(
                     "horizontal_pixels_from_bottom_left {}, vertical_pixels_from_bottom_left {}",
                     horizontal_pixels_from_bottom_left.0, vertical_pixels_from_bottom_left.0
@@ -201,11 +198,11 @@ mod tests {
     fn test_flattened_color_bytes_from() {
         let mock_matrix = MockColoredPixelMatrix {};
 
-        let full_intensity = RedGreenBlueIntensity {
-            red_density: ColorUnit(1.0),
-            green_density: ColorUnit(1.0),
-            blue_density: ColorUnit(1.0),
-        };
+        let full_intensity = super::super::color::brightness_from(
+            RedColorUnit(1.0),
+            GreenColorUnit(1.0),
+            BlueColorUnit(1.0),
+        );
 
         #[rustfmt::skip]
         let expected_bytes: Vec<u8> = vec![

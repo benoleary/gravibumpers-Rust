@@ -38,10 +38,10 @@ fn create_rgb_demonstration(
         Box::new(visual_representation::demonstration::DemonstrationMapper {}),
         0,
     );
-    let mut dummy_sequence: Vec<visual_representation::demonstration::DummyParticleCollection> =
+    let mut dummy_sequence: Vec<visual_representation::demonstration::DummyParticleVector> =
         Vec::new();
     for _ in 0..100 {
-        dummy_sequence.push(visual_representation::demonstration::DummyParticleCollection {});
+        dummy_sequence.push(visual_representation::demonstration::DummyParticleVector {});
     }
     (*demonstration_animator).animate_sequence(&mut dummy_sequence.iter(), 100, output_filename)
 }
