@@ -37,6 +37,7 @@ pub struct VerticalVelocityUnit(pub f64);
 
 /// The particles have some intrinsic qualities which do not change, unlike their
 /// positions and velocities.
+#[derive(Clone, Copy, Debug)]
 pub struct ParticleIntrinsics {
     pub inertial_mass: InertialMassUnit,
     pub attractive_charge: AttractiveChargeUnit,
@@ -48,6 +49,7 @@ pub struct ParticleIntrinsics {
 
 /// The particles have some intrinsic qualities which do not change, unlike their
 /// positions and velocities.
+#[derive(Clone, Copy, Debug)]
 pub struct ParticleVariables {
     pub horizontal_position: HorizontalPositionUnit,
     pub vertical_position: VerticalPositionUnit,
@@ -55,6 +57,7 @@ pub struct ParticleVariables {
     pub vertical_velocity: VerticalVelocityUnit,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct IndividualParticle {
     pub intrinsic_values: ParticleIntrinsics,
     pub variable_values: ParticleVariables,
