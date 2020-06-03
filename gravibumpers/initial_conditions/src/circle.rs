@@ -150,7 +150,7 @@ mod tests {
         let generated_particles =
             from_json(&three_point_configuration).expect("Valid configuration should be parsed.");
         let number_of_particles = (*generated_particles).len();
-        if number_of_particles != 2 {
+        if number_of_particles != 3 {
             return Err(String::from(format!(
                 "Expected 3 points, got {}",
                 number_of_particles
@@ -169,7 +169,7 @@ mod tests {
         let generated_particles =
             from_json(&four_point_configuration).expect("Valid configuration should be parsed.");
         let number_of_particles = (*generated_particles).len();
-        if number_of_particles != 2 {
+        if number_of_particles != 4 {
             return Err(String::from(format!(
                 "Expected 4 points, got {}",
                 number_of_particles

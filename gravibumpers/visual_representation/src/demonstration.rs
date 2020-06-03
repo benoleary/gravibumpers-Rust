@@ -147,6 +147,7 @@ impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
 type PixelMatrixBox = Box<dyn super::ColoredPixelMatrix>;
 type PixelMatrixSequence = super::particles_to_pixels::ColoredPixelMatrixSequence;
 
+#[derive(Clone, Copy, Debug)]
 pub struct DummyParticleVector {}
 
 impl data_structure::ParticleIteratorProvider for DummyParticleVector {
@@ -160,9 +161,12 @@ impl data_structure::ParticleIteratorProvider for DummyParticleVector {
 pub struct DemonstrationMapper {}
 
 impl ParticleToPixelMapper for DemonstrationMapper {
-    fn aggregate_particle_colors_to_pixels<T: data_structure::ParticleIteratorProvider>(
+    fn aggregate_particle_colors_to_pixels<
+        T: data_structure::ParticleIteratorProvider,
+        U: std::iter::ExactSizeIterator<Item = T>,
+    >(
         &self,
-        particle_map_sequence: &mut dyn std::iter::ExactSizeIterator<Item = &T>,
+        particle_map_sequence: U,
     ) -> Result<PixelMatrixSequence, Box<dyn std::error::Error>> {
         let mut matrix_sequence: Vec<PixelMatrixBox> = Vec::new();
         for (time_index, _) in particle_map_sequence.enumerate() {

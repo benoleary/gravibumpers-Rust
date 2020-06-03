@@ -43,7 +43,7 @@ fn create_rgb_demonstration(
     for _ in 0..100 {
         dummy_sequence.push(visual_representation::demonstration::DummyParticleVector {});
     }
-    (*demonstration_animator).animate_sequence(&mut dummy_sequence.iter(), 100, output_filename)
+    (*demonstration_animator).animate_sequence(dummy_sequence.iter().cloned(), 100, output_filename)
 }
 
 fn run_from_configuration_file(
