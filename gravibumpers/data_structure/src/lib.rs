@@ -64,7 +64,26 @@ pub struct IndividualParticle {
 }
 
 pub trait ParticleIteratorProvider {
-    fn get(&mut self) -> &mut dyn std::iter::ExactSizeIterator<Item = IndividualParticle>;
+    fn get<'a>(&'a mut self)
+        -> &'a mut dyn std::iter::ExactSizeIterator<Item = IndividualParticle>;
 }
 
-pub type ParticleIterator = dyn std::iter::ExactSizeIterator<Item = IndividualParticle>;
+pub struct ParticleVector {
+    particle_iterator: Box<dyn std::iter::ExactSizeIterator<Item = IndividualParticle>>,
+}
+
+impl ParticleIteratorProvider for ParticleVector {
+    fn get<'a>(
+        &'a mut self,
+    ) -> &'a mut dyn std::iter::ExactSizeIterator<Item = IndividualParticle> {
+        &mut self.particle_iterator
+    }
+}
+
+pub fn wrap_particle_vector(
+    particle_vector: std::vec::Vec<IndividualParticle>,
+) -> Box<dyn ParticleIteratorProvider> {
+    Box::new(ParticleVector {
+        particle_iterator: Box::new(particle_vector.into_iter()),
+    })
+}

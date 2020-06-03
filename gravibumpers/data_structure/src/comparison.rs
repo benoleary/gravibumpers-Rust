@@ -8,7 +8,7 @@ pub fn unordered_within_tolerance<
     T: std::iter::ExactSizeIterator<Item = super::IndividualParticle>,
 >(
     expected_set: &mut T,
-    actual_set: &mut T,
+    actual_set: T,
     tolerances_as_particle: &super::IndividualParticle,
 ) -> Result<(), String> {
     let expected_length = expected_set.len();

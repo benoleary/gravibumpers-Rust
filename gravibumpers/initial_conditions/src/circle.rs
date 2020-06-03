@@ -5,7 +5,7 @@ const POPULATION_LABEL: &str = "population";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
-) -> Result<Box<data_structure::ParticleIterator>, Box<dyn std::error::Error>> {
+) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
     let circle_radius = match given_configuration[RADIUS_LABEL].as_f64() {
         Some(parsed_number) => parsed_number,
         _ => {
@@ -30,7 +30,7 @@ pub fn from_json(
 fn from_numbers(
     circle_radius: f64,
     circle_population: i64,
-) -> Result<Box<data_structure::ParticleIterator>, Box<dyn std::error::Error>> {
+) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
     Err(Box::new(ConfigurationParseError::new(&format!(
         "Not yet implemented"
     ))))
@@ -39,6 +39,55 @@ fn from_numbers(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const INTRINSICS_TOLERANCE: data_structure::ParticleIntrinsics =
+        data_structure::ParticleIntrinsics {
+            inertial_mass: data_structure::InertialMassUnit(0.01),
+            attractive_charge: data_structure::AttractiveChargeUnit(0.01),
+            repulsive_charge: data_structure::RepulsiveChargeUnit(0.01),
+            red_brightness: data_structure::RedColorUnit(0.01),
+            green_brightness: data_structure::GreenColorUnit(0.01),
+            blue_brightness: data_structure::BlueColorUnit(0.01),
+        };
+
+    const VARIABLES_TOLERANCE: data_structure::ParticleVariables =
+        data_structure::ParticleVariables {
+            horizontal_position: data_structure::HorizontalPositionUnit(0.01),
+            vertical_position: data_structure::VerticalPositionUnit(0.01),
+            horizontal_velocity: data_structure::HorizontalVelocityUnit(0.01),
+            vertical_velocity: data_structure::VerticalVelocityUnit(0.01),
+        };
+
+    const PARTICLE_TOLERANCE: data_structure::IndividualParticle =
+        data_structure::IndividualParticle {
+            intrinsic_values: INTRINSICS_TOLERANCE,
+            variable_values: VARIABLES_TOLERANCE,
+        };
+
+    const TEST_INTRINSICS: data_structure::ParticleIntrinsics =
+        data_structure::ParticleIntrinsics {
+            inertial_mass: data_structure::InertialMassUnit(1.9),
+            attractive_charge: data_structure::AttractiveChargeUnit(2.8),
+            repulsive_charge: data_structure::RepulsiveChargeUnit(3.7),
+            red_brightness: data_structure::RedColorUnit(4.6),
+            green_brightness: data_structure::GreenColorUnit(5.5),
+            blue_brightness: data_structure::BlueColorUnit(6.4),
+        };
+
+    fn new_test_particle_at(
+        horizontal_position: data_structure::HorizontalPositionUnit,
+        vertical_position: data_structure::VerticalPositionUnit,
+    ) -> data_structure::IndividualParticle {
+        data_structure::IndividualParticle {
+            intrinsic_values: TEST_INTRINSICS,
+            variable_values: data_structure::ParticleVariables {
+                horizontal_position: horizontal_position,
+                vertical_position: vertical_position,
+                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+            },
+        }
+    }
 
     #[test]
     fn check_reject_when_no_radius() -> Result<(), String> {
@@ -130,15 +179,22 @@ mod tests {
         });
         let generated_particles =
             from_json(&two_point_configuration).expect("Valid configuration should be parsed.");
-        let number_of_particles = (*generated_particles).len();
-        if number_of_particles != 2 {
-            return Err(String::from(format!(
-                "Expected 2 points, got {}",
-                number_of_particles
-            )));
-        }
+        let expected_particles = vec![
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(0.0),
+                data_structure::VerticalPositionUnit(1.0),
+            ),
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(0.0),
+                data_structure::VerticalPositionUnit(-1.0),
+            ),
+        ];
 
-        Ok(())
+        data_structure::comparison::unordered_within_tolerance(
+            &mut expected_particles.iter().cloned(),
+            generated_particles.get(),
+            &PARTICLE_TOLERANCE,
+        )
     }
 
     #[test]
