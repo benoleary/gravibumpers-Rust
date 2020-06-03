@@ -1,11 +1,12 @@
 use super::ConfigurationParseError;
+use std::iter::FromIterator;
 
 const RADIUS_LABEL: &str = "radius";
 const POPULATION_LABEL: &str = "population";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
-) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
+) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
     let circle_radius = match given_configuration[RADIUS_LABEL].as_f64() {
         Some(parsed_number) => parsed_number,
         _ => {
@@ -30,7 +31,7 @@ pub fn from_json(
 fn from_numbers(
     circle_radius: f64,
     circle_population: i64,
-) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
+) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
     Err(Box::new(ConfigurationParseError::new(&format!(
         "Not yet implemented"
     ))))
@@ -192,7 +193,7 @@ mod tests {
 
         data_structure::comparison::unordered_within_tolerance(
             &mut expected_particles.iter().cloned(),
-            generated_particles.get(),
+            generated_particles.iter().cloned(),
             &PARTICLE_TOLERANCE,
         )
     }
