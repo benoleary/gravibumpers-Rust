@@ -206,15 +206,28 @@ mod tests {
         });
         let generated_particles =
             from_json(&three_point_configuration).expect("Valid configuration should be parsed.");
-        let number_of_particles = (*generated_particles).len();
-        if number_of_particles != 3 {
-            return Err(String::from(format!(
-                "Expected 3 points, got {}",
-                number_of_particles
-            )));
-        }
+        let lower_horizontal_magnitude = 0.866;
+        let lower_vertical_coordinate = data_structure::VerticalPositionUnit(-0.5);
+        let expected_particles = vec![
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(0.0),
+                data_structure::VerticalPositionUnit(1.0),
+            ),
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(lower_horizontal_magnitude),
+                lower_vertical_coordinate,
+            ),
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(-lower_horizontal_magnitude),
+                lower_vertical_coordinate,
+            ),
+        ];
 
-        Ok(())
+        data_structure::comparison::unordered_within_tolerance(
+            &mut expected_particles.iter().cloned(),
+            generated_particles.iter().cloned(),
+            &PARTICLE_TOLERANCE,
+        )
     }
 
     #[test]
@@ -225,14 +238,29 @@ mod tests {
         });
         let generated_particles =
             from_json(&four_point_configuration).expect("Valid configuration should be parsed.");
-        let number_of_particles = (*generated_particles).len();
-        if number_of_particles != 4 {
-            return Err(String::from(format!(
-                "Expected 4 points, got {}",
-                number_of_particles
-            )));
-        }
+        let expected_particles = vec![
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(0.0),
+                data_structure::VerticalPositionUnit(1.0),
+            ),
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(1.0),
+                data_structure::VerticalPositionUnit(0.0),
+            ),
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(0.0),
+                data_structure::VerticalPositionUnit(-1.0),
+            ),
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(-1.0),
+                data_structure::VerticalPositionUnit(0.0),
+            ),
+        ];
 
-        Ok(())
+        data_structure::comparison::unordered_within_tolerance(
+            &mut expected_particles.iter().cloned(),
+            generated_particles.iter().cloned(),
+            &PARTICLE_TOLERANCE,
+        )
     }
 }
