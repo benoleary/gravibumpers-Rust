@@ -1,12 +1,11 @@
 use super::ConfigurationParseError;
-use std::iter::FromIterator;
 
 const RADIUS_LABEL: &str = "radius";
 const POPULATION_LABEL: &str = "population";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
-) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
+) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
     let circle_radius = match given_configuration[RADIUS_LABEL].as_f64() {
         Some(parsed_number) => parsed_number,
         _ => {
@@ -31,7 +30,7 @@ pub fn from_json(
 fn from_numbers(
     circle_radius: f64,
     circle_population: i64,
-) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
+) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
     Err(Box::new(ConfigurationParseError::new(&format!(
         "Not yet implemented"
     ))))
@@ -178,7 +177,7 @@ mod tests {
             RADIUS_LABEL: 1.0,
             POPULATION_LABEL: 2,
         });
-        let generated_particles =
+        let mut generated_particles =
             from_json(&two_point_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
@@ -193,7 +192,7 @@ mod tests {
 
         data_structure::comparison::unordered_within_tolerance(
             &mut expected_particles.iter().cloned(),
-            generated_particles.iter().cloned(),
+            generated_particles.get(),
             &PARTICLE_TOLERANCE,
         )
     }
@@ -204,7 +203,7 @@ mod tests {
             RADIUS_LABEL: 1.0,
             POPULATION_LABEL: 3,
         });
-        let generated_particles =
+        let mut generated_particles =
             from_json(&three_point_configuration).expect("Valid configuration should be parsed.");
         let lower_horizontal_magnitude = 0.866;
         let lower_vertical_coordinate = data_structure::VerticalPositionUnit(-0.5);
@@ -225,7 +224,7 @@ mod tests {
 
         data_structure::comparison::unordered_within_tolerance(
             &mut expected_particles.iter().cloned(),
-            generated_particles.iter().cloned(),
+            generated_particles.get(),
             &PARTICLE_TOLERANCE,
         )
     }
@@ -236,7 +235,7 @@ mod tests {
             RADIUS_LABEL: 1.0,
             POPULATION_LABEL: 4,
         });
-        let generated_particles =
+        let mut generated_particles =
             from_json(&four_point_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
@@ -259,7 +258,7 @@ mod tests {
 
         data_structure::comparison::unordered_within_tolerance(
             &mut expected_particles.iter().cloned(),
-            generated_particles.iter().cloned(),
+            generated_particles.get(),
             &PARTICLE_TOLERANCE,
         )
     }
