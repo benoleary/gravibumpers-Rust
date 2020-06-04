@@ -68,7 +68,7 @@ pub fn parse_i64(
 fn particles_from_numbers(
     circle_radius: f64,
     circle_population: i64,
-    circle_rotation: f64,
+    angular_velocity: f64,
     common_intrinsics: data_structure::ParticleIntrinsics,
 ) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
     if circle_population < 2 {
@@ -81,83 +81,88 @@ fn particles_from_numbers(
     let mut circle_particles: std::vec::Vec<data_structure::IndividualParticle> =
         std::vec::Vec::with_capacity(circle_population.try_into()?);
 
-    // We always start with a particle at north, the top of the circle.
+    // We always start with a particle at 0 radians from the positive x axis.
     circle_particles.push(data_structure::IndividualParticle {
         intrinsic_values: common_intrinsics,
         variable_values: data_structure::ParticleVariables {
-            horizontal_position: data_structure::HorizontalPositionUnit(0.0),
-            vertical_position: data_structure::VerticalPositionUnit(circle_radius),
-            horizontal_velocity: data_structure::HorizontalVelocityUnit(
-                circle_radius * circle_rotation,
+            horizontal_position: data_structure::HorizontalPositionUnit(circle_radius),
+            vertical_position: data_structure::VerticalPositionUnit(0.0),
+            horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+            vertical_velocity: data_structure::VerticalVelocityUnit(
+                circle_radius * angular_velocity,
             ),
-            vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
         },
     });
+
     if (circle_population % 2) == 0 {
-        // If the number of particles is even, then there is a particle at south, the bottom of the
-        // circle.
+        // If the number of particles is even, then there is a particle pi radians from the
+        // positive x axis.
         circle_particles.push(data_structure::IndividualParticle {
             intrinsic_values: common_intrinsics,
             variable_values: data_structure::ParticleVariables {
-                horizontal_position: data_structure::HorizontalPositionUnit(0.0),
-                vertical_position: data_structure::VerticalPositionUnit(-circle_radius),
+                horizontal_position: data_structure::HorizontalPositionUnit(-circle_radius),
+                vertical_position: data_structure::VerticalPositionUnit(0.0),
                 horizontal_velocity: data_structure::HorizontalVelocityUnit(
-                    -circle_radius * circle_rotation,
+                    -circle_radius * angular_velocity,
                 ),
                 vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
             },
         });
     }
 
-    // Apart from the particle at north, and a possible particle at south, the particles come
-    // in pairs reflected in the vertical axis.
-    let number_of_horizontal_pairs = (circle_population / 2) - 1;
+    // Apart from the particle or pair of particles on the x axis, the rest of the particles come
+    // in pairs with equal displacements above and below the x axis.
+    let number_of_vertical_pairs = (circle_population - 1) / 2;
 
-    if number_of_horizontal_pairs > 0 {
+    if number_of_vertical_pairs > 0 {
         let angle_between_particles_in_radians =
-            std::f64::consts::PI / (number_of_horizontal_pairs + 1) as f64;
-        let mut angle_from_north_in_radians = 0.0;
-        for _ in 1..number_of_horizontal_pairs {
-            angle_from_north_in_radians += angle_between_particles_in_radians;
-            let horizontal_position_value = angle_from_north_in_radians.sin() * circle_radius;
-            let vertical_position_value = angle_from_north_in_radians.cos() * circle_radius;
+            std::f64::consts::PI / (number_of_vertical_pairs + 1) as f64;
+        let mut angle_from_horizontal_in_radians = 0.0;
+        for _ in 0..number_of_vertical_pairs {
+            angle_from_horizontal_in_radians += angle_between_particles_in_radians;
+            let cosine_of_angle_times_radius =
+                angle_from_horizontal_in_radians.cos() * circle_radius;
+            let sine_of_angle_times_radius = angle_from_horizontal_in_radians.sin() * circle_radius;
 
             circle_particles.push(data_structure::IndividualParticle {
                 intrinsic_values: common_intrinsics,
                 variable_values: data_structure::ParticleVariables {
                     horizontal_position: data_structure::HorizontalPositionUnit(
-                        horizontal_position_value,
+                        cosine_of_angle_times_radius,
                     ),
                     vertical_position: data_structure::VerticalPositionUnit(
-                        vertical_position_value,
+                        sine_of_angle_times_radius,
                     ),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(??),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(??),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(
+                        -sine_of_angle_times_radius * angular_velocity,
+                    ),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(
+                        cosine_of_angle_times_radius * angular_velocity,
+                    ),
+                },
+            });
+
+            circle_particles.push(data_structure::IndividualParticle {
+                intrinsic_values: common_intrinsics,
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(
+                        cosine_of_angle_times_radius,
+                    ),
+                    vertical_position: data_structure::VerticalPositionUnit(
+                        -sine_of_angle_times_radius,
+                    ),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(
+                        sine_of_angle_times_radius * angular_velocity,
+                    ),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(
+                        cosine_of_angle_times_radius * angular_velocity,
+                    ),
                 },
             });
         }
     }
 
     Ok(data_structure::wrap_particle_vector(circle_particles))
-}
-
-fn particle_from_numbers(
-    circle_radius: f64,
-    angle_from_north_in_radians: f64,
-    circle_rotation: f64,
-    common_intrinsics: data_structure::ParticleIntrinsics,
-) -> data_structure::IndividualParticle {
-    data_structure::IndividualParticle {
-        intrinsic_values: common_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            horizontal_position: data_structure::HorizontalPositionUnit(0.0),
-            vertical_position: data_structure::VerticalPositionUnit(circle_radius),
-            horizontal_velocity: data_structure::HorizontalVelocityUnit(
-                circle_radius * circle_rotation,
-            ),
-            vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
-        },
-    }
 }
 
 #[cfg(test)]
@@ -198,53 +203,125 @@ mod tests {
             blue_brightness: data_structure::BlueColorUnit(6.4),
         };
 
+    fn new_test_configuration(
+        test_radius: serde_json::Value,
+        test_rotation: serde_json::Value,
+    ) -> serde_json::Value {
+        serde_json::json!({
+            RADIUS_LABEL: test_radius,
+            ROTATION_LABEL: test_rotation,
+            MASS_LABEL: TEST_INTRINSICS.inertial_mass.0,
+            GRAV_LABEL: TEST_INTRINSICS.attractive_charge.0,
+            BUMP_LABEL: TEST_INTRINSICS.repulsive_charge.0,
+            RED_LABEL: TEST_INTRINSICS.red_brightness.0,
+            GREEN_LABEL: TEST_INTRINSICS.green_brightness.0,
+            BLUE_LABEL: TEST_INTRINSICS.blue_brightness.0,
+        })
+    }
+
     fn new_test_particle_at(
         horizontal_position: data_structure::HorizontalPositionUnit,
         vertical_position: data_structure::VerticalPositionUnit,
+        horizontal_velocity: data_structure::HorizontalVelocityUnit,
+        vertical_velocity: data_structure::VerticalVelocityUnit,
     ) -> data_structure::IndividualParticle {
         data_structure::IndividualParticle {
             intrinsic_values: TEST_INTRINSICS,
             variable_values: data_structure::ParticleVariables {
                 horizontal_position: horizontal_position,
                 vertical_position: vertical_position,
-                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                horizontal_velocity: horizontal_velocity,
+                vertical_velocity: vertical_velocity,
             },
         }
     }
 
     #[test]
-    fn check_reject_when_no_radius() -> Result<(), String> {
-        let configuration_without_radius = serde_json::json!({
-            POPULATION_LABEL: 9001
-        });
-        let parsing_result = from_json(&configuration_without_radius);
-        if parsing_result.is_err() {
+    fn check_reject_when_missing_attribute() -> Result<(), String> {
+        let required_attributes = vec![
+            ROTATION_LABEL,
+            MASS_LABEL,
+            GRAV_LABEL,
+            BUMP_LABEL,
+            RED_LABEL,
+            GREEN_LABEL,
+            BLUE_LABEL,
+        ];
+
+        let mut failed_cases: std::vec::Vec<String> = vec![];
+        for missing_attribute in &required_attributes {
+            let mut configuration_without_attribute = serde_json::json!({});
+            for present_attribute in &required_attributes {
+                // Every attribute of the configuration is numeric, even though one of them should
+                // be integer.
+                if present_attribute != missing_attribute {
+                    configuration_without_attribute[present_attribute] = serde_json::json!(9001.0);
+                }
+            }
+
+            let parsing_result = from_json(&configuration_without_attribute);
+            if !parsing_result.is_err() {
+                failed_cases.push(missing_attribute.to_string());
+            }
+        }
+
+        if failed_cases.is_empty() {
             Ok(())
         } else {
-            Err(String::from("Did not get an error"))
+            Err(String::from(format!(
+                "Did not get an error from the following: {:?}",
+                failed_cases
+            )))
         }
     }
 
     #[test]
-    fn check_reject_when_malformed_radius() -> Result<(), String> {
-        let configuration_with_string_radius = serde_json::json!({
-            RADIUS_LABEL: "over nine thousand",
-            POPULATION_LABEL: 9001
-        });
-        let parsing_result = from_json(&configuration_with_string_radius);
-        if parsing_result.is_err() {
+    fn check_reject_when_malformed_attribute() -> Result<(), String> {
+        let required_attributes = vec![
+            RADIUS_LABEL,
+            POPULATION_LABEL,
+            ROTATION_LABEL,
+            MASS_LABEL,
+            GRAV_LABEL,
+            BUMP_LABEL,
+            RED_LABEL,
+            GREEN_LABEL,
+            BLUE_LABEL,
+        ];
+
+        let mut failed_cases: std::vec::Vec<String> = vec![];
+        for malformed_attribute in &required_attributes {
+            let mut configuration_without_attribute = serde_json::json!({});
+            for present_attribute in &required_attributes {
+                // Every attribute of the configuration is numeric, even though one of them should
+                // be integer.
+                if present_attribute != malformed_attribute {
+                    configuration_without_attribute[present_attribute] = serde_json::json!(9001.0);
+                } else {
+                    configuration_without_attribute[present_attribute] =
+                        serde_json::json!("over nine thousand");
+                }
+            }
+
+            let parsing_result = from_json(&configuration_without_attribute);
+            if !parsing_result.is_err() {
+                failed_cases.push(malformed_attribute.to_string());
+            }
+        }
+
+        if failed_cases.is_empty() {
             Ok(())
         } else {
-            Err(String::from("Did not get an error"))
+            Err(String::from(format!(
+                "Did not get an error from the following: {:?}",
+                failed_cases
+            )))
         }
     }
-
     #[test]
     fn check_reject_when_no_population() -> Result<(), String> {
-        let configuration_without_population = serde_json::json!({
-            RADIUS_LABEL: 9001.0
-        });
+        let configuration_without_population =
+            new_test_configuration(serde_json::json!(9001.0), serde_json::json!(9002.0));
         let parsing_result = from_json(&configuration_without_population);
         if parsing_result.is_err() {
             Ok(())
@@ -255,10 +332,9 @@ mod tests {
 
     #[test]
     fn check_reject_when_malformed_population() -> Result<(), String> {
-        let configuration_with_array_population = serde_json::json!({
-            RADIUS_LABEL: 9001.0,
-            POPULATION_LABEL: [9001.0, 9002.0]
-        });
+        let mut configuration_with_array_population =
+            new_test_configuration(serde_json::json!(9001.0), serde_json::json!(9002.0));
+        configuration_with_array_population[POPULATION_LABEL] = serde_json::json!([9001.0, 9002.0]);
         let parsing_result = from_json(&configuration_with_array_population);
         if parsing_result.is_err() {
             Ok(())
@@ -269,11 +345,10 @@ mod tests {
 
     #[test]
     fn check_reject_when_zero_population() -> Result<(), String> {
-        let configuration_with_array_population = serde_json::json!({
-            RADIUS_LABEL: 9001.0,
-            POPULATION_LABEL: 0,
-        });
-        let parsing_result = from_json(&configuration_with_array_population);
+        let mut test_configuration =
+            new_test_configuration(serde_json::json!(9001.0), serde_json::json!(9002.0));
+        test_configuration[POPULATION_LABEL] = serde_json::json!(0);
+        let parsing_result = from_json(&test_configuration);
         if parsing_result.is_err() {
             Ok(())
         } else {
@@ -283,11 +358,10 @@ mod tests {
 
     #[test]
     fn check_reject_when_population_is_one() -> Result<(), String> {
-        let configuration_with_array_population = serde_json::json!({
-            RADIUS_LABEL: 9001.0,
-            POPULATION_LABEL: 1,
-        });
-        let parsing_result = from_json(&configuration_with_array_population);
+        let mut test_configuration =
+            new_test_configuration(serde_json::json!(9001.0), serde_json::json!(9002.0));
+        test_configuration[POPULATION_LABEL] = serde_json::json!(1);
+        let parsing_result = from_json(&test_configuration);
         if parsing_result.is_err() {
             Ok(())
         } else {
@@ -297,20 +371,27 @@ mod tests {
 
     #[test]
     fn check_parse_two_points() -> Result<(), String> {
-        let two_point_configuration = serde_json::json!({
-            RADIUS_LABEL: 1.0,
-            POPULATION_LABEL: 2,
-        });
+        let test_radius = 1.0;
+        let test_speed = 2.0;
+        let mut test_configuration = new_test_configuration(
+            serde_json::json!(test_radius),
+            serde_json::json!(test_speed),
+        );
+        test_configuration[POPULATION_LABEL] = serde_json::json!(2);
         let mut generated_particles =
-            from_json(&two_point_configuration).expect("Valid configuration should be parsed.");
+            from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(0.0),
-                data_structure::VerticalPositionUnit(1.0),
+                data_structure::HorizontalPositionUnit(test_radius),
+                data_structure::VerticalPositionUnit(0.0),
+                data_structure::HorizontalVelocityUnit(0.0),
+                data_structure::VerticalVelocityUnit(test_speed),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(0.0),
-                data_structure::VerticalPositionUnit(-1.0),
+                data_structure::HorizontalPositionUnit(-test_radius),
+                data_structure::VerticalPositionUnit(0.0),
+                data_structure::HorizontalVelocityUnit(0.0),
+                data_structure::VerticalVelocityUnit(-test_speed),
             ),
         ];
 
@@ -323,26 +404,34 @@ mod tests {
 
     #[test]
     fn check_parse_three_points() -> Result<(), String> {
-        let three_point_configuration = serde_json::json!({
-            RADIUS_LABEL: 1.0,
-            POPULATION_LABEL: 3,
-        });
+        let test_radius = 2.0;
+
+        // This time we will have zero angular velocity to keep the calculation simple.
+        let mut test_configuration =
+            new_test_configuration(serde_json::json!(test_radius), serde_json::json!(0.0));
+        test_configuration[POPULATION_LABEL] = serde_json::json!(3);
         let mut generated_particles =
-            from_json(&three_point_configuration).expect("Valid configuration should be parsed.");
-        let lower_horizontal_magnitude = 0.866;
-        let lower_vertical_coordinate = data_structure::VerticalPositionUnit(-0.5);
+            from_json(&test_configuration).expect("Valid configuration should be parsed.");
+        let left_vertical_magnitude = 0.866;
+        let left_horizontal_coordinate = data_structure::HorizontalPositionUnit(-0.5);
         let expected_particles = vec![
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(0.0),
-                data_structure::VerticalPositionUnit(1.0),
+                data_structure::HorizontalPositionUnit(1.0),
+                data_structure::VerticalPositionUnit(0.0),
+                data_structure::HorizontalVelocityUnit(0.0),
+                data_structure::VerticalVelocityUnit(0.0),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(lower_horizontal_magnitude),
-                lower_vertical_coordinate,
+                left_horizontal_coordinate,
+                data_structure::VerticalPositionUnit(left_vertical_magnitude),
+                data_structure::HorizontalVelocityUnit(0.0),
+                data_structure::VerticalVelocityUnit(0.0),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(-lower_horizontal_magnitude),
-                lower_vertical_coordinate,
+                left_horizontal_coordinate,
+                data_structure::VerticalPositionUnit(-left_vertical_magnitude),
+                data_structure::HorizontalVelocityUnit(0.0),
+                data_structure::VerticalVelocityUnit(0.0),
             ),
         ];
 
@@ -355,28 +444,39 @@ mod tests {
 
     #[test]
     fn check_parse_four_points() -> Result<(), String> {
-        let four_point_configuration = serde_json::json!({
-            RADIUS_LABEL: 1.0,
-            POPULATION_LABEL: 4,
-        });
+        let test_radius = 2.5;
+        let test_speed = 0.1;
+        let mut test_configuration = new_test_configuration(
+            serde_json::json!(test_radius),
+            serde_json::json!(test_speed),
+        );
+        test_configuration[POPULATION_LABEL] = serde_json::json!(4);
         let mut generated_particles =
-            from_json(&four_point_configuration).expect("Valid configuration should be parsed.");
+            from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(0.0),
-                data_structure::VerticalPositionUnit(1.0),
-            ),
-            new_test_particle_at(
-                data_structure::HorizontalPositionUnit(1.0),
+                data_structure::HorizontalPositionUnit(test_radius),
                 data_structure::VerticalPositionUnit(0.0),
+                data_structure::HorizontalVelocityUnit(0.0),
+                data_structure::VerticalVelocityUnit(test_speed),
             ),
             new_test_particle_at(
                 data_structure::HorizontalPositionUnit(0.0),
-                data_structure::VerticalPositionUnit(-1.0),
+                data_structure::VerticalPositionUnit(test_radius),
+                data_structure::HorizontalVelocityUnit(-test_speed),
+                data_structure::VerticalVelocityUnit(0.0),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(-1.0),
+                data_structure::HorizontalPositionUnit(-test_radius),
                 data_structure::VerticalPositionUnit(0.0),
+                data_structure::HorizontalVelocityUnit(0.0),
+                data_structure::VerticalVelocityUnit(-test_speed),
+            ),
+            new_test_particle_at(
+                data_structure::HorizontalPositionUnit(0.0),
+                data_structure::VerticalPositionUnit(-test_radius),
+                data_structure::HorizontalVelocityUnit(test_speed),
+                data_structure::VerticalVelocityUnit(0.0),
             ),
         ];
 
