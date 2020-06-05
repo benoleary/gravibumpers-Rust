@@ -3,6 +3,7 @@
 ///
 /// As such it does not implement any logic and thus has no #[cfg(test)].
 pub mod comparison;
+use std::ops::Add;
 
 /// First we have some structs for dimensional parameters.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -26,14 +27,46 @@ pub struct BlueColorUnit(pub f64);
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct HorizontalPositionUnit(pub f64);
 
+impl Add for HorizontalPositionUnit {
+    type Output = HorizontalPositionUnit;
+
+    fn add(self, horizontal_position: HorizontalPositionUnit) -> HorizontalPositionUnit {
+        HorizontalPositionUnit(self.0 + horizontal_position.0)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct VerticalPositionUnit(pub f64);
+
+impl Add for VerticalPositionUnit {
+    type Output = VerticalPositionUnit;
+
+    fn add(self, vertical_position: VerticalPositionUnit) -> VerticalPositionUnit {
+        VerticalPositionUnit(self.0 + vertical_position.0)
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct HorizontalVelocityUnit(pub f64);
 
+impl Add for HorizontalVelocityUnit {
+    type Output = HorizontalVelocityUnit;
+
+    fn add(self, horizontal_velocity: HorizontalVelocityUnit) -> HorizontalVelocityUnit {
+        HorizontalVelocityUnit(self.0 + horizontal_velocity.0)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct VerticalVelocityUnit(pub f64);
+
+impl Add for VerticalVelocityUnit {
+    type Output = VerticalVelocityUnit;
+
+    fn add(self, vertical_velocity: VerticalVelocityUnit) -> VerticalVelocityUnit {
+        VerticalVelocityUnit(self.0 + vertical_velocity.0)
+    }
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct PositionVector {

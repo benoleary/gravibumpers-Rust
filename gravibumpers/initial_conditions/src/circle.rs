@@ -67,12 +67,15 @@ fn particles_from_numbers(
     circle_particles.push(data_structure::IndividualParticle {
         intrinsic_values: common_intrinsics,
         variable_values: data_structure::ParticleVariables {
-            horizontal_position: data_structure::HorizontalPositionUnit(circle_radius),
-            vertical_position: data_structure::VerticalPositionUnit(0.0),
-            horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+            horizontal_position: data_structure::HorizontalPositionUnit(circle_radius)
+                + circle_displacement.horizontal_position,
+            vertical_position: data_structure::VerticalPositionUnit(0.0)
+                + circle_displacement.vertical_position,
+            horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0)
+                + circle_velocity.horizontal_velocity,
             vertical_velocity: data_structure::VerticalVelocityUnit(
                 circle_radius * angular_velocity,
-            ),
+            ) + circle_velocity.vertical_velocity,
         },
     });
 
@@ -82,12 +85,15 @@ fn particles_from_numbers(
         circle_particles.push(data_structure::IndividualParticle {
             intrinsic_values: common_intrinsics,
             variable_values: data_structure::ParticleVariables {
-                horizontal_position: data_structure::HorizontalPositionUnit(-circle_radius),
-                vertical_position: data_structure::VerticalPositionUnit(0.0),
-                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                horizontal_position: data_structure::HorizontalPositionUnit(-circle_radius)
+                    + circle_displacement.horizontal_position,
+                vertical_position: data_structure::VerticalPositionUnit(0.0)
+                    + circle_displacement.vertical_position,
+                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0)
+                    + circle_velocity.horizontal_velocity,
                 vertical_velocity: data_structure::VerticalVelocityUnit(
                     -circle_radius * angular_velocity,
-                ),
+                ) + circle_velocity.vertical_velocity,
             },
         });
     }
@@ -111,16 +117,16 @@ fn particles_from_numbers(
                 variable_values: data_structure::ParticleVariables {
                     horizontal_position: data_structure::HorizontalPositionUnit(
                         cosine_of_angle_times_radius,
-                    ),
+                    ) + circle_displacement.horizontal_position,
                     vertical_position: data_structure::VerticalPositionUnit(
                         sine_of_angle_times_radius,
-                    ),
+                    ) + circle_displacement.vertical_position,
                     horizontal_velocity: data_structure::HorizontalVelocityUnit(
                         -sine_of_angle_times_radius * angular_velocity,
-                    ),
+                    ) + circle_velocity.horizontal_velocity,
                     vertical_velocity: data_structure::VerticalVelocityUnit(
                         cosine_of_angle_times_radius * angular_velocity,
-                    ),
+                    ) + circle_velocity.vertical_velocity,
                 },
             });
 
@@ -129,16 +135,16 @@ fn particles_from_numbers(
                 variable_values: data_structure::ParticleVariables {
                     horizontal_position: data_structure::HorizontalPositionUnit(
                         cosine_of_angle_times_radius,
-                    ),
+                    ) + circle_displacement.horizontal_position,
                     vertical_position: data_structure::VerticalPositionUnit(
                         -sine_of_angle_times_radius,
-                    ),
+                    ) + circle_displacement.vertical_position,
                     horizontal_velocity: data_structure::HorizontalVelocityUnit(
                         sine_of_angle_times_radius * angular_velocity,
-                    ),
+                    ) + circle_velocity.horizontal_velocity,
                     vertical_velocity: data_structure::VerticalVelocityUnit(
                         cosine_of_angle_times_radius * angular_velocity,
-                    ),
+                    ) + circle_velocity.vertical_velocity,
                 },
             });
         }
@@ -501,28 +507,32 @@ mod tests {
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(test_radius),
-                data_structure::VerticalPositionUnit(0.0),
-                data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(test_linear_speed),
+                data_structure::HorizontalPositionUnit(test_horizontal_displacement + test_radius),
+                data_structure::VerticalPositionUnit(test_vertical_displacement),
+                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
+                data_structure::VerticalVelocityUnit(test_vertical_velocity + test_linear_speed),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(0.0),
-                data_structure::VerticalPositionUnit(test_radius),
-                data_structure::HorizontalVelocityUnit(-test_linear_speed),
-                data_structure::VerticalVelocityUnit(0.0),
+                data_structure::HorizontalPositionUnit(test_horizontal_displacement),
+                data_structure::VerticalPositionUnit(test_vertical_displacement + test_radius),
+                data_structure::HorizontalVelocityUnit(
+                    test_horizontal_velocity - test_linear_speed,
+                ),
+                data_structure::VerticalVelocityUnit(test_vertical_velocity),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(-test_radius),
-                data_structure::VerticalPositionUnit(0.0),
-                data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(-test_linear_speed),
+                data_structure::HorizontalPositionUnit(test_horizontal_displacement - test_radius),
+                data_structure::VerticalPositionUnit(test_vertical_displacement),
+                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
+                data_structure::VerticalVelocityUnit(test_vertical_velocity - test_linear_speed),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(0.0),
-                data_structure::VerticalPositionUnit(-test_radius),
-                data_structure::HorizontalVelocityUnit(test_linear_speed),
-                data_structure::VerticalVelocityUnit(0.0),
+                data_structure::HorizontalPositionUnit(test_horizontal_displacement),
+                data_structure::VerticalPositionUnit(test_vertical_displacement - test_radius),
+                data_structure::HorizontalVelocityUnit(
+                    test_horizontal_velocity + test_linear_speed,
+                ),
+                data_structure::VerticalVelocityUnit(test_vertical_velocity),
             ),
         ];
 
