@@ -2,7 +2,22 @@
   "generatorName": "circle",
   "generatorConfiguration":
   {
+    "displacement": {
+      "x": 2.5,
+      "y": -1.0
+    },
+    "velocity": {
+      "x": -0.1,
+      "y": 0.0
+    },
     "radius": 4,
-    "population": 100
+    "population": 100,
+    "rotation": 3,
+    "mass": 1,
+    "grav": 1,
+    "bump": 0.5,
+    "red": 0,
+    "green": 0,
+    "blue": 100
   }
 }
