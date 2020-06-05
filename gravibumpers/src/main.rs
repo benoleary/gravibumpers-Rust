@@ -2,6 +2,8 @@ extern crate data_structure;
 extern crate serde_json;
 extern crate visual_representation;
 
+use std::io::Write;
+use std::iter::FromIterator;
 use visual_representation::SequenceAnimator;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,9 +22,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn print_help() -> Result<(), Box<dyn std::error::Error>> {
     println!("GraviBumpers!");
-    println!("The first argument should be the mode. Currently implemented: rgb_demo, no_op");
+    println!("The first argument should be the mode. Currently implemented: rgb_demo, read_file");
     println!("rgb_demo expects 1 further argument: the filename for the output APNG.");
-    println!("read_file expects 1 further argument: the filename of the configuration.");
+    println!(
+        "read_file expects 2 further argument: the filename of the configuration, then the \
+        filename for the output."
+    );
     Ok(())
 }
 
@@ -50,19 +55,23 @@ fn run_from_configuration_file(
     command_line_arguments: &[String],
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("This will become GraviBumpers!");
-    if command_line_arguments.len() != 3 {
+    if command_line_arguments.len() != 4 {
         return print_help();
     }
 
     let input_filename = &command_line_arguments[2];
-    println!("reading configuration from {}", input_filename);
+    let output_filename = &command_line_arguments[3];
+    println!(
+        "reading configuration from {}, will write to {}",
+        input_filename, output_filename
+    );
 
     let configuration_content = std::fs::read_to_string(input_filename)?;
     let deserialized_configuration: serde_json::Value =
         serde_json::from_str(&configuration_content)?;
     let parsed_configuration =
         initial_conditions::parse_deserialized_configuration(&deserialized_configuration)?;
-    let initial_particle_map = match parsed_configuration.generator_name {
+    let mut initial_particle_map = match parsed_configuration.generator_name {
         "circle" => {
             initial_conditions::circle::from_json(parsed_configuration.generator_configuration)
         }
@@ -74,11 +83,18 @@ fn run_from_configuration_file(
                 ),
             )))
         }
-    };
+    }?;
     let time_evolution_placeholder = time_evolution::hold_place(23);
     println!(
         "time_evolution_placeholder = {}",
         time_evolution_placeholder
     );
+    let mut output_file = std::fs::File::create(output_filename)?;
+
+    // Here we copy into a vector so that we can print it as a placeholder until we implement
+    // creating a pixel map out of a particle list.
+    let particle_vector: std::vec::Vec<data_structure::IndividualParticle> =
+        std::vec::Vec::from_iter(initial_particle_map.get());
+    write!(output_file, "{:?}", particle_vector)?;
     Ok(())
 }

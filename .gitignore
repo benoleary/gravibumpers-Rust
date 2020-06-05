@@ -13,4 +13,5 @@ gravibumpers/.vscode
 **/*.png
 **/*.apng
 **/*.code-workspace
+**/*.out
 
