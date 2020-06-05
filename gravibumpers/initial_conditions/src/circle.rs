@@ -102,10 +102,10 @@ fn particles_from_numbers(
             variable_values: data_structure::ParticleVariables {
                 horizontal_position: data_structure::HorizontalPositionUnit(-circle_radius),
                 vertical_position: data_structure::VerticalPositionUnit(0.0),
-                horizontal_velocity: data_structure::HorizontalVelocityUnit(
+                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_velocity: data_structure::VerticalVelocityUnit(
                     -circle_radius * angular_velocity,
                 ),
-                vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
             },
         });
     }
@@ -116,7 +116,7 @@ fn particles_from_numbers(
 
     if number_of_vertical_pairs > 0 {
         let angle_between_particles_in_radians =
-            std::f64::consts::PI / (number_of_vertical_pairs + 1) as f64;
+            (2.0 * std::f64::consts::PI) / (circle_population as f64);
         let mut angle_from_horizontal_in_radians = 0.0;
         for _ in 0..number_of_vertical_pairs {
             angle_from_horizontal_in_radians += angle_between_particles_in_radians;
@@ -371,11 +371,12 @@ mod tests {
 
     #[test]
     fn check_parse_two_points() -> Result<(), String> {
-        let test_radius = 1.0;
-        let test_speed = 2.0;
+        let test_radius = 2.0;
+        let test_angular_speed = 23.4;
+        let test_linear_speed = test_angular_speed * test_radius;
         let mut test_configuration = new_test_configuration(
             serde_json::json!(test_radius),
-            serde_json::json!(test_speed),
+            serde_json::json!(test_angular_speed),
         );
         test_configuration[POPULATION_LABEL] = serde_json::json!(2);
         let mut generated_particles =
@@ -385,13 +386,13 @@ mod tests {
                 data_structure::HorizontalPositionUnit(test_radius),
                 data_structure::VerticalPositionUnit(0.0),
                 data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(test_speed),
+                data_structure::VerticalVelocityUnit(test_linear_speed),
             ),
             new_test_particle_at(
                 data_structure::HorizontalPositionUnit(-test_radius),
                 data_structure::VerticalPositionUnit(0.0),
                 data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(-test_speed),
+                data_structure::VerticalVelocityUnit(-test_linear_speed),
             ),
         ];
 
@@ -404,7 +405,7 @@ mod tests {
 
     #[test]
     fn check_parse_three_points() -> Result<(), String> {
-        let test_radius = 2.0;
+        let test_radius = 1.0;
 
         // This time we will have zero angular velocity to keep the calculation simple.
         let mut test_configuration =
@@ -445,10 +446,11 @@ mod tests {
     #[test]
     fn check_parse_four_points() -> Result<(), String> {
         let test_radius = 2.5;
-        let test_speed = 0.1;
+        let test_angular_speed = 0.1;
+        let test_linear_speed = test_angular_speed * test_radius;
         let mut test_configuration = new_test_configuration(
             serde_json::json!(test_radius),
-            serde_json::json!(test_speed),
+            serde_json::json!(test_angular_speed),
         );
         test_configuration[POPULATION_LABEL] = serde_json::json!(4);
         let mut generated_particles =
@@ -458,24 +460,24 @@ mod tests {
                 data_structure::HorizontalPositionUnit(test_radius),
                 data_structure::VerticalPositionUnit(0.0),
                 data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(test_speed),
+                data_structure::VerticalVelocityUnit(test_linear_speed),
             ),
             new_test_particle_at(
                 data_structure::HorizontalPositionUnit(0.0),
                 data_structure::VerticalPositionUnit(test_radius),
-                data_structure::HorizontalVelocityUnit(-test_speed),
+                data_structure::HorizontalVelocityUnit(-test_linear_speed),
                 data_structure::VerticalVelocityUnit(0.0),
             ),
             new_test_particle_at(
                 data_structure::HorizontalPositionUnit(-test_radius),
                 data_structure::VerticalPositionUnit(0.0),
                 data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(-test_speed),
+                data_structure::VerticalVelocityUnit(-test_linear_speed),
             ),
             new_test_particle_at(
                 data_structure::HorizontalPositionUnit(0.0),
                 data_structure::VerticalPositionUnit(-test_radius),
-                data_structure::HorizontalVelocityUnit(test_speed),
+                data_structure::HorizontalVelocityUnit(test_linear_speed),
                 data_structure::VerticalVelocityUnit(0.0),
             ),
         ];
