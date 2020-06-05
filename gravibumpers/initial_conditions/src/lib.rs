@@ -5,6 +5,8 @@ use std::error::Error;
 
 const GENERATOR_NAME_LABEL: &str = "generatorName";
 const GENERATOR_CONFIGURATION_LABEL: &str = "generatorConfiguration";
+const HORIZONTAL_LABEL: &str = "x";
+const VERTICAL_LABEL: &str = "y";
 
 #[derive(Debug)]
 pub struct ConfigurationParseError {
@@ -62,6 +64,54 @@ pub fn parse_deserialized_configuration<'a>(
     Ok(ParsedConfiguration {
         generator_name: generator_name,
         generator_configuration: generator_configuration,
+    })
+}
+
+pub fn parse_f64(
+    attribute_label: &str,
+    given_configuration: &serde_json::Value,
+) -> Result<f64, Box<dyn std::error::Error>> {
+    match given_configuration[attribute_label].as_f64() {
+        Some(parsed_number) => Ok(parsed_number),
+        _ => Err(Box::new(ConfigurationParseError::new(&format!(
+            "Could not parse \"{}\" from {}",
+            attribute_label, given_configuration
+        )))),
+    }
+}
+
+pub fn parse_i64(
+    attribute_label: &str,
+    given_configuration: &serde_json::Value,
+) -> Result<i64, Box<dyn std::error::Error>> {
+    match given_configuration[attribute_label].as_i64() {
+        Some(parsed_number) => Ok(parsed_number),
+        _ => Err(Box::new(ConfigurationParseError::new(&format!(
+            "Could not parse \"{}\" from {}",
+            attribute_label, given_configuration
+        )))),
+    }
+}
+
+pub fn parse_position(
+    given_position: &serde_json::Value,
+) -> Result<data_structure::PositionVector, Box<dyn std::error::Error>> {
+    let horizontal_position = parse_f64(HORIZONTAL_LABEL, given_position)?;
+    let vertical_position = parse_f64(VERTICAL_LABEL, given_position)?;
+    Ok(data_structure::PositionVector {
+        horizontal_position: data_structure::HorizontalPositionUnit(horizontal_position),
+        vertical_position: data_structure::VerticalPositionUnit(vertical_position),
+    })
+}
+
+pub fn parse_velocity(
+    given_position: &serde_json::Value,
+) -> Result<data_structure::VelocityVector, Box<dyn std::error::Error>> {
+    let horizontal_velocity = parse_f64(HORIZONTAL_LABEL, given_position)?;
+    let vertical_velocity = parse_f64(VERTICAL_LABEL, given_position)?;
+    Ok(data_structure::VelocityVector {
+        horizontal_velocity: data_structure::HorizontalVelocityUnit(horizontal_velocity),
+        vertical_velocity: data_structure::VerticalVelocityUnit(vertical_velocity),
     })
 }
 

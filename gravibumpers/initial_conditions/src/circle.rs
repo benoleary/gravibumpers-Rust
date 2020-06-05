@@ -1,9 +1,11 @@
 use super::ConfigurationParseError;
 use std::convert::TryInto;
 
+const DISPLACEMENT_LABEL: &str = "displacement";
+const VELOCITY_LABEL: &str = "velocity";
 const RADIUS_LABEL: &str = "radius";
 const POPULATION_LABEL: &str = "population";
-const ROTATION_LABEL: &str = "rotation";
+const ANGULAR_VELOCITY_LABEL: &str = "rotation";
 const MASS_LABEL: &str = "mass";
 const GRAV_LABEL: &str = "grav";
 const BUMP_LABEL: &str = "bump";
@@ -14,15 +16,17 @@ const BLUE_LABEL: &str = "blue";
 pub fn from_json(
     given_configuration: &serde_json::Value,
 ) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
-    let circle_radius = parse_f64(RADIUS_LABEL, given_configuration)?;
-    let circle_population = parse_i64(POPULATION_LABEL, given_configuration)?;
-    let circle_rotation = parse_f64(ROTATION_LABEL, given_configuration)?;
-    let inertial_mass = parse_f64(MASS_LABEL, given_configuration)?;
-    let attractive_charge = parse_f64(GRAV_LABEL, given_configuration)?;
-    let repulsive_charge = parse_f64(BUMP_LABEL, given_configuration)?;
-    let red_brightness = parse_f64(RED_LABEL, given_configuration)?;
-    let green_brightness = parse_f64(GREEN_LABEL, given_configuration)?;
-    let blue_brightness = parse_f64(BLUE_LABEL, given_configuration)?;
+    let circle_displacement = super::parse_position(&given_configuration[DISPLACEMENT_LABEL])?;
+    let circle_velocity = super::parse_velocity(&given_configuration[VELOCITY_LABEL])?;
+    let circle_radius = super::parse_f64(RADIUS_LABEL, given_configuration)?;
+    let circle_population = super::parse_i64(POPULATION_LABEL, given_configuration)?;
+    let circle_rotation = super::parse_f64(ANGULAR_VELOCITY_LABEL, given_configuration)?;
+    let inertial_mass = super::parse_f64(MASS_LABEL, given_configuration)?;
+    let attractive_charge = super::parse_f64(GRAV_LABEL, given_configuration)?;
+    let repulsive_charge = super::parse_f64(BUMP_LABEL, given_configuration)?;
+    let red_brightness = super::parse_f64(RED_LABEL, given_configuration)?;
+    let green_brightness = super::parse_f64(GREEN_LABEL, given_configuration)?;
+    let blue_brightness = super::parse_f64(BLUE_LABEL, given_configuration)?;
     let common_intrinsics = data_structure::ParticleIntrinsics {
         inertial_mass: data_structure::InertialMassUnit(inertial_mass),
         attractive_charge: data_structure::AttractiveChargeUnit(attractive_charge),
@@ -32,6 +36,8 @@ pub fn from_json(
         blue_brightness: data_structure::BlueColorUnit(blue_brightness),
     };
     particles_from_numbers(
+        circle_displacement,
+        circle_velocity,
         circle_radius,
         circle_population,
         circle_rotation,
@@ -39,33 +45,9 @@ pub fn from_json(
     )
 }
 
-pub fn parse_f64(
-    attribute_label: &str,
-    given_configuration: &serde_json::Value,
-) -> Result<f64, Box<dyn std::error::Error>> {
-    match given_configuration[attribute_label].as_f64() {
-        Some(parsed_number) => Ok(parsed_number),
-        _ => Err(Box::new(ConfigurationParseError::new(&format!(
-            "Could not parse \"{}\" from {}",
-            attribute_label, given_configuration
-        )))),
-    }
-}
-
-pub fn parse_i64(
-    attribute_label: &str,
-    given_configuration: &serde_json::Value,
-) -> Result<i64, Box<dyn std::error::Error>> {
-    match given_configuration[attribute_label].as_i64() {
-        Some(parsed_number) => Ok(parsed_number),
-        _ => Err(Box::new(ConfigurationParseError::new(&format!(
-            "Could not parse \"{}\" from {}",
-            attribute_label, given_configuration
-        )))),
-    }
-}
-
 fn particles_from_numbers(
+    circle_displacement: data_structure::PositionVector,
+    circle_velocity: data_structure::VelocityVector,
     circle_radius: f64,
     circle_population: i64,
     angular_velocity: f64,
@@ -204,12 +186,24 @@ mod tests {
         };
 
     fn new_test_configuration(
+        test_horizontal_displacement: serde_json::Value,
+        test_vertical_displacement: serde_json::Value,
+        test_horizontal_velocity: serde_json::Value,
+        test_vertical_velocity: serde_json::Value,
         test_radius: serde_json::Value,
         test_rotation: serde_json::Value,
     ) -> serde_json::Value {
         serde_json::json!({
+            DISPLACEMENT_LABEL: {
+                super::super::HORIZONTAL_LABEL: test_horizontal_displacement,
+                super::super::VERTICAL_LABEL: test_vertical_displacement,
+            },
+            VELOCITY_LABEL: {
+                super::super::HORIZONTAL_LABEL: test_horizontal_velocity,
+                super::super::VERTICAL_LABEL: test_vertical_velocity,
+            },
             RADIUS_LABEL: test_radius,
-            ROTATION_LABEL: test_rotation,
+            ANGULAR_VELOCITY_LABEL: test_rotation,
             MASS_LABEL: TEST_INTRINSICS.inertial_mass.0,
             GRAV_LABEL: TEST_INTRINSICS.attractive_charge.0,
             BUMP_LABEL: TEST_INTRINSICS.repulsive_charge.0,
@@ -239,7 +233,9 @@ mod tests {
     #[test]
     fn check_reject_when_missing_attribute() -> Result<(), String> {
         let required_attributes = vec![
-            ROTATION_LABEL,
+            DISPLACEMENT_LABEL,
+            VELOCITY_LABEL,
+            ANGULAR_VELOCITY_LABEL,
             MASS_LABEL,
             GRAV_LABEL,
             BUMP_LABEL,
@@ -278,9 +274,11 @@ mod tests {
     #[test]
     fn check_reject_when_malformed_attribute() -> Result<(), String> {
         let required_attributes = vec![
+            DISPLACEMENT_LABEL,
+            VELOCITY_LABEL,
             RADIUS_LABEL,
             POPULATION_LABEL,
-            ROTATION_LABEL,
+            ANGULAR_VELOCITY_LABEL,
             MASS_LABEL,
             GRAV_LABEL,
             BUMP_LABEL,
@@ -320,8 +318,14 @@ mod tests {
     }
     #[test]
     fn check_reject_when_no_population() -> Result<(), String> {
-        let configuration_without_population =
-            new_test_configuration(serde_json::json!(9001.0), serde_json::json!(9002.0));
+        let configuration_without_population = new_test_configuration(
+            serde_json::json!(9001.0),
+            serde_json::json!(9002.0),
+            serde_json::json!(9003.0),
+            serde_json::json!(9004.0),
+            serde_json::json!(9005.0),
+            serde_json::json!(9006.0),
+        );
         let parsing_result = from_json(&configuration_without_population);
         if parsing_result.is_err() {
             Ok(())
@@ -332,8 +336,14 @@ mod tests {
 
     #[test]
     fn check_reject_when_malformed_population() -> Result<(), String> {
-        let mut configuration_with_array_population =
-            new_test_configuration(serde_json::json!(9001.0), serde_json::json!(9002.0));
+        let mut configuration_with_array_population = new_test_configuration(
+            serde_json::json!(9001.0),
+            serde_json::json!(9002.0),
+            serde_json::json!(9003.0),
+            serde_json::json!(9004.0),
+            serde_json::json!(9005.0),
+            serde_json::json!(9006.0),
+        );
         configuration_with_array_population[POPULATION_LABEL] = serde_json::json!([9001.0, 9002.0]);
         let parsing_result = from_json(&configuration_with_array_population);
         if parsing_result.is_err() {
@@ -345,8 +355,14 @@ mod tests {
 
     #[test]
     fn check_reject_when_zero_population() -> Result<(), String> {
-        let mut test_configuration =
-            new_test_configuration(serde_json::json!(9001.0), serde_json::json!(9002.0));
+        let mut test_configuration = new_test_configuration(
+            serde_json::json!(9001.0),
+            serde_json::json!(9002.0),
+            serde_json::json!(9003.0),
+            serde_json::json!(9004.0),
+            serde_json::json!(9005.0),
+            serde_json::json!(9006.0),
+        );
         test_configuration[POPULATION_LABEL] = serde_json::json!(0);
         let parsing_result = from_json(&test_configuration);
         if parsing_result.is_err() {
@@ -358,8 +374,14 @@ mod tests {
 
     #[test]
     fn check_reject_when_population_is_one() -> Result<(), String> {
-        let mut test_configuration =
-            new_test_configuration(serde_json::json!(9001.0), serde_json::json!(9002.0));
+        let mut test_configuration = new_test_configuration(
+            serde_json::json!(9001.0),
+            serde_json::json!(9002.0),
+            serde_json::json!(9003.0),
+            serde_json::json!(9004.0),
+            serde_json::json!(9005.0),
+            serde_json::json!(9006.0),
+        );
         test_configuration[POPULATION_LABEL] = serde_json::json!(1);
         let parsing_result = from_json(&test_configuration);
         if parsing_result.is_err() {
@@ -374,7 +396,13 @@ mod tests {
         let test_radius = 2.0;
         let test_angular_speed = 23.4;
         let test_linear_speed = test_angular_speed * test_radius;
+        let test_horizontal_displacement = 1000.0;
+        let test_vertical_displacement = 500.0;
         let mut test_configuration = new_test_configuration(
+            serde_json::json!(test_horizontal_displacement),
+            serde_json::json!(test_vertical_displacement),
+            serde_json::json!(0.0),
+            serde_json::json!(0.0),
             serde_json::json!(test_radius),
             serde_json::json!(test_angular_speed),
         );
@@ -383,14 +411,14 @@ mod tests {
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(test_radius),
-                data_structure::VerticalPositionUnit(0.0),
+                data_structure::HorizontalPositionUnit(test_horizontal_displacement + test_radius),
+                data_structure::VerticalPositionUnit(test_vertical_displacement),
                 data_structure::HorizontalVelocityUnit(0.0),
                 data_structure::VerticalVelocityUnit(test_linear_speed),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(-test_radius),
-                data_structure::VerticalPositionUnit(0.0),
+                data_structure::HorizontalPositionUnit(test_horizontal_displacement - test_radius),
+                data_structure::VerticalPositionUnit(test_vertical_displacement),
                 data_structure::HorizontalVelocityUnit(0.0),
                 data_structure::VerticalVelocityUnit(-test_linear_speed),
             ),
@@ -406,10 +434,18 @@ mod tests {
     #[test]
     fn check_parse_three_points() -> Result<(), String> {
         let test_radius = 1.0;
+        let test_horizontal_velocity = 50.0;
+        let test_vertical_velocity = 500.0;
 
         // This time we will have zero angular velocity to keep the calculation simple.
-        let mut test_configuration =
-            new_test_configuration(serde_json::json!(test_radius), serde_json::json!(0.0));
+        let mut test_configuration = new_test_configuration(
+            serde_json::json!(0.0),
+            serde_json::json!(0.0),
+            serde_json::json!(test_horizontal_velocity),
+            serde_json::json!(test_vertical_velocity),
+            serde_json::json!(test_radius),
+            serde_json::json!(0.0),
+        );
         test_configuration[POPULATION_LABEL] = serde_json::json!(3);
         let mut generated_particles =
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
@@ -419,20 +455,20 @@ mod tests {
             new_test_particle_at(
                 data_structure::HorizontalPositionUnit(1.0),
                 data_structure::VerticalPositionUnit(0.0),
-                data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(0.0),
+                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
+                data_structure::VerticalVelocityUnit(test_vertical_velocity),
             ),
             new_test_particle_at(
                 left_horizontal_coordinate,
                 data_structure::VerticalPositionUnit(left_vertical_magnitude),
-                data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(0.0),
+                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
+                data_structure::VerticalVelocityUnit(test_vertical_velocity),
             ),
             new_test_particle_at(
                 left_horizontal_coordinate,
                 data_structure::VerticalPositionUnit(-left_vertical_magnitude),
-                data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(0.0),
+                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
+                data_structure::VerticalVelocityUnit(test_vertical_velocity),
             ),
         ];
 
@@ -448,7 +484,15 @@ mod tests {
         let test_radius = 2.5;
         let test_angular_speed = 0.1;
         let test_linear_speed = test_angular_speed * test_radius;
+        let test_horizontal_displacement = 1000.0;
+        let test_vertical_displacement = 500.0;
+        let test_horizontal_velocity = 50.0;
+        let test_vertical_velocity = 500.0;
         let mut test_configuration = new_test_configuration(
+            serde_json::json!(test_horizontal_displacement),
+            serde_json::json!(test_vertical_displacement),
+            serde_json::json!(test_horizontal_velocity),
+            serde_json::json!(test_vertical_velocity),
             serde_json::json!(test_radius),
             serde_json::json!(test_angular_speed),
         );

@@ -35,6 +35,18 @@ pub struct HorizontalVelocityUnit(pub f64);
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct VerticalVelocityUnit(pub f64);
 
+#[derive(Clone, Copy, Debug)]
+pub struct PositionVector {
+    pub horizontal_position: HorizontalPositionUnit,
+    pub vertical_position: VerticalPositionUnit,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct VelocityVector {
+    pub horizontal_velocity: HorizontalVelocityUnit,
+    pub vertical_velocity: VerticalVelocityUnit,
+}
+
 /// The particles have some intrinsic qualities which do not change, unlike their
 /// positions and velocities.
 #[derive(Clone, Copy, Debug)]
