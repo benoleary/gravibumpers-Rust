@@ -4,6 +4,7 @@ extern crate visual_representation;
 
 use std::io::Write;
 use std::iter::FromIterator;
+use time_evolution::ParticlesInTimeEvolver;
 use visual_representation::SequenceAnimator;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -84,10 +85,15 @@ fn run_from_configuration_file(
             )))
         }
     }?;
-    let time_evolution_placeholder = time_evolution::hold_place(23);
+
+    let particles_in_time_evolver = time_evolution::DummyEvolver {
+        number_of_copies: 23,
+    };
+    let particle_map_sequence =
+        particles_in_time_evolver.create_time_sequence(&mut *initial_particle_map);
     println!(
-        "time_evolution_placeholder = {}",
-        time_evolution_placeholder
+        "particle_map_sequence.len() = {}",
+        particle_map_sequence.len()
     );
     let mut output_file = std::fs::File::create(output_filename)?;
 

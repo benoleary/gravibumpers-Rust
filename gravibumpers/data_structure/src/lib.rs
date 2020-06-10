@@ -125,10 +125,8 @@ impl ParticleIteratorProvider for ParticleVector {
     }
 }
 
-pub fn wrap_particle_vector(
-    particle_vector: std::vec::Vec<IndividualParticle>,
-) -> Box<dyn ParticleIteratorProvider> {
-    Box::new(ParticleVector {
+pub fn wrap_particle_vector(particle_vector: std::vec::Vec<IndividualParticle>) -> ParticleVector {
+    ParticleVector {
         particle_iterator: Box::new(particle_vector.into_iter()),
-    })
+    }
 }

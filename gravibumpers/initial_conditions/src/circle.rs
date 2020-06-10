@@ -150,7 +150,9 @@ fn particles_from_numbers(
         }
     }
 
-    Ok(data_structure::wrap_particle_vector(circle_particles))
+    Ok(Box::new(data_structure::wrap_particle_vector(
+        circle_particles,
+    )))
 }
 
 #[cfg(test)]
