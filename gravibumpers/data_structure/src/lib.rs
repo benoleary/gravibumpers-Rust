@@ -1,7 +1,8 @@
-/// This crate defines the traits and structs for representing the particles from
-/// initial set-up through time evolution to visualization.
+/// This crate defines the traits and structs for representing the particles from initial set-up
+/// through time evolution to visualization.
 ///
-/// As such it does not implement any logic and thus has no #[cfg(test)].
+/// As such it does not implement any logic (except some trivial implementations of Add and a
+/// default unpacking for a trait) and thus has no #[cfg(test)].
 pub mod comparison;
 use std::ops::Add;
 

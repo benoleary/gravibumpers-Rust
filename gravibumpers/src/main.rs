@@ -90,7 +90,7 @@ fn run_from_configuration_file(
         number_of_copies: 23,
     };
     let particle_map_sequence =
-        particles_in_time_evolver.create_time_sequence(initial_particle_map.get());
+        particles_in_time_evolver.create_time_sequence(initial_particle_map.get())?;
     println!(
         "particle_map_sequence.len() = {}",
         particle_map_sequence.len()

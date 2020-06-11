@@ -8,7 +8,7 @@ pub trait ParticlesInTimeEvolver<
     fn create_time_sequence(
         &self,
         initial_conditions: impl std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle>,
-    ) -> U;
+    ) -> Result<U, Box<dyn std::error::Error>>;
 }
 
 pub struct DummyEvolver {
@@ -24,7 +24,8 @@ impl
     fn create_time_sequence(
         &self,
         initial_conditions: impl std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle>,
-    ) -> std::vec::IntoIter<data_structure::ParticleVector> {
+    ) -> Result<std::vec::IntoIter<data_structure::ParticleVector>, Box<dyn std::error::Error>>
+    {
         let number_of_particles = initial_conditions.len();
         let mut vector_of_copies: std::vec::Vec<std::vec::Vec<data_structure::IndividualParticle>> =
             std::vec::Vec::with_capacity(self.number_of_copies);
@@ -46,16 +47,8 @@ impl
             vector_of_iterators.push(data_structure::wrap_particle_vector(copy_vector));
         }
 
-        vector_of_iterators.into_iter()
+        Ok(vector_of_iterators.into_iter())
     }
-}
-
-pub fn hold_place(input_int: i32) -> i32 {
-    println!(
-        "time_evolution::hold_place(input_int = {input_int})",
-        input_int = input_int
-    );
-    234
 }
 
 #[cfg(test)]
@@ -63,11 +56,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn check_placeholder() {
-        let placeholder_value = hold_place(0);
-        assert_eq!(
-            234, placeholder_value,
-            "placeholder test, left is expected, right is actual"
-        );
+    fn check_dummy_produces_correct_length() -> Result<(), String> {
+        let expected_length = 23;
+        let particles_in_time_evolver = super::DummyEvolver {
+            number_of_copies: expected_length,
+        };
+        let empty_initial_conditions: std::vec::Vec<data_structure::IndividualParticle> = vec![];
+        let evolution_result =
+            particles_in_time_evolver.create_time_sequence(empty_initial_conditions.into_iter());
+
+        match evolution_result {
+            Ok(particle_map_sequence) => {
+                if particle_map_sequence.len() == expected_length {
+                    return Ok(());
+                } else {
+                    return Err(String::from(format!(
+                        "Expected length = {}, actual length = {}",
+                        expected_length,
+                        particle_map_sequence.len()
+                    )));
+                }
+            }
+            Err(evolution_error) => Err(String::from(format!(
+                "Time evolution encountered error {:?}",
+                evolution_error
+            ))),
+        }
     }
 }
