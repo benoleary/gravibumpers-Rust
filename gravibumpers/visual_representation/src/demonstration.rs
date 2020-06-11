@@ -1,6 +1,5 @@
 use super::color::BrightnessTriplet as ColorBrightness;
 use super::color::FractionTriplet as ColorFraction;
-use super::particles_to_pixels::ParticleToPixelMapper;
 use super::HorizontalPixelAmount;
 use super::OutOfBoundsError;
 use super::VerticalPixelAmount;
@@ -144,9 +143,6 @@ impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
     }
 }
 
-type PixelMatrixBox = Box<dyn super::ColoredPixelMatrix>;
-type PixelMatrixSequence = super::particles_to_pixels::ColoredPixelMatrixSequence;
-
 #[derive(Clone, Copy, Debug)]
 pub struct DummyParticleVector {}
 
@@ -160,27 +156,33 @@ impl data_structure::ParticleIteratorProvider for DummyParticleVector {
 
 pub struct DemonstrationMapper {}
 
-impl ParticleToPixelMapper for DemonstrationMapper {
+impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
+    type Output = DemonstrationPixelMatrix;
     fn aggregate_particle_colors_to_pixels<
         T: data_structure::ParticleIteratorProvider,
         U: std::iter::ExactSizeIterator<Item = T>,
     >(
         &self,
         particle_map_sequence: U,
-    ) -> Result<PixelMatrixSequence, Box<dyn std::error::Error>> {
-        let mut matrix_sequence: Vec<PixelMatrixBox> = Vec::new();
+    ) -> Result<
+        super::particles_to_pixels::ColoredPixelMatrixSequence<DemonstrationPixelMatrix>,
+        Box<dyn std::error::Error>,
+    > {
+        let mut matrix_sequence: Vec<DemonstrationPixelMatrix> = Vec::new();
         for (time_index, _) in particle_map_sequence.enumerate() {
-            matrix_sequence.push(Box::new(new_pixel_matrix(4 * time_index as i32)))
+            matrix_sequence.push(new_pixel_matrix(4 * time_index as i32))
         }
 
-        Ok(PixelMatrixSequence {
-            colored_pixel_matrices: matrix_sequence,
-            maximum_brightness_per_color: super::color::brightness_from(
-                data_structure::RedColorUnit(1.0),
-                data_structure::GreenColorUnit(1.0),
-                data_structure::BlueColorUnit(1.0),
-            ),
-        })
+        Ok(
+            super::particles_to_pixels::ColoredPixelMatrixSequence::<DemonstrationPixelMatrix> {
+                colored_pixel_matrices: matrix_sequence,
+                maximum_brightness_per_color: super::color::brightness_from(
+                    data_structure::RedColorUnit(1.0),
+                    data_structure::GreenColorUnit(1.0),
+                    data_structure::BlueColorUnit(1.0),
+                ),
+            },
+        )
     }
 
     fn width_in_pixels(&self) -> &HorizontalPixelAmount {

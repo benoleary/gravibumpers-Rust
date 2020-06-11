@@ -15,10 +15,10 @@ const COLOR_DEPTH: apng_encoder::Color = apng_encoder::Color::RGB(8);
 
 const MAXIMUM_COLOR_BYTE: u8 = 0xFF;
 
-pub fn new<T: ColoredPixelMatrix, U: ParticleToPixelMapper<T>>(
+pub fn new<T: ParticleToPixelMapper>(
     particle_to_pixel_mapper: T,
     number_of_plays: u32,
-) -> ApngAnimator<T, U> {
+) -> ApngAnimator<T> {
     // I am sticking with the color palette from the apng_encoder example. It should be good enough
     // for my purposes.
     ApngAnimator {
@@ -28,7 +28,7 @@ pub fn new<T: ColoredPixelMatrix, U: ParticleToPixelMapper<T>>(
     }
 }
 
-pub struct ApngAnimator<T: ColoredPixelMatrix, U: ParticleToPixelMapper<T>> {
+pub struct ApngAnimator<T: ParticleToPixelMapper> {
     color_palette: apng_encoder::Color,
     particle_to_pixel_mapper: T,
     number_of_plays: u32,
@@ -36,11 +36,11 @@ pub struct ApngAnimator<T: ColoredPixelMatrix, U: ParticleToPixelMapper<T>> {
 
 impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
     fn animate_sequence<
-        U: data_structure::ParticleIteratorProvider,
-        V: std::iter::ExactSizeIterator<Item = U>,
+        V: data_structure::ParticleIteratorProvider,
+        W: std::iter::ExactSizeIterator<Item = V>,
     >(
         &self,
-        particle_map_sequence: V,
+        particle_map_sequence: W,
         milliseconds_per_frame: u32,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -80,7 +80,7 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
 
         for pixel_matrix in matrix_sequence.colored_pixel_matrices {
             let flattened_color_bytes = &flattened_color_bytes_from(
-                *pixel_matrix,
+                pixel_matrix,
                 &matrix_sequence.maximum_brightness_per_color,
             )?;
             output_encoder
@@ -223,7 +223,7 @@ mod tests {
                 ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE, ZERO_BYTE,
         ];
 
-        let flattened_color_bytes = flattened_color_bytes_from(&mock_matrix, &full_intensity)
+        let flattened_color_bytes = flattened_color_bytes_from(mock_matrix, &full_intensity)
             .expect("Mock should always return Ok(...)");
 
         assert_eq!(
