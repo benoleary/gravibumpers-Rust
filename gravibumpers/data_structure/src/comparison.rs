@@ -4,12 +4,9 @@
 /// any actual elements which were not matched, an error will be returned. Because of the nature
 /// of matching within a tolerance, if the tolerances are too large, some matches might happen
 /// between wrong pairings, and the result might be a false negative.
-pub fn unordered_within_tolerance<
-    T: std::iter::ExactSizeIterator<Item = super::IndividualParticle>,
-    U: std::iter::ExactSizeIterator<Item = super::IndividualParticle>,
->(
-    expected_set: &mut T,
-    actual_set: U,
+pub fn unordered_within_tolerance(
+    expected_set: &mut impl std::iter::ExactSizeIterator<Item = super::IndividualParticle>,
+    actual_set: impl std::iter::ExactSizeIterator<Item = super::IndividualParticle>,
     tolerances_as_particle: &super::IndividualParticle,
 ) -> Result<(), String> {
     let expected_length = expected_set.len();
@@ -71,9 +68,9 @@ pub fn unordered_within_tolerance<
     }
 }
 
-fn list_unmatched_particles<T: std::iter::ExactSizeIterator<Item = super::IndividualParticle>>(
+fn list_unmatched_particles(
     expected_particle: &super::IndividualParticle,
-    unmatched_actuals: T,
+    unmatched_actuals: impl std::iter::ExactSizeIterator<Item = super::IndividualParticle>,
     tolerances_as_particle: &super::IndividualParticle,
 ) -> std::vec::Vec<super::IndividualParticle> {
     let mut found_match = false;
