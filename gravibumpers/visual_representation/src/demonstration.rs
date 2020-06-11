@@ -157,13 +157,11 @@ impl data_structure::ParticleIteratorProvider for DummyParticleVector {
 pub struct DemonstrationMapper {}
 
 impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
+    type Input = DummyParticleVector;
     type Output = DemonstrationPixelMatrix;
-    fn aggregate_particle_colors_to_pixels<
-        T: data_structure::ParticleIteratorProvider,
-        U: std::iter::ExactSizeIterator<Item = T>,
-    >(
+    fn aggregate_particle_colors_to_pixels(
         &self,
-        particle_map_sequence: U,
+        particle_map_sequence: impl std::iter::ExactSizeIterator<Item = Self::Input>,
     ) -> Result<
         super::particles_to_pixels::ColoredPixelMatrixSequence<DemonstrationPixelMatrix>,
         Box<dyn std::error::Error>,

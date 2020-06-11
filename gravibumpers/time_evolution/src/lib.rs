@@ -1,26 +1,21 @@
 extern crate data_structure;
 
-pub trait ParticlesInTimeEvolver<
-    T: data_structure::ParticleIteratorProvider,
-    U: std::iter::ExactSizeIterator<Item = T>,
->
-{
+pub trait ParticlesInTimeEvolver<T: std::iter::ExactSizeIterator<Item = Self::Output>> {
+    type Output: data_structure::ParticleIteratorProvider;
+
     fn create_time_sequence(
         &self,
         initial_conditions: impl std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle>,
-    ) -> Result<U, Box<dyn std::error::Error>>;
+    ) -> Result<T, Box<dyn std::error::Error>>;
 }
 
 pub struct DummyEvolver {
     pub number_of_copies: usize,
 }
 
-impl
-    ParticlesInTimeEvolver<
-        data_structure::ParticleVector,
-        std::vec::IntoIter<data_structure::ParticleVector>,
-    > for DummyEvolver
-{
+impl ParticlesInTimeEvolver<std::vec::IntoIter<data_structure::ParticleVector>> for DummyEvolver {
+    type Output = data_structure::ParticleVector;
+
     fn create_time_sequence(
         &self,
         initial_conditions: impl std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle>,
