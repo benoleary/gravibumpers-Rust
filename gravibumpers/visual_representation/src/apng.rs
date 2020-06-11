@@ -15,22 +15,22 @@ const COLOR_DEPTH: apng_encoder::Color = apng_encoder::Color::RGB(8);
 
 const MAXIMUM_COLOR_BYTE: u8 = 0xFF;
 
-pub fn new<T: ParticleToPixelMapper>(
-    particle_to_pixel_mapper: Box<T>,
+pub fn new<T: ColoredPixelMatrix, U: ParticleToPixelMapper<T>>(
+    particle_to_pixel_mapper: T,
     number_of_plays: u32,
-) -> Box<ApngAnimator<T>> {
+) -> ApngAnimator<T, U> {
     // I am sticking with the color palette from the apng_encoder example. It should be good enough
     // for my purposes.
-    Box::new(ApngAnimator {
+    ApngAnimator {
         color_palette: COLOR_DEPTH,
         particle_to_pixel_mapper: particle_to_pixel_mapper,
         number_of_plays: number_of_plays,
-    })
+    }
 }
 
-pub struct ApngAnimator<T: ParticleToPixelMapper> {
+pub struct ApngAnimator<T: ColoredPixelMatrix, U: ParticleToPixelMapper<T>> {
     color_palette: apng_encoder::Color,
-    particle_to_pixel_mapper: Box<T>,
+    particle_to_pixel_mapper: T,
     number_of_plays: u32,
 }
 
@@ -80,7 +80,7 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
 
         for pixel_matrix in matrix_sequence.colored_pixel_matrices {
             let flattened_color_bytes = &flattened_color_bytes_from(
-                &*pixel_matrix,
+                *pixel_matrix,
                 &matrix_sequence.maximum_brightness_per_color,
             )?;
             output_encoder
@@ -105,7 +105,7 @@ fn ceiling_as_byte(color_intensity: f64) -> u8 {
 // This function creates the byte array specific to APNG representing the rectangle of triplets of
 // floating-point numbers representing red-green-blue quantities.
 fn flattened_color_bytes_from(
-    pixel_matrix: &dyn ColoredPixelMatrix,
+    pixel_matrix: impl ColoredPixelMatrix,
     maximum_color_intensity: &ColorBrightness,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let width_in_pixels = pixel_matrix.width_in_pixels().0;

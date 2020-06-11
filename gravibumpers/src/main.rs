@@ -41,7 +41,7 @@ fn create_rgb_demonstration(
 
     let output_filename = &command_line_arguments[2];
     let demonstration_animator = visual_representation::apng::new(
-        Box::new(visual_representation::demonstration::DemonstrationMapper {}),
+        visual_representation::demonstration::DemonstrationMapper {},
         0,
     );
     let mut dummy_sequence: Vec<visual_representation::demonstration::DummyParticleVector> =
@@ -49,7 +49,7 @@ fn create_rgb_demonstration(
     for _ in 0..100 {
         dummy_sequence.push(visual_representation::demonstration::DummyParticleVector {});
     }
-    (*demonstration_animator).animate_sequence(dummy_sequence.iter().cloned(), 100, output_filename)
+    demonstration_animator.animate_sequence(dummy_sequence.iter().cloned(), 100, output_filename)
 }
 
 fn run_from_configuration_file(
