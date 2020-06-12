@@ -2,6 +2,7 @@
 /// and structs.
 extern crate data_structure;
 pub mod apng;
+pub mod brightness_aggregator;
 pub mod color;
 pub mod demonstration;
 pub mod particles_to_pixels;

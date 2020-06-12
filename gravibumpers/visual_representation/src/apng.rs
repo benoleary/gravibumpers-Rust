@@ -166,20 +166,28 @@ mod tests {
                 vertical_pixels_from_bottom_left,
             ) {
                 (HorizontalPixelAmount(0), VerticalPixelAmount(y)) => {
-                    Ok(super::super::color::fraction_from(
+                    Ok(super::super::color::fraction_from_values(
                         0.5 * (*y as f64),
                         0.5 * (*y as f64),
                         0.5 * (*y as f64),
                     ))
                 }
-                (HorizontalPixelAmount(1), VerticalPixelAmount(y)) => Ok(
-                    super::super::color::fraction_from(0.5 * (*y as f64), 0.0, 0.5 * (*y as f64)),
-                ),
-                (HorizontalPixelAmount(2), VerticalPixelAmount(y)) => Ok(
-                    super::super::color::fraction_from(0.5 * (*y as f64), 0.5 * (*y as f64), 0.0),
-                ),
+                (HorizontalPixelAmount(1), VerticalPixelAmount(y)) => {
+                    Ok(super::super::color::fraction_from_values(
+                        0.5 * (*y as f64),
+                        0.0,
+                        0.5 * (*y as f64),
+                    ))
+                }
+                (HorizontalPixelAmount(2), VerticalPixelAmount(y)) => {
+                    Ok(super::super::color::fraction_from_values(
+                        0.5 * (*y as f64),
+                        0.5 * (*y as f64),
+                        0.0,
+                    ))
+                }
                 (HorizontalPixelAmount(3), VerticalPixelAmount(_)) => {
-                    Ok(super::super::color::fraction_from(0.0, 0.0, 0.0))
+                    Ok(super::super::color::fraction_from_values(0.0, 0.0, 0.0))
                 }
                 _ => Err(Box::new(OutOfBoundsError::new(&format!(
                     "horizontal_pixels_from_bottom_left {}, vertical_pixels_from_bottom_left {}",
@@ -199,7 +207,7 @@ mod tests {
     fn test_flattened_color_bytes_from() {
         let mock_matrix = MockColoredPixelMatrix {};
 
-        let full_intensity = super::super::color::brightness_from(
+        let full_intensity = super::super::color::brightness_from_values(
             RedColorUnit(1.0),
             GreenColorUnit(1.0),
             BlueColorUnit(1.0),

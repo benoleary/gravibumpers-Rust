@@ -118,12 +118,16 @@ impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
             || (vertical_pixels_from_bottom_left >= self.height_in_pixels())
         {
             return Err(Box::new(OutOfBoundsError::new(&format!(
-                "horizontal_pixels_from_bottom_left {}, vertical_pixels_from_bottom_left {}",
-                horizontal_pixels_from_bottom_left.0, vertical_pixels_from_bottom_left.0
+                "horizontal_pixels_from_bottom_left {}, vertical_pixels_from_bottom_left {} \
+                - width {}, height {}",
+                horizontal_pixels_from_bottom_left.0,
+                vertical_pixels_from_bottom_left.0,
+                FRAME_WIDTH.0,
+                FRAME_HEIGHT.0
             ))));
         }
 
-        Ok(super::color::fraction_from(
+        Ok(super::color::fraction_from_values(
             self.red_at(
                 horizontal_pixels_from_bottom_left,
                 vertical_pixels_from_bottom_left,
@@ -174,7 +178,7 @@ impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
         Ok(
             super::particles_to_pixels::ColoredPixelMatrixSequence::<DemonstrationPixelMatrix> {
                 colored_pixel_matrices: matrix_sequence,
-                maximum_brightness_per_color: super::color::brightness_from(
+                maximum_brightness_per_color: super::color::brightness_from_values(
                     data_structure::RedColorUnit(1.0),
                     data_structure::GreenColorUnit(1.0),
                     data_structure::BlueColorUnit(1.0),
