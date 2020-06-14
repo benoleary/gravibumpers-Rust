@@ -35,10 +35,11 @@ pub struct ApngAnimator<T: ParticleToPixelMapper> {
 }
 
 impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
-    type Input = T::Input;
-    fn animate_sequence<U: std::iter::ExactSizeIterator<Item = Self::Input>>(
+    fn animate_sequence(
         &self,
-        particle_map_sequence: U,
+        particle_map_sequence: impl std::iter::ExactSizeIterator<
+            Item = impl data_structure::ParticleIteratorProvider,
+        >,
         milliseconds_per_frame: u32,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {

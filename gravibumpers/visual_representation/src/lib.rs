@@ -34,10 +34,11 @@ impl std::fmt::Display for OutOfBoundsError {
 }
 
 pub trait SequenceAnimator {
-    type Input: data_structure::ParticleIteratorProvider;
-    fn animate_sequence<T: std::iter::ExactSizeIterator<Item = Self::Input>>(
+    fn animate_sequence(
         &self,
-        particle_map_sequence: T,
+        particle_map_sequence: impl std::iter::ExactSizeIterator<
+            Item = impl data_structure::ParticleIteratorProvider,
+        >,
         milliseconds_per_frame: u32,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>>;
@@ -66,6 +67,14 @@ impl std::ops::Sub<HorizontalPixelAmount> for HorizontalPixelAmount {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct VerticalPixelAmount(pub i32);
+
+impl std::ops::Add<VerticalPixelAmount> for VerticalPixelAmount {
+    type Output = VerticalPixelAmount;
+
+    fn add(self, other_amount: VerticalPixelAmount) -> VerticalPixelAmount {
+        VerticalPixelAmount(self.0 + other_amount.0)
+    }
+}
 
 impl std::ops::Sub<VerticalPixelAmount> for VerticalPixelAmount {
     type Output = VerticalPixelAmount;
