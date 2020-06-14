@@ -67,6 +67,14 @@ pub fn brightness_from_values(
     }
 }
 
+pub fn zero_brightness() -> BrightnessTriplet {
+    brightness_from_values(
+        data_structure::RedColorUnit(0.0),
+        data_structure::GreenColorUnit(0.0),
+        data_structure::BlueColorUnit(0.0),
+    )
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct FractionTriplet {
     red_fraction: f64,

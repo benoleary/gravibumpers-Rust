@@ -1,5 +1,6 @@
 use super::color::BrightnessTriplet as ColorBrightness;
 use super::color::FractionTriplet as ColorFraction;
+use super::particles_to_pixels::ColoredPixelMatrixSequence as PixelMatrixSequence;
 use super::HorizontalPixelAmount;
 use super::OutOfBoundsError;
 use super::VerticalPixelAmount;
@@ -75,6 +76,24 @@ pub fn new(
     }
 }
 
+impl PixelBrightnessAggregator {
+    fn aggregate_over_particle_iterator(&self) -> AggregatedBrightnessMatrix {
+        let mut aggregated_brightnesses = AggregatedBrightnessMatrix {
+            brightness_matrix: vec![
+                vec![
+                    super::color::zero_brightness();
+                    self.width_in_pixels_including_border.abs_as_usize()
+                ];
+                self.height_in_pixels_including_border.abs_as_usize()
+            ],
+            width_in_pixels_including_border: self.width_in_pixels_including_border,
+            height_in_pixels_including_border: self.height_in_pixels_including_border,
+        };
+        panic!("Implement something!")
+        //aggregated_brightnesses
+    }
+}
+
 impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggregator {
     type Output = AggregatedBrightnessMatrix;
     fn aggregate_particle_colors_to_pixels(
@@ -82,10 +101,12 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
         particle_map_sequence: impl std::iter::ExactSizeIterator<
             Item = impl data_structure::ParticleIteratorProvider,
         >,
-    ) -> Result<
-        super::particles_to_pixels::ColoredPixelMatrixSequence<Self::Output>,
-        Box<dyn std::error::Error>,
-    > {
+    ) -> Result<PixelMatrixSequence<Self::Output>, Box<dyn std::error::Error>> {
+        let mut aggregated_brightnesses: PixelMatrixSequence<AggregatedBrightnessMatrix> =
+            PixelMatrixSequence {
+                colored_pixel_matrices: vec![],
+                maximum_brightness_per_color: super::color::zero_brightness(),
+            };
         Err(Box::new(OutOfBoundsError::new(&format!(
             "horizontal_offset_of_origin_from_picture_bottom_left {:?}, \
              vertical_offset_of_origin_from_picture_bottom_left {:?}, \

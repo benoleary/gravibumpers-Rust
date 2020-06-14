@@ -49,6 +49,13 @@ pub trait SequenceAnimator {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct HorizontalPixelAmount(pub i32);
 
+impl HorizontalPixelAmount {
+    pub fn abs_as_usize(&self) -> usize {
+        // The abs takes care of the unsigned, and u32 must fit inside usize.
+        self.0.abs() as usize
+    }
+}
+
 impl std::ops::Add<HorizontalPixelAmount> for HorizontalPixelAmount {
     type Output = HorizontalPixelAmount;
 
@@ -67,6 +74,13 @@ impl std::ops::Sub<HorizontalPixelAmount> for HorizontalPixelAmount {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct VerticalPixelAmount(pub i32);
+
+impl VerticalPixelAmount {
+    pub fn abs_as_usize(&self) -> usize {
+        // The abs takes care of the unsigned, and u32 must fit inside usize.
+        self.0.abs() as usize
+    }
+}
 
 impl std::ops::Add<VerticalPixelAmount> for VerticalPixelAmount {
     type Output = VerticalPixelAmount;
