@@ -1,3 +1,6 @@
+/// This module exists to provide helper functions to some tests, so has no #[cfg(test)] of its
+/// own.
+
 /// This checks each element in expected_set for any match in actual_set, where match is defined
 /// as each of the data members having a difference less than the value of the data member in
 /// tolerances_as_particle (absolute value). If any expected element is not matched, or there are

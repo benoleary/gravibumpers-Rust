@@ -1,5 +1,5 @@
 /// There is has no #[cfg(test)] in the main part of the library because it just introduces traits
-/// and structs.
+/// and structs, along with a few trivial implementations of some standard traits.
 extern crate data_structure;
 pub mod apng;
 pub mod brightness_aggregator;

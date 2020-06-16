@@ -77,7 +77,10 @@ pub fn new(
 }
 
 impl PixelBrightnessAggregator {
-    fn aggregate_over_particle_iterator(&self) -> AggregatedBrightnessMatrix {
+    fn aggregate_over_particle_iterator(
+        &self,
+        particles_to_draw: impl std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle>,
+    ) -> AggregatedBrightnessMatrix {
         let mut aggregated_brightnesses = AggregatedBrightnessMatrix {
             brightness_matrix: vec![
                 vec![
@@ -107,6 +110,15 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
                 colored_pixel_matrices: vec![],
                 maximum_brightness_per_color: super::color::zero_brightness(),
             };
+
+        for mut particle_map in particle_map_sequence {
+            aggregated_brightnesses
+                .colored_pixel_matrices
+                .push(self.aggregate_over_particle_iterator(particle_map.get()));
+        }
+
+        Ok(aggregated_brightnesses)
+        /*
         Err(Box::new(OutOfBoundsError::new(&format!(
             "horizontal_offset_of_origin_from_picture_bottom_left {:?}, \
              vertical_offset_of_origin_from_picture_bottom_left {:?}, \
@@ -117,6 +129,7 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
             self.width_in_pixels_including_border,
             self.height_in_pixels_including_border
         ))))
+        */
     }
 
     fn width_in_pixels(&self) -> &HorizontalPixelAmount {
