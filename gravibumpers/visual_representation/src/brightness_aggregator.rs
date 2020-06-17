@@ -1,3 +1,7 @@
+/// This module provides implementations of ColoredPixelMatrix and
+/// particles_to_pixels::ParticleToPixelMapper which perform the basic functionality of
+/// rounding particle co-ordinates to pixel co-ordinates, aggregating the color brightnesses
+/// which land in each pixel.
 use super::color::BrightnessTriplet as ColorBrightness;
 use super::color::FractionTriplet as ColorFraction;
 use super::particles_to_pixels::ColoredPixelMatrixSequence as PixelMatrixSequence;

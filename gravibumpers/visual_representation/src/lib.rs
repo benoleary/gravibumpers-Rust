@@ -1,4 +1,7 @@
-/// There is has no #[cfg(test)] in the main part of the library because it just introduces traits
+/// This crate provides structs, traits, and functions for turning sequences of particle
+/// collections into an animated visual representation.
+///
+/// There is has no #[cfg(test)] in the main file of the library because it just introduces traits
 /// and structs, along with a few trivial implementations of some standard traits.
 extern crate data_structure;
 pub mod apng;

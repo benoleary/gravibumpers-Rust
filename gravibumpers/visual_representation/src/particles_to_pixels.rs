@@ -1,3 +1,5 @@
+/// This module just defines some structs and traits for deciding how to represent particles as
+/// pixels, and thus has no #[cfg(test)].
 use super::color::BrightnessTriplet;
 use super::ColoredPixelMatrix;
 use super::HorizontalPixelAmount;

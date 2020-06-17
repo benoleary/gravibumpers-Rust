@@ -1,3 +1,6 @@
+/// This crate provides structs, traits, and functions for producing initial conditions based on
+/// JSON configurations, represented using the structs and traits defined in data_structure and
+/// serde_json.
 extern crate data_structure;
 extern crate serde_json;
 pub mod circle;

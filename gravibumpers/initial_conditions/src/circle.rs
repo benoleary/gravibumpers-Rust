@@ -1,3 +1,5 @@
+/// This module provides a function to put particles evenly around a circle, with a common angular
+/// speed around the center.
 use super::ConfigurationParseError;
 use std::convert::TryInto;
 

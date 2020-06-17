@@ -1,3 +1,5 @@
+/// This module provides an implementation of SequenceAnimator which produces a file in APNG
+/// format.
 extern crate apng_encoder;
 extern crate data_structure;
 

@@ -1,3 +1,5 @@
+/// This crate provides structs, traits, and functions for evolving initial conditions into
+/// sequences of collections of particles.
 extern crate data_structure;
 
 pub trait ParticlesInTimeEvolver<T: std::iter::ExactSizeIterator<Item = Self::Output>> {

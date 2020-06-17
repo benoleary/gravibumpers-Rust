@@ -1,3 +1,5 @@
+/// This module defines some "dimensionful" structs for representing colors. It has only struct
+/// definitions and some trivial functions, and thus has no #[cfg(test)].
 use super::OutOfBoundsError;
 
 #[derive(Clone, Copy, Debug)]

@@ -1,3 +1,9 @@
+/// This modules provides implementations of ColoredPixelMatrix and
+/// particles_to_pixels::ParticleToPixelMapper which ignore the given particles and just create an
+/// animation of some moving blocks of color.
+///
+/// There is some non-trivial logic in producing the animation, but there is no non-trivial input
+/// so there is no #[cfg(test)]. The code was tested by checking that the animation was correct.
 use super::color::BrightnessTriplet as ColorBrightness;
 use super::color::FractionTriplet as ColorFraction;
 use super::HorizontalPixelAmount;

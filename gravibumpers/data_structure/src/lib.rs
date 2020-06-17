@@ -1,8 +1,11 @@
 /// This crate defines the traits and structs for representing the particles from initial set-up
 /// through time evolution to visualization.
 ///
-/// As such it does not implement any logic (except some trivial implementations of Add and a
-/// default unpacking for a trait) and thus has no #[cfg(test)].
+/// As such this main lib file does not implement any logic (except some trivial implementations
+/// of Add and a default unpacking for a trait) and thus has no #[cfg(test)].
+///
+/// There is a public module (comparison) but this exists to provide utility functions for tests,
+/// so itself also has no #[cfg(test)].
 pub mod comparison;
 use std::ops::Add;
 
