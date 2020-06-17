@@ -143,3 +143,71 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
         &self.height_in_pixels_including_border
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn new_test_matrix() -> AggregatedBrightnessMatrix {
+        AggregatedBrightnessMatrix {
+            brightness_matrix: vec![
+                vec![
+                    super::super::color::brightness_from_values(
+                        data_structure::RedColorUnit(1.0),
+                        data_structure::GreenColorUnit(0.0),
+                        data_structure::BlueColorUnit(0.0),
+                    ),
+                    super::super::color::brightness_from_values(
+                        data_structure::RedColorUnit(0.0),
+                        data_structure::GreenColorUnit(1.0),
+                        data_structure::BlueColorUnit(0.0),
+                    ),
+                ],
+                vec![
+                    super::super::color::brightness_from_values(
+                        data_structure::RedColorUnit(0.0),
+                        data_structure::GreenColorUnit(0.0),
+                        data_structure::BlueColorUnit(1.0),
+                    ),
+                    super::super::color::brightness_from_values(
+                        data_structure::RedColorUnit(0.5),
+                        data_structure::GreenColorUnit(0.5),
+                        data_structure::BlueColorUnit(0.5),
+                    ),
+                ],
+            ],
+            width_in_pixels_including_border: HorizontalPixelAmount(2),
+            height_in_pixels_including_border: VerticalPixelAmount(2),
+        }
+    }
+    #[test]
+    fn check_out_of_bounds_produces_error() -> Result<(), String> {
+        Err(String::from("Implement something"))
+    }
+
+    #[test]
+    fn check_internal_pixels_are_correct() -> Result<(), String> {
+        Err(String::from("Implement something"))
+    }
+
+    #[test]
+    fn check_three_particles_in_three_separate_pixels() -> Result<(), String> {
+        Err(String::from("Implement something"))
+    }
+
+    #[test]
+    fn check_six_particles_in_only_three_pixels() -> Result<(), String> {
+        // 3 in 1, 2 in 1, 1 in 1.
+        Err(String::from("Implement something"))
+    }
+
+    #[test]
+    fn check_offscreen_particle_not_drawn_when_appropriate() -> Result<(), String> {
+        Err(String::from("use macro rules for E/NE/N/NW/W/SW/S/SE!"))
+    }
+
+    #[test]
+    fn check_offscreen_particle_drawn_on_border_when_appropriate() -> Result<(), String> {
+        Err(String::from("use macro rules for E/NE/N/NW/W/SW/S/SE!"))
+    }
+}
