@@ -157,33 +157,56 @@ mod tests {
         )
     }
 
+    fn new_test_fraction(color_brightness: &ColorBrightness) -> Result<ColorFraction, String> {
+        let reference_color = new_reference_brightness();
+        match super::super::color::fraction_from_triplets(color_brightness, &reference_color) {
+            Ok(color_fraction) => Ok(color_fraction),
+            Err(unexpected_error) => Err(String::from(format!(
+                "Could not produce valid fraction ({:?}/{:?}) for test: {:?}",
+                color_brightness,
+                reference_color,
+                unexpected_error.to_string()
+            ))),
+        }
+    }
+
+    fn new_lower_left_color() -> ColorBrightness {
+        super::super::color::brightness_from_values(
+            data_structure::RedColorUnit(1.0),
+            data_structure::GreenColorUnit(0.0),
+            data_structure::BlueColorUnit(0.0),
+        )
+    }
+
+    fn new_lower_right_color() -> ColorBrightness {
+        super::super::color::brightness_from_values(
+            data_structure::RedColorUnit(0.0),
+            data_structure::GreenColorUnit(1.0),
+            data_structure::BlueColorUnit(0.0),
+        )
+    }
+
+    fn new_upper_left_color() -> ColorBrightness {
+        super::super::color::brightness_from_values(
+            data_structure::RedColorUnit(0.0),
+            data_structure::GreenColorUnit(0.0),
+            data_structure::BlueColorUnit(1.0),
+        )
+    }
+
+    fn new_upper_right_color() -> ColorBrightness {
+        super::super::color::brightness_from_values(
+            data_structure::RedColorUnit(0.5),
+            data_structure::GreenColorUnit(0.5),
+            data_structure::BlueColorUnit(0.5),
+        )
+    }
+
     fn new_test_matrix() -> AggregatedBrightnessMatrix {
         AggregatedBrightnessMatrix {
             brightness_matrix: vec![
-                vec![
-                    super::super::color::brightness_from_values(
-                        data_structure::RedColorUnit(1.0),
-                        data_structure::GreenColorUnit(0.0),
-                        data_structure::BlueColorUnit(0.0),
-                    ),
-                    super::super::color::brightness_from_values(
-                        data_structure::RedColorUnit(0.0),
-                        data_structure::GreenColorUnit(1.0),
-                        data_structure::BlueColorUnit(0.0),
-                    ),
-                ],
-                vec![
-                    super::super::color::brightness_from_values(
-                        data_structure::RedColorUnit(0.0),
-                        data_structure::GreenColorUnit(0.0),
-                        data_structure::BlueColorUnit(1.0),
-                    ),
-                    super::super::color::brightness_from_values(
-                        data_structure::RedColorUnit(0.5),
-                        data_structure::GreenColorUnit(0.5),
-                        data_structure::BlueColorUnit(0.5),
-                    ),
-                ],
+                vec![new_lower_left_color(), new_lower_right_color()],
+                vec![new_upper_left_color(), new_upper_right_color()],
             ],
             width_in_pixels_including_border: HorizontalPixelAmount(2),
             height_in_pixels_including_border: VerticalPixelAmount(2),
@@ -230,7 +253,72 @@ mod tests {
 
     #[test]
     fn check_internal_pixels_are_correct() -> Result<(), String> {
-        Err(String::from("Implement something"))
+        let test_matrix = new_test_matrix();
+        let mut points_in_error: std::vec::Vec<(
+            HorizontalPixelAmount,
+            VerticalPixelAmount,
+            String,
+        )> = std::vec::Vec::new();
+        let mut points_with_incorrect_color: std::vec::Vec<(
+            HorizontalPixelAmount,
+            VerticalPixelAmount,
+            ColorFraction,
+        )> = std::vec::Vec::new();
+        for (horizontal_pixel, vertical_pixel, expected_color_fraction) in &[
+            (
+                HorizontalPixelAmount(0),
+                VerticalPixelAmount(0),
+                new_test_fraction(&new_lower_left_color())?,
+            ),
+            (
+                HorizontalPixelAmount(1),
+                VerticalPixelAmount(0),
+                new_test_fraction(&new_lower_right_color())?,
+            ),
+            (
+                HorizontalPixelAmount(1),
+                VerticalPixelAmount(1),
+                new_test_fraction(&new_upper_right_color())?,
+            ),
+            (
+                HorizontalPixelAmount(0),
+                VerticalPixelAmount(1),
+                new_test_fraction(&new_upper_left_color())?,
+            ),
+        ] {
+            let function_result = test_matrix.color_fractions_at(
+                &new_reference_brightness(),
+                horizontal_pixel,
+                vertical_pixel,
+            );
+
+            match function_result {
+                Ok(resulting_brightness) => {
+                    if &resulting_brightness != expected_color_fraction {
+                        points_with_incorrect_color.push((
+                            *horizontal_pixel,
+                            *vertical_pixel,
+                            resulting_brightness,
+                        ));
+                    }
+                }
+                Err(unexpected_error) => points_in_error.push((
+                    *horizontal_pixel,
+                    *vertical_pixel,
+                    unexpected_error.to_string(),
+                )),
+            }
+        }
+
+        if points_in_error.is_empty() && points_with_incorrect_color.is_empty() {
+            Ok(())
+        } else {
+            Err(String::from(format!(
+                "Following points had incorrect color fractions (as (x, y, color)): {:?} \n \
+                Following points had unexpected errors (as (x, y, error)): {:?}",
+                points_with_incorrect_color, points_in_error
+            )))
+        }
     }
 
     #[test]
@@ -246,11 +334,15 @@ mod tests {
 
     #[test]
     fn check_offscreen_particle_not_drawn_when_appropriate() -> Result<(), String> {
-        Err(String::from("use macro rules for E/NE/N/NW/W/SW/S/SE!"))
+        Err(String::from(
+            "Implement something like check_internal_pixels_are_correct",
+        ))
     }
 
     #[test]
     fn check_offscreen_particle_drawn_on_border_when_appropriate() -> Result<(), String> {
-        Err(String::from("use macro rules for E/NE/N/NW/W/SW/S/SE!"))
+        Err(String::from(
+            "Implement something like check_internal_pixels_are_correct",
+        ))
     }
 }

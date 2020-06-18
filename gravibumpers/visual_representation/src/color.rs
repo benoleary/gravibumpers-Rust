@@ -2,7 +2,7 @@
 /// definitions and some trivial functions, and thus has no #[cfg(test)].
 use super::OutOfBoundsError;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct BrightnessTriplet {
     red_value: data_structure::RedColorUnit,
     green_value: data_structure::GreenColorUnit,
@@ -77,7 +77,7 @@ pub fn zero_brightness() -> BrightnessTriplet {
     )
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FractionTriplet {
     red_fraction: f64,
     green_fraction: f64,
