@@ -122,18 +122,6 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
         }
 
         Ok(aggregated_brightnesses)
-        /*
-        Err(Box::new(OutOfBoundsError::new(&format!(
-            "horizontal_offset_of_origin_from_picture_bottom_left {:?}, \
-             vertical_offset_of_origin_from_picture_bottom_left {:?}, \
-             width_in_pixels_including_border {:?}, \
-             height_in_pixels_including_border {:?}",
-            self.horizontal_offset_of_origin_from_picture_bottom_left,
-            self.vertical_offset_of_origin_from_picture_bottom_left,
-            self.width_in_pixels_including_border,
-            self.height_in_pixels_including_border
-        ))))
-        */
     }
 
     fn width_in_pixels(&self) -> &HorizontalPixelAmount {
@@ -210,6 +198,19 @@ mod tests {
             ],
             width_in_pixels_including_border: HorizontalPixelAmount(2),
             height_in_pixels_including_border: VerticalPixelAmount(2),
+        }
+    }
+
+    fn new_test_particle_intrinsics(
+        color_brightness: &ColorBrightness,
+    ) -> data_structure::ParticleIntrinsics {
+        data_structure::ParticleIntrinsics {
+            inertial_mass: data_structure::InertialMassUnit(1.2),
+            attractive_charge: data_structure::AttractiveChargeUnit(-3.4),
+            repulsive_charge: data_structure::RepulsiveChargeUnit(5.6),
+            red_brightness: color_brightness.get_red(),
+            green_brightness: color_brightness.get_green(),
+            blue_brightness: color_brightness.get_blue(),
         }
     }
 
@@ -323,6 +324,64 @@ mod tests {
 
     #[test]
     fn check_three_particles_in_three_separate_pixels() -> Result<(), String> {
+        let expected_colored_pixels = vec![
+            (
+                HorizontalPixelAmount(0),
+                VerticalPixelAmount(0),
+                super::super::color::brightness_from_values(
+                    data_structure::RedColorUnit(0.75),
+                    data_structure::GreenColorUnit(0.25),
+                    data_structure::BlueColorUnit(0.0),
+                ),
+            ),
+            (
+                HorizontalPixelAmount(1),
+                VerticalPixelAmount(1),
+                super::super::color::brightness_from_values(
+                    data_structure::RedColorUnit(0.0),
+                    data_structure::GreenColorUnit(0.25),
+                    data_structure::BlueColorUnit(2.0),
+                ),
+            ),
+            (
+                HorizontalPixelAmount(9),
+                VerticalPixelAmount(-1),
+                super::super::color::brightness_from_values(
+                    data_structure::RedColorUnit(0.05),
+                    data_structure::GreenColorUnit(0.9),
+                    data_structure::BlueColorUnit(0.05),
+                ),
+            ),
+        ];
+        let test_particles = vec![
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(0.0),
+                    vertical_position: data_structure::VerticalPositionUnit(0.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(-10.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(9.9),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[1].2),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(0.1),
+                    vertical_position: data_structure::VerticalPositionUnit(1.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.001),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.99),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(9.999),
+                    vertical_position: data_structure::VerticalPositionUnit(-0.001),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+        ];
         Err(String::from("Implement something"))
     }
 
