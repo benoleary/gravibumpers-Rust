@@ -146,7 +146,16 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
 
 #[cfg(test)]
 mod tests {
+    use super::super::ColoredPixelMatrix;
     use super::*;
+
+    fn new_reference_brightness() -> ColorBrightness {
+        super::super::color::brightness_from_values(
+            data_structure::RedColorUnit(10.0),
+            data_structure::GreenColorUnit(10.0),
+            data_structure::BlueColorUnit(10.0),
+        )
+    }
 
     fn new_test_matrix() -> AggregatedBrightnessMatrix {
         AggregatedBrightnessMatrix {
@@ -180,9 +189,43 @@ mod tests {
             height_in_pixels_including_border: VerticalPixelAmount(2),
         }
     }
+
     #[test]
     fn check_out_of_bounds_produces_error() -> Result<(), String> {
-        Err(String::from("Implement something"))
+        let test_matrix = new_test_matrix();
+        let mut failing_points: std::vec::Vec<(
+            HorizontalPixelAmount,
+            VerticalPixelAmount,
+            ColorFraction,
+        )> = std::vec::Vec::new();
+        for (horizontal_pixel, vertical_pixel) in &[
+            (HorizontalPixelAmount(2), VerticalPixelAmount(0)),
+            (HorizontalPixelAmount(2), VerticalPixelAmount(2)),
+            (HorizontalPixelAmount(0), VerticalPixelAmount(20)),
+            (HorizontalPixelAmount(-1), VerticalPixelAmount(3)),
+            (HorizontalPixelAmount(-4), VerticalPixelAmount(1)),
+            (HorizontalPixelAmount(-1), VerticalPixelAmount(-2)),
+            (HorizontalPixelAmount(1), VerticalPixelAmount(-1)),
+            (HorizontalPixelAmount(2), VerticalPixelAmount(-12)),
+        ] {
+            let function_result = test_matrix.color_fractions_at(
+                &new_reference_brightness(),
+                horizontal_pixel,
+                vertical_pixel,
+            );
+            if let Ok(unexpected_brightness) = function_result {
+                failing_points.push((*horizontal_pixel, *vertical_pixel, unexpected_brightness));
+            }
+        }
+
+        if failing_points.is_empty() {
+            Ok(())
+        } else {
+            Err(String::from(format!(
+                "Following points had color fractions (as (x, y, unexpected result)): {:?}",
+                failing_points
+            )))
+        }
     }
 
     #[test]
