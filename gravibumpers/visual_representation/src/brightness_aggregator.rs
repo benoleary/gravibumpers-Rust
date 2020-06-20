@@ -137,14 +137,6 @@ mod tests {
     use super::super::ColoredPixelMatrix;
     use super::*;
 
-    fn new_reference_brightness() -> ColorBrightness {
-        super::super::color::brightness_from_values(
-            data_structure::RedColorUnit(10.0),
-            data_structure::GreenColorUnit(10.0),
-            data_structure::BlueColorUnit(10.0),
-        )
-    }
-
     fn new_test_fraction(color_brightness: &ColorBrightness) -> Result<ColorFraction, String> {
         let reference_color = new_reference_brightness();
         match super::super::color::fraction_from_triplets(color_brightness, &reference_color) {
@@ -201,9 +193,18 @@ mod tests {
         }
     }
 
+    fn new_reference_brightness() -> ColorBrightness {
+        super::super::color::brightness_from_values(
+            data_structure::RedColorUnit(1.0),
+            data_structure::GreenColorUnit(1.0),
+            data_structure::BlueColorUnit(1.0),
+        )
+    }
+
     fn new_test_particle_intrinsics(
-        color_brightness: &ColorBrightness,
+        color_fraction: &ColorFraction,
     ) -> data_structure::ParticleIntrinsics {
+        let color_brightness = *color_fraction * &new_reference_brightness();
         data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(1.2),
             attractive_charge: data_structure::AttractiveChargeUnit(-3.4),
@@ -322,35 +323,113 @@ mod tests {
         }
     }
 
+    fn compare_pixel_with_expected(
+        horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
+        vertical_pixels_from_bottom_left: &VerticalPixelAmount,
+        expected_brights: &std::vec::Vec<(
+            HorizontalPixelAmount,
+            VerticalPixelAmount,
+            ColorFraction,
+        )>,
+        actual_pixel: &ColorFraction,
+    ) -> Option<String> {
+        let mut expected_pixel = super::super::color::zero_fraction();
+        for expected_bright in expected_brights {
+            if (expected_bright.0 == *horizontal_pixels_from_bottom_left)
+                && (expected_bright.1 == *vertical_pixels_from_bottom_left)
+            {
+                expected_pixel = expected_bright.2;
+                break;
+            }
+        }
+
+        if *actual_pixel != expected_pixel {
+            Some(String::from(format!(
+                "({:?},{:?}): expected {:?}, actual {:?}",
+                horizontal_pixels_from_bottom_left,
+                vertical_pixels_from_bottom_left,
+                expected_pixel,
+                actual_pixel
+            )))
+        } else {
+            None
+        }
+    }
+
+    fn assert_pixels_as_expected_with_implicit_black_background(
+        test_result: AggregatedBrightnessMatrix,
+        expected_pixels: &std::vec::Vec<(
+            HorizontalPixelAmount,
+            VerticalPixelAmount,
+            ColorFraction,
+        )>,
+    ) -> Result<(), String> {
+        let reference_brightness = new_reference_brightness();
+        let mut failure_messages: std::vec::Vec<String> = vec![];
+        for vertical_pixel in 0..test_result.height_in_pixels().0 {
+            let vertical_pixels_from_bottom_left = VerticalPixelAmount(vertical_pixel);
+            for horizontal_pixel in 0..test_result.width_in_pixels().0 {
+                let horizontal_pixels_from_bottom_left = HorizontalPixelAmount(horizontal_pixel);
+                let actual_result = test_result.color_fractions_at(
+                    &reference_brightness,
+                    &horizontal_pixels_from_bottom_left,
+                    &vertical_pixels_from_bottom_left,
+                );
+
+                if let Ok(actual_pixel) = actual_result {
+                    let pixel_comparison = compare_pixel_with_expected(
+                        &horizontal_pixels_from_bottom_left,
+                        &vertical_pixels_from_bottom_left,
+                        expected_pixels,
+                        &actual_pixel,
+                    );
+                    if let Some(failure_message) = pixel_comparison {
+                        failure_messages.push(failure_message);
+                    }
+                } else {
+                    failure_messages.push(String::from(format!(
+                        "({:?},{:?}) produced error {:?}",
+                        horizontal_pixels_from_bottom_left,
+                        vertical_pixels_from_bottom_left,
+                        actual_result
+                    )));
+                }
+            }
+        }
+
+        if failure_messages.is_empty() {
+            Ok(())
+        } else {
+            Err(failure_messages.join("\n"))
+        }
+    }
+
     #[test]
     fn check_three_particles_in_three_separate_pixels() -> Result<(), String> {
+        // We have a view on co-ordinates with 10 <= x <= 30, -10 <= y <= 10.
+        let pixel_brightness_aggregator = new(
+            HorizontalPixelAmount(10),
+            HorizontalPixelAmount(30),
+            VerticalPixelAmount(-10),
+            VerticalPixelAmount(10),
+        );
+        // Since the view is 0 <= x <= 20, -10 <= y <= 10, the expected vertical
+        // co-ordinate is 10 higher than the particle y co-ordinate.
         let expected_colored_pixels = vec![
             (
                 HorizontalPixelAmount(0),
-                VerticalPixelAmount(0),
-                super::super::color::brightness_from_values(
-                    data_structure::RedColorUnit(0.75),
-                    data_structure::GreenColorUnit(0.25),
-                    data_structure::BlueColorUnit(0.0),
-                ),
+                VerticalPixelAmount(10),
+                super::super::color::fraction_from_values(0.75, 0.25, 0.0),
             ),
             (
                 HorizontalPixelAmount(1),
-                VerticalPixelAmount(1),
-                super::super::color::brightness_from_values(
-                    data_structure::RedColorUnit(0.0),
-                    data_structure::GreenColorUnit(0.25),
-                    data_structure::BlueColorUnit(2.0),
-                ),
+                VerticalPixelAmount(11),
+                super::super::color::fraction_from_values(0.0, 0.25, 2.0),
             ),
             (
                 HorizontalPixelAmount(9),
-                VerticalPixelAmount(-1),
-                super::super::color::brightness_from_values(
-                    data_structure::RedColorUnit(0.05),
-                    data_structure::GreenColorUnit(0.9),
-                    data_structure::BlueColorUnit(0.05),
-                ),
+                VerticalPixelAmount(9),
+                super::super::color::fraction_from_values(0.05, 0.9, 0.05),
             ),
         ];
         let test_particles = vec![
@@ -382,13 +461,117 @@ mod tests {
                 },
             },
         ];
-        Err(String::from("Implement something"))
+        let test_result = pixel_brightness_aggregator
+            .aggregate_over_particle_iterator(test_particles.into_iter());
+        assert_pixels_as_expected_with_implicit_black_background(
+            test_result,
+            &expected_colored_pixels,
+        )
     }
 
     #[test]
     fn check_six_particles_in_only_three_pixels() -> Result<(), String> {
-        // 3 in 1, 2 in 1, 1 in 1.
-        Err(String::from("Implement something"))
+        let pixel_brightness_aggregator = new(
+            HorizontalPixelAmount(0),
+            HorizontalPixelAmount(10),
+            VerticalPixelAmount(10),
+            VerticalPixelAmount(0),
+        );
+        let expected_colored_pixels = vec![
+            (
+                HorizontalPixelAmount(3),
+                VerticalPixelAmount(3),
+                super::super::color::fraction_from_values(0.3, 0.2, 0.1),
+            ),
+            (
+                HorizontalPixelAmount(5),
+                VerticalPixelAmount(9),
+                super::super::color::fraction_from_values(0.0, 2.0, 2.0),
+            ),
+            (
+                HorizontalPixelAmount(8),
+                VerticalPixelAmount(0),
+                super::super::color::fraction_from_values(0.0, 0.0, 1.0),
+            ),
+        ];
+        let test_particles = vec![
+            // First of 3 in pixel (3, 3).
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.1, 0.0, 0.1),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(3.0),
+                    vertical_position: data_structure::VerticalPositionUnit(3.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(10.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(10.0),
+                },
+            },
+            // Second of 3 in pixel (3, 3).
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.1, 0.1, 0.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(3.0),
+                    vertical_position: data_structure::VerticalPositionUnit(3.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(-1.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(1.0),
+                },
+            },
+            // Third of 3 in pixel (3, 3).
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.1, 0.1, 0.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(3.5),
+                    vertical_position: data_structure::VerticalPositionUnit(3.8),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            // First of 2 in pixel (5, 9).
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.0, 2.0, 0.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(5.9),
+                    vertical_position: data_structure::VerticalPositionUnit(9.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            // Second of 2 in pixel (5, 9).
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.0, 0.0, 2.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(5.0),
+                    vertical_position: data_structure::VerticalPositionUnit(9.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            // Only particle in pixel (8, 0).
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(8.999),
+                    vertical_position: data_structure::VerticalPositionUnit(0.001),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+        ];
+        let test_result = pixel_brightness_aggregator
+            .aggregate_over_particle_iterator(test_particles.into_iter());
+        assert_pixels_as_expected_with_implicit_black_background(
+            test_result,
+            &expected_colored_pixels,
+        )
     }
 
     #[test]

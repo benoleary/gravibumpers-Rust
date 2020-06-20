@@ -107,3 +107,7 @@ impl std::ops::Mul<&BrightnessTriplet> for FractionTriplet {
         )
     }
 }
+
+pub fn zero_fraction() -> FractionTriplet {
+    fraction_from_values(0.0, 0.0, 0.0)
+}
