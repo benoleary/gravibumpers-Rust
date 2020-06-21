@@ -356,6 +356,24 @@ mod tests {
         }
     }
 
+    // It isn't really necessary to extract this and use a closure, but I wanted to try it out.
+    fn loop_over_all_pixels(
+        height_in_pixels: &VerticalPixelAmount,
+        width_in_pixels: &HorizontalPixelAmount,
+        function_per_pixel: &mut impl FnMut(HorizontalPixelAmount, VerticalPixelAmount) -> (),
+    ) -> () {
+        for vertical_pixel in 0..height_in_pixels.0 {
+            let vertical_pixels_from_bottom_left = VerticalPixelAmount(vertical_pixel);
+            for horizontal_pixel in 0..width_in_pixels.0 {
+                let horizontal_pixels_from_bottom_left = HorizontalPixelAmount(horizontal_pixel);
+                function_per_pixel(
+                    horizontal_pixels_from_bottom_left,
+                    vertical_pixels_from_bottom_left,
+                );
+            }
+        }
+    }
+
     fn assert_pixels_as_expected_with_implicit_black_background(
         test_result: AggregatedBrightnessMatrix,
         expected_pixels: &std::vec::Vec<(
@@ -366,10 +384,10 @@ mod tests {
     ) -> Result<(), String> {
         let reference_brightness = new_reference_brightness();
         let mut failure_messages: std::vec::Vec<String> = vec![];
-        for vertical_pixel in 0..test_result.height_in_pixels().0 {
-            let vertical_pixels_from_bottom_left = VerticalPixelAmount(vertical_pixel);
-            for horizontal_pixel in 0..test_result.width_in_pixels().0 {
-                let horizontal_pixels_from_bottom_left = HorizontalPixelAmount(horizontal_pixel);
+        loop_over_all_pixels(
+            test_result.height_in_pixels(),
+            test_result.width_in_pixels(),
+            &mut |horizontal_pixels_from_bottom_left, vertical_pixels_from_bottom_left| {
                 let actual_result = test_result.color_fractions_at(
                     &reference_brightness,
                     &horizontal_pixels_from_bottom_left,
@@ -394,8 +412,8 @@ mod tests {
                         actual_result
                     )));
                 }
-            }
-        }
+            },
+        );
 
         if failure_messages.is_empty() {
             Ok(())
@@ -469,14 +487,18 @@ mod tests {
         )
     }
 
-    #[test]
-    fn check_six_particles_in_only_three_pixels() -> Result<(), String> {
-        let pixel_brightness_aggregator = new(
+    fn new_test_ten_by_ten_aggregator() -> PixelBrightnessAggregator {
+        new(
             HorizontalPixelAmount(0),
             HorizontalPixelAmount(10),
             VerticalPixelAmount(10),
             VerticalPixelAmount(0),
-        );
+        )
+    }
+
+    #[test]
+    fn check_six_particles_in_only_three_pixels() -> Result<(), String> {
+        let pixel_brightness_aggregator = new_test_ten_by_ten_aggregator();
         let expected_colored_pixels = vec![
             (
                 HorizontalPixelAmount(3),
@@ -574,17 +596,207 @@ mod tests {
         )
     }
 
+    fn new_test_particles_outside_frame() -> std::vec::Vec<data_structure::IndividualParticle> {
+        vec![
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.0, 0.0, 1.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(11.0),
+                    vertical_position: data_structure::VerticalPositionUnit(3.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(-10.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.0, 1.0, 0.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(30.0),
+                    vertical_position: data_structure::VerticalPositionUnit(30.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(-1.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(1.0),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.0, 1.0, 1.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(3.5),
+                    vertical_position: data_structure::VerticalPositionUnit(13.8),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(1.0, 0.0, 0.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(-0.001),
+                    vertical_position: data_structure::VerticalPositionUnit(10.001),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(1.0, 0.0, 1.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(-500.0),
+                    vertical_position: data_structure::VerticalPositionUnit(0.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(1.0, 1.0, 0.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(-1.0),
+                    vertical_position: data_structure::VerticalPositionUnit(-1.0),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(1.0, 1.0, 1.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(8.999),
+                    vertical_position: data_structure::VerticalPositionUnit(-0.001),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: new_test_particle_intrinsics(
+                    &super::super::color::fraction_from_values(0.0, 0.0, 2.0),
+                ),
+                variable_values: data_structure::ParticleVariables {
+                    horizontal_position: data_structure::HorizontalPositionUnit(88.999),
+                    vertical_position: data_structure::VerticalPositionUnit(-100.001),
+                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                },
+            },
+        ]
+    }
+
     #[test]
     fn check_offscreen_particle_not_drawn_when_appropriate() -> Result<(), String> {
-        Err(String::from(
-            "Implement something like check_internal_pixels_are_correct",
-        ))
+        let pixel_brightness_aggregator = new_test_ten_by_ten_aggregator();
+        let expected_colored_pixels = vec![];
+        let test_particles = new_test_particles_outside_frame();
+        let test_result = pixel_brightness_aggregator
+            .aggregate_over_particle_iterator(test_particles.into_iter());
+        assert_pixels_as_expected_with_implicit_black_background(
+            test_result,
+            &expected_colored_pixels,
+        )
+    }
+
+    fn color_fraction_from_particle_intrinsics(
+        particle_intrinsics: data_structure::ParticleIntrinsics,
+    ) -> ColorFraction {
+        let particle_color_triplet = super::super::color::brightness_from_values(
+            particle_intrinsics.red_brightness,
+            particle_intrinsics.green_brightness,
+            particle_intrinsics.blue_brightness,
+        );
+        super::super::color::fraction_from_triplets(
+            &particle_color_triplet,
+            &new_reference_brightness(),
+        )
+        .expect("How did the test constant end up as zero?")
     }
 
     #[test]
     fn check_offscreen_particle_drawn_on_border_when_appropriate() -> Result<(), String> {
-        Err(String::from(
-            "Implement something like check_internal_pixels_are_correct",
-        ))
+        let pixel_brightness_aggregator = new_test_ten_by_ten_aggregator();
+        let mut test_particles = new_test_particles_outside_frame();
+        // We add 2 more particles to check for aggregation of brightnesses on the lower edge and
+        // lower-right corner.
+        test_particles.push(data_structure::IndividualParticle {
+            intrinsic_values: new_test_particle_intrinsics(
+                &super::super::color::fraction_from_values(1.0, 1.0, 3.0),
+            ),
+            variable_values: data_structure::ParticleVariables {
+                horizontal_position: data_structure::HorizontalPositionUnit(8.1),
+                vertical_position: data_structure::VerticalPositionUnit(-2.2),
+                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+            },
+        });
+        test_particles.push(data_structure::IndividualParticle {
+            intrinsic_values: new_test_particle_intrinsics(
+                &super::super::color::fraction_from_values(0.0, 3.0, 3.0),
+            ),
+            variable_values: data_structure::ParticleVariables {
+                horizontal_position: data_structure::HorizontalPositionUnit(4.0),
+                vertical_position: data_structure::VerticalPositionUnit(-100.001),
+                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+            },
+        });
+
+        let left_edge = HorizontalPixelAmount(0);
+        let right_edge = HorizontalPixelAmount(10);
+        let lower_edge = VerticalPixelAmount(0);
+        let upper_edge = VerticalPixelAmount(10);
+        let expected_colored_pixels = vec![
+            (
+                right_edge,
+                VerticalPixelAmount(3),
+                color_fraction_from_particle_intrinsics(test_particles[0].intrinsic_values),
+            ),
+            (
+                right_edge,
+                upper_edge,
+                color_fraction_from_particle_intrinsics(test_particles[1].intrinsic_values),
+            ),
+            (
+                HorizontalPixelAmount(3),
+                upper_edge,
+                color_fraction_from_particle_intrinsics(test_particles[2].intrinsic_values),
+            ),
+            (
+                left_edge,
+                upper_edge,
+                color_fraction_from_particle_intrinsics(test_particles[3].intrinsic_values),
+            ),
+            (
+                left_edge,
+                VerticalPixelAmount(0),
+                color_fraction_from_particle_intrinsics(test_particles[4].intrinsic_values),
+            ),
+            (
+                left_edge,
+                lower_edge,
+                color_fraction_from_particle_intrinsics(test_particles[5].intrinsic_values),
+            ),
+            (
+                HorizontalPixelAmount(8),
+                lower_edge,
+                super::super::color::fraction_from_values(2.0, 2.0, 4.0),
+            ),
+            (
+                right_edge,
+                lower_edge,
+                super::super::color::fraction_from_values(0.0, 3.0, 5.0),
+            ),
+        ];
+        let test_result = pixel_brightness_aggregator
+            .aggregate_over_particle_iterator(test_particles.into_iter());
+        assert_pixels_as_expected_with_implicit_black_background(
+            test_result,
+            &expected_colored_pixels,
+        )
     }
 }
