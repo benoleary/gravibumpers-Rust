@@ -66,121 +66,16 @@ struct PixelWindow {
     pub height_in_pixels_including_border: VerticalPixelAmount,
 }
 
-trait AggregatorPerParticle {
-    fn add_brightness_from_particle(
-        aggregation_matrix: &mut AggregatedBrightnessMatrix,
-        particle_to_draw: &data_structure::IndividualParticle,
-    ) -> ();
-    fn width_in_pixels(&self) -> &HorizontalPixelAmount;
-    fn height_in_pixels(&self) -> &VerticalPixelAmount;
-}
-
-struct DrawOnlyOnscreenParticles {
+pub struct PixelBrightnessAggregator {
     pixel_window: PixelWindow,
+    add_brightness_from_particle: Box<
+        dyn Fn(
+            &PixelWindow,
+            &mut AggregatedBrightnessMatrix,
+            &data_structure::IndividualParticle,
+        ) -> (),
+    >,
 }
-
-impl AggregatorPerParticle for DrawOnlyOnscreenParticles {
-    fn add_brightness_from_particle(
-        aggregation_matrix: &mut AggregatedBrightnessMatrix,
-        particle_to_draw: &data_structure::IndividualParticle,
-    ) -> () {
-        panic!("Implement something!")
-    }
-    fn width_in_pixels(&self) -> &HorizontalPixelAmount {
-        &self.pixel_window.width_in_pixels_including_border
-    }
-    fn height_in_pixels(&self) -> &VerticalPixelAmount {
-        &self.pixel_window.height_in_pixels_including_border
-    }
-}
-
-struct DrawOffscreenParticlesOnBorder {
-    pixel_window: PixelWindow,
-}
-
-impl AggregatorPerParticle for DrawOffscreenParticlesOnBorder {
-    fn add_brightness_from_particle(
-        aggregation_matrix: &mut AggregatedBrightnessMatrix,
-        particle_to_draw: &data_structure::IndividualParticle,
-    ) -> () {
-        panic!("Implement something!")
-    }
-    fn width_in_pixels(&self) -> &HorizontalPixelAmount {
-        &self.pixel_window.width_in_pixels_including_border
-    }
-    fn height_in_pixels(&self) -> &VerticalPixelAmount {
-        &self.pixel_window.height_in_pixels_including_border
-    }
-}
-
-pub struct PixelBrightnessAggregator<T: AggregatorPerParticle> {
-    aggregator_per_particle: T,
-}
-
-impl<T: AggregatorPerParticle> super::particles_to_pixels::ParticleToPixelMapper
-    for PixelBrightnessAggregator<T>
-{
-    type Output = AggregatedBrightnessMatrix;
-    fn aggregate_particle_colors_to_pixels(
-        &self,
-        particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl data_structure::ParticleIteratorProvider,
-        >,
-    ) -> Result<PixelMatrixSequence<Self::Output>, Box<dyn std::error::Error>> {
-        let mut aggregated_brightnesses: PixelMatrixSequence<AggregatedBrightnessMatrix> =
-            PixelMatrixSequence {
-                colored_pixel_matrices: vec![],
-                maximum_brightness_per_color: super::color::zero_brightness(),
-            };
-
-        for mut particle_map in particle_map_sequence {
-            aggregated_brightnesses
-                .colored_pixel_matrices
-                .push(self.aggregate_over_particle_iterator(particle_map.get()));
-        }
-
-        Ok(aggregated_brightnesses)
-    }
-
-    fn width_in_pixels(&self) -> &HorizontalPixelAmount {
-        &self.aggregator_per_particle.width_in_pixels()
-    }
-    fn height_in_pixels(&self) -> &VerticalPixelAmount {
-        &self.aggregator_per_particle.height_in_pixels()
-    }
-}
-
-pub fn new(
-    left_border: HorizontalPixelAmount,
-    right_border: HorizontalPixelAmount,
-    upper_border: VerticalPixelAmount,
-    lower_border: VerticalPixelAmount,
-    draw_offscreen_on_border: bool,
-) -> PixelBrightnessAggregator {
-    let add_particle_brightness: Box<
-        dyn Fn(&mut AggregatedBrightnessMatrix, &data_structure::IndividualParticle) -> (),
-    > = if draw_offscreen_on_border {
-        Box::new(draw_offscreen_particles_on_border)
-    } else {
-        Box::new(draw_only_onscreen_particles)
-    };
-    PixelBrightnessAggregator {
-        left_border: left_border,
-        right_border: right_border,
-        upper_border: upper_border,
-        lower_border: lower_border,
-        horizontal_offset_of_origin_from_picture_bottom_left: HorizontalPixelAmount(
-            (right_border + left_border).0 / 2,
-        ),
-        vertical_offset_of_origin_from_picture_bottom_left: VerticalPixelAmount(
-            (upper_border + lower_border).0 / 2,
-        ),
-        width_in_pixels_including_border: HorizontalPixelAmount((right_border - left_border).0),
-        height_in_pixels_including_border: VerticalPixelAmount((upper_border - lower_border).0),
-        add_brightness_from_particle: add_particle_brightness,
-    }
-}
-
 impl PixelBrightnessAggregator {
     fn aggregate_over_particle_iterator(
         &self,
@@ -190,16 +85,24 @@ impl PixelBrightnessAggregator {
             brightness_matrix: vec![
                 vec![
                     super::color::zero_brightness();
-                    self.width_in_pixels_including_border.abs_as_usize()
+                    self.pixel_window
+                        .width_in_pixels_including_border
+                        .abs_as_usize()
                 ];
-                self.height_in_pixels_including_border.abs_as_usize()
+                self.pixel_window
+                    .height_in_pixels_including_border
+                    .abs_as_usize()
             ],
-            width_in_pixels_including_border: self.width_in_pixels_including_border,
-            height_in_pixels_including_border: self.height_in_pixels_including_border,
+            width_in_pixels_including_border: self.pixel_window.width_in_pixels_including_border,
+            height_in_pixels_including_border: self.pixel_window.height_in_pixels_including_border,
         };
 
         for particle_to_draw in particles_to_draw {
-            (self.add_brightness_from_particle)(&mut aggregated_brightnesses, &particle_to_draw);
+            (self.add_brightness_from_particle)(
+                &self.pixel_window,
+                &mut aggregated_brightnesses,
+                &particle_to_draw,
+            );
         }
         aggregated_brightnesses
     }
@@ -229,10 +132,64 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
     }
 
     fn width_in_pixels(&self) -> &HorizontalPixelAmount {
-        &self.width_in_pixels_including_border
+        &self.pixel_window.width_in_pixels_including_border
     }
     fn height_in_pixels(&self) -> &VerticalPixelAmount {
-        &self.height_in_pixels_including_border
+        &self.pixel_window.height_in_pixels_including_border
+    }
+}
+
+fn draw_only_onscreen_particles(
+    pixel_window: &PixelWindow,
+    aggregation_matrix: &mut AggregatedBrightnessMatrix,
+    particle_to_draw: &data_structure::IndividualParticle,
+) -> () {
+    panic!("Implement something!")
+}
+
+fn draw_offscreen_particles_on_border(
+    pixel_window: &PixelWindow,
+    aggregation_matrix: &mut AggregatedBrightnessMatrix,
+    particle_to_draw: &data_structure::IndividualParticle,
+) -> () {
+    panic!("Implement something!")
+}
+
+pub fn new(
+    left_border: HorizontalPixelAmount,
+    right_border: HorizontalPixelAmount,
+    upper_border: VerticalPixelAmount,
+    lower_border: VerticalPixelAmount,
+    draw_offscreen_on_border: bool,
+) -> PixelBrightnessAggregator {
+    let add_particle_brightness: Box<
+        dyn Fn(
+            &PixelWindow,
+            &mut AggregatedBrightnessMatrix,
+            &data_structure::IndividualParticle,
+        ) -> (),
+    > = if draw_offscreen_on_border {
+        Box::new(draw_offscreen_particles_on_border)
+    } else {
+        Box::new(draw_only_onscreen_particles)
+    };
+    let pixel_window = PixelWindow {
+        left_border: left_border,
+        right_border: right_border,
+        upper_border: upper_border,
+        lower_border: lower_border,
+        horizontal_offset_of_origin_from_picture_bottom_left: HorizontalPixelAmount(
+            (right_border + left_border).0 / 2,
+        ),
+        vertical_offset_of_origin_from_picture_bottom_left: VerticalPixelAmount(
+            (upper_border + lower_border).0 / 2,
+        ),
+        width_in_pixels_including_border: HorizontalPixelAmount((right_border - left_border).0),
+        height_in_pixels_including_border: VerticalPixelAmount((upper_border - lower_border).0),
+    };
+    PixelBrightnessAggregator {
+        pixel_window: pixel_window,
+        add_brightness_from_particle: add_particle_brightness,
     }
 }
 
