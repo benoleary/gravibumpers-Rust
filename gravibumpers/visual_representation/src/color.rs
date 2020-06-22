@@ -84,18 +84,6 @@ pub struct FractionTriplet {
     blue_fraction: f64,
 }
 
-pub fn fraction_from_values(
-    red_fraction: f64,
-    green_fraction: f64,
-    blue_fraction: f64,
-) -> FractionTriplet {
-    FractionTriplet {
-        red_fraction: red_fraction,
-        green_fraction: green_fraction,
-        blue_fraction: blue_fraction,
-    }
-}
-
 impl std::ops::Mul<&BrightnessTriplet> for FractionTriplet {
     type Output = BrightnessTriplet;
 
@@ -105,6 +93,18 @@ impl std::ops::Mul<&BrightnessTriplet> for FractionTriplet {
             data_structure::GreenColorUnit(self.green_fraction * brightness_triplet.green_value.0),
             data_structure::BlueColorUnit(self.blue_fraction * brightness_triplet.blue_value.0),
         )
+    }
+}
+
+pub fn fraction_from_values(
+    red_fraction: f64,
+    green_fraction: f64,
+    blue_fraction: f64,
+) -> FractionTriplet {
+    FractionTriplet {
+        red_fraction: red_fraction,
+        green_fraction: green_fraction,
+        blue_fraction: blue_fraction,
     }
 }
 
