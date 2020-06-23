@@ -22,20 +22,85 @@ pub struct RepulsiveChargeUnit(pub f64);
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct RedColorUnit(pub f64);
 
+impl Add for RedColorUnit {
+    type Output = Self;
+
+    fn add(self, other_amount: Self) -> Self {
+        Self(self.0 + other_amount.0)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct GreenColorUnit(pub f64);
 
+impl Add for GreenColorUnit {
+    type Output = Self;
+
+    fn add(self, other_amount: Self) -> Self {
+        Self(self.0 + other_amount.0)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct BlueColorUnit(pub f64);
+
+impl Add for BlueColorUnit {
+    type Output = Self;
+
+    fn add(self, other_amount: Self) -> Self {
+        Self(self.0 + other_amount.0)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ColorTriplet {
+    red_brightness: RedColorUnit,
+    green_brightness: GreenColorUnit,
+    blue_brightness: BlueColorUnit,
+}
+
+impl std::ops::AddAssign for ColorTriplet {
+    fn add_assign(&mut self, other_amount: Self) {
+        self.red_brightness = self.red_brightness + other_amount.red_brightness;
+        self.green_brightness = self.green_brightness + other_amount.green_brightness;
+        self.blue_brightness = self.blue_brightness + other_amount.blue_brightness;
+    }
+}
+
+impl ColorTriplet {
+    pub fn get_red(&self) -> RedColorUnit {
+        self.red_brightness
+    }
+
+    pub fn get_green(&self) -> GreenColorUnit {
+        self.green_brightness
+    }
+
+    pub fn get_blue(&self) -> BlueColorUnit {
+        self.blue_brightness
+    }
+}
+
+pub fn new_color_triplet(
+    red_brightness: RedColorUnit,
+    green_brightness: GreenColorUnit,
+    blue_brightness: BlueColorUnit,
+) -> ColorTriplet {
+    ColorTriplet {
+        red_brightness: red_brightness,
+        green_brightness: green_brightness,
+        blue_brightness: blue_brightness,
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct HorizontalPositionUnit(pub f64);
 
 impl Add for HorizontalPositionUnit {
-    type Output = HorizontalPositionUnit;
+    type Output = Self;
 
-    fn add(self, horizontal_position: HorizontalPositionUnit) -> HorizontalPositionUnit {
-        HorizontalPositionUnit(self.0 + horizontal_position.0)
+    fn add(self, other_amount: Self) -> Self {
+        Self(self.0 + other_amount.0)
     }
 }
 
@@ -43,10 +108,10 @@ impl Add for HorizontalPositionUnit {
 pub struct VerticalPositionUnit(pub f64);
 
 impl Add for VerticalPositionUnit {
-    type Output = VerticalPositionUnit;
+    type Output = Self;
 
-    fn add(self, vertical_position: VerticalPositionUnit) -> VerticalPositionUnit {
-        VerticalPositionUnit(self.0 + vertical_position.0)
+    fn add(self, other_amount: Self) -> Self {
+        Self(self.0 + other_amount.0)
     }
 }
 
@@ -91,9 +156,7 @@ pub struct ParticleIntrinsics {
     pub inertial_mass: InertialMassUnit,
     pub attractive_charge: AttractiveChargeUnit,
     pub repulsive_charge: RepulsiveChargeUnit,
-    pub red_brightness: RedColorUnit,
-    pub green_brightness: GreenColorUnit,
-    pub blue_brightness: BlueColorUnit,
+    pub color_brightness: ColorTriplet,
 }
 
 /// The particles have some intrinsic qualities which do not change, unlike their

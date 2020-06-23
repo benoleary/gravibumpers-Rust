@@ -125,12 +125,22 @@ fn intrinsics_within_tolerance(
             <= tolerances_as_intrinsics.attractive_charge.0.abs()
         && (expected_intrinsics.repulsive_charge.0 - actual_intrinsics.repulsive_charge.0).abs()
             <= tolerances_as_intrinsics.repulsive_charge.0.abs()
-        && (expected_intrinsics.red_brightness.0 - actual_intrinsics.red_brightness.0).abs()
-            <= tolerances_as_intrinsics.red_brightness.0.abs()
-        && (expected_intrinsics.green_brightness.0 - actual_intrinsics.green_brightness.0).abs()
-            <= tolerances_as_intrinsics.green_brightness.0.abs()
-        && (expected_intrinsics.blue_brightness.0 - actual_intrinsics.blue_brightness.0).abs()
-            <= tolerances_as_intrinsics.blue_brightness.0.abs()
+        && (expected_intrinsics.color_brightness.get_red().0
+            - actual_intrinsics.color_brightness.get_red().0)
+            .abs()
+            <= tolerances_as_intrinsics.color_brightness.get_red().0.abs()
+        && (expected_intrinsics.color_brightness.get_green().0
+            - actual_intrinsics.color_brightness.get_green().0)
+            .abs()
+            <= tolerances_as_intrinsics
+                .color_brightness
+                .get_green()
+                .0
+                .abs()
+        && (expected_intrinsics.color_brightness.get_blue().0
+            - actual_intrinsics.color_brightness.get_blue().0)
+            .abs()
+            <= tolerances_as_intrinsics.color_brightness.get_blue().0.abs()
 }
 
 fn variables_within_tolerance(

@@ -1,13 +1,12 @@
 /// This module just defines some structs and traits for deciding how to represent particles as
 /// pixels, and thus has no #[cfg(test)].
-use super::color::BrightnessTriplet;
 use super::ColoredPixelMatrix;
 use super::HorizontalPixelAmount;
 use super::VerticalPixelAmount;
 
 pub struct ColoredPixelMatrixSequence<T: ColoredPixelMatrix> {
     pub colored_pixel_matrices: Vec<T>,
-    pub maximum_brightness_per_color: BrightnessTriplet,
+    pub maximum_brightness_per_color: data_structure::ColorTriplet,
 }
 
 pub trait ParticleToPixelMapper {

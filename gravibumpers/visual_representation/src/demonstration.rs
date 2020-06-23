@@ -4,7 +4,6 @@
 ///
 /// There is some non-trivial logic in producing the animation, but there is no non-trivial input
 /// so there is no #[cfg(test)]. The code was tested by checking that the animation was correct.
-use super::color::BrightnessTriplet as ColorBrightness;
 use super::color::FractionTriplet as ColorFraction;
 use super::HorizontalPixelAmount;
 use super::OutOfBoundsError;
@@ -116,7 +115,7 @@ impl DemonstrationPixelMatrix {
 impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
     fn color_fractions_at(
         &self,
-        _reference_brightness: &ColorBrightness,
+        _reference_brightness: &data_structure::ColorTriplet,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
@@ -185,7 +184,7 @@ impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
         Ok(
             super::particles_to_pixels::ColoredPixelMatrixSequence::<DemonstrationPixelMatrix> {
                 colored_pixel_matrices: matrix_sequence,
-                maximum_brightness_per_color: super::color::brightness_from_values(
+                maximum_brightness_per_color: data_structure::new_color_triplet(
                     data_structure::RedColorUnit(1.0),
                     data_structure::GreenColorUnit(1.0),
                     data_structure::BlueColorUnit(1.0),

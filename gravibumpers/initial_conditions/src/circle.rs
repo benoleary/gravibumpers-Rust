@@ -33,9 +33,11 @@ pub fn from_json(
         inertial_mass: data_structure::InertialMassUnit(inertial_mass),
         attractive_charge: data_structure::AttractiveChargeUnit(attractive_charge),
         repulsive_charge: data_structure::RepulsiveChargeUnit(repulsive_charge),
-        red_brightness: data_structure::RedColorUnit(red_brightness),
-        green_brightness: data_structure::GreenColorUnit(green_brightness),
-        blue_brightness: data_structure::BlueColorUnit(blue_brightness),
+        color_brightness: data_structure::new_color_triplet(
+            data_structure::RedColorUnit(red_brightness),
+            data_structure::GreenColorUnit(green_brightness),
+            data_structure::BlueColorUnit(blue_brightness),
+        ),
     };
     particles_from_numbers(
         circle_displacement,
@@ -161,39 +163,47 @@ fn particles_from_numbers(
 mod tests {
     use super::*;
 
-    const INTRINSICS_TOLERANCE: data_structure::ParticleIntrinsics =
+    fn new_intrinsics_tolerance() -> data_structure::ParticleIntrinsics {
         data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(0.01),
             attractive_charge: data_structure::AttractiveChargeUnit(0.01),
             repulsive_charge: data_structure::RepulsiveChargeUnit(0.01),
-            red_brightness: data_structure::RedColorUnit(0.01),
-            green_brightness: data_structure::GreenColorUnit(0.01),
-            blue_brightness: data_structure::BlueColorUnit(0.01),
-        };
+            color_brightness: data_structure::new_color_triplet(
+                data_structure::RedColorUnit(0.01),
+                data_structure::GreenColorUnit(0.01),
+                data_structure::BlueColorUnit(0.01),
+            ),
+        }
+    }
 
-    const VARIABLES_TOLERANCE: data_structure::ParticleVariables =
+    fn new_variables_tolerance() -> data_structure::ParticleVariables {
         data_structure::ParticleVariables {
             horizontal_position: data_structure::HorizontalPositionUnit(0.01),
             vertical_position: data_structure::VerticalPositionUnit(0.01),
             horizontal_velocity: data_structure::HorizontalVelocityUnit(0.01),
             vertical_velocity: data_structure::VerticalVelocityUnit(0.01),
-        };
+        }
+    }
 
-    const PARTICLE_TOLERANCE: data_structure::IndividualParticle =
+    fn new_particle_tolerance() -> data_structure::IndividualParticle {
         data_structure::IndividualParticle {
-            intrinsic_values: INTRINSICS_TOLERANCE,
-            variable_values: VARIABLES_TOLERANCE,
-        };
+            intrinsic_values: new_intrinsics_tolerance(),
+            variable_values: new_variables_tolerance(),
+        }
+    }
 
-    const TEST_INTRINSICS: data_structure::ParticleIntrinsics =
+    fn new_test_intrinsics() -> data_structure::ParticleIntrinsics {
         data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(1.9),
             attractive_charge: data_structure::AttractiveChargeUnit(2.8),
             repulsive_charge: data_structure::RepulsiveChargeUnit(3.7),
-            red_brightness: data_structure::RedColorUnit(4.6),
-            green_brightness: data_structure::GreenColorUnit(5.5),
-            blue_brightness: data_structure::BlueColorUnit(6.4),
-        };
+            color_brightness: data_structure::new_color_triplet(
+                data_structure::RedColorUnit(4.6),
+                data_structure::GreenColorUnit(5.5),
+                data_structure::BlueColorUnit(6.4),
+            ),
+        }
+    }
 
     fn new_test_configuration(
         test_horizontal_displacement: serde_json::Value,
@@ -203,6 +213,7 @@ mod tests {
         test_radius: serde_json::Value,
         test_rotation: serde_json::Value,
     ) -> serde_json::Value {
+        let test_intrinsics = new_test_intrinsics();
         serde_json::json!({
             DISPLACEMENT_LABEL: {
                 super::super::HORIZONTAL_LABEL: test_horizontal_displacement,
@@ -214,12 +225,12 @@ mod tests {
             },
             RADIUS_LABEL: test_radius,
             ANGULAR_VELOCITY_LABEL: test_rotation,
-            MASS_LABEL: TEST_INTRINSICS.inertial_mass.0,
-            GRAV_LABEL: TEST_INTRINSICS.attractive_charge.0,
-            BUMP_LABEL: TEST_INTRINSICS.repulsive_charge.0,
-            RED_LABEL: TEST_INTRINSICS.red_brightness.0,
-            GREEN_LABEL: TEST_INTRINSICS.green_brightness.0,
-            BLUE_LABEL: TEST_INTRINSICS.blue_brightness.0,
+            MASS_LABEL: test_intrinsics.inertial_mass.0,
+            GRAV_LABEL: test_intrinsics.attractive_charge.0,
+            BUMP_LABEL: test_intrinsics.repulsive_charge.0,
+            RED_LABEL: test_intrinsics.color_brightness.get_red().0,
+            GREEN_LABEL: test_intrinsics.color_brightness.get_green().0,
+            BLUE_LABEL: test_intrinsics.color_brightness.get_blue().0,
         })
     }
 
@@ -230,7 +241,7 @@ mod tests {
         vertical_velocity: data_structure::VerticalVelocityUnit,
     ) -> data_structure::IndividualParticle {
         data_structure::IndividualParticle {
-            intrinsic_values: TEST_INTRINSICS,
+            intrinsic_values: new_test_intrinsics(),
             variable_values: data_structure::ParticleVariables {
                 horizontal_position: horizontal_position,
                 vertical_position: vertical_position,
@@ -437,7 +448,7 @@ mod tests {
         data_structure::comparison::unordered_within_tolerance(
             &mut expected_particles.iter().cloned(),
             generated_particles.get(),
-            &PARTICLE_TOLERANCE,
+            &new_particle_tolerance(),
         )
     }
 
@@ -485,7 +496,7 @@ mod tests {
         data_structure::comparison::unordered_within_tolerance(
             &mut expected_particles.iter().cloned(),
             generated_particles.get(),
-            &PARTICLE_TOLERANCE,
+            &new_particle_tolerance(),
         )
     }
 
@@ -543,7 +554,7 @@ mod tests {
         data_structure::comparison::unordered_within_tolerance(
             &mut expected_particles.iter().cloned(),
             generated_particles.get(),
-            &PARTICLE_TOLERANCE,
+            &new_particle_tolerance(),
         )
     }
 }

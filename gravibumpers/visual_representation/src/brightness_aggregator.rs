@@ -2,7 +2,6 @@
 /// particles_to_pixels::ParticleToPixelMapper which perform the basic functionality of
 /// rounding particle co-ordinates to pixel co-ordinates, aggregating the color brightnesses
 /// which land in each pixel.
-use super::color::BrightnessTriplet as ColorBrightness;
 use super::color::FractionTriplet as ColorFraction;
 use super::particles_to_pixels::ColoredPixelMatrixSequence as PixelMatrixSequence;
 use super::HorizontalPixelAmount;
@@ -10,22 +9,35 @@ use super::OutOfBoundsError;
 use super::VerticalPixelAmount;
 
 pub struct AggregatedBrightnessMatrix {
-    brightness_matrix: std::vec::Vec<std::vec::Vec<ColorBrightness>>,
+    brightness_matrix: std::vec::Vec<std::vec::Vec<data_structure::ColorTriplet>>,
     width_in_pixels_including_border: HorizontalPixelAmount,
     height_in_pixels_including_border: VerticalPixelAmount,
+}
+
+impl AggregatedBrightnessMatrix {
+    fn add_brightness_without_bounds_check(
+        &mut self,
+        horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
+        vertical_pixels_from_bottom_left: &VerticalPixelAmount,
+        brightness_to_add: &data_structure::ColorTriplet,
+    ) {
+        let height_index = vertical_pixels_from_bottom_left.0;
+        let width_index = horizontal_pixels_from_bottom_left.0;
+        self.brightness_matrix[height_index as usize][width_index as usize] += *brightness_to_add;
+    }
 }
 
 impl super::ColoredPixelMatrix for AggregatedBrightnessMatrix {
     fn color_fractions_at(
         &self,
-        reference_brightness: &ColorBrightness,
+        reference_brightness: &data_structure::ColorTriplet,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
         let height_index = vertical_pixels_from_bottom_left.0;
-        let width_index = vertical_pixels_from_bottom_left.0;
-        if (horizontal_pixels_from_bottom_left >= self.width_in_pixels())
-            || (vertical_pixels_from_bottom_left >= self.height_in_pixels())
+        let width_index = horizontal_pixels_from_bottom_left.0;
+        if (horizontal_pixels_from_bottom_left > &self.width_in_pixels_including_border)
+            || (vertical_pixels_from_bottom_left > &self.height_in_pixels_including_border)
             || (height_index < 0)
             || (width_index < 0)
         {
@@ -60,8 +72,6 @@ struct PixelWindow {
     pub right_border: HorizontalPixelAmount,
     pub upper_border: VerticalPixelAmount,
     pub lower_border: VerticalPixelAmount,
-    pub horizontal_offset_of_origin_from_picture_bottom_left: HorizontalPixelAmount,
-    pub vertical_offset_of_origin_from_picture_bottom_left: VerticalPixelAmount,
     pub width_in_pixels_including_border: HorizontalPixelAmount,
     pub height_in_pixels_including_border: VerticalPixelAmount,
 }
@@ -76,6 +86,7 @@ pub struct PixelBrightnessAggregator {
         ) -> (),
     >,
 }
+
 impl PixelBrightnessAggregator {
     fn aggregate_over_particle_iterator(
         &self,
@@ -97,8 +108,9 @@ impl PixelBrightnessAggregator {
             height_in_pixels_including_border: self.pixel_window.height_in_pixels_including_border,
         };
 
+        let add_brightness_from = &*self.add_brightness_from_particle;
         for particle_to_draw in particles_to_draw {
-            (self.add_brightness_from_particle)(
+            add_brightness_from(
                 &self.pixel_window,
                 &mut aggregated_brightnesses,
                 &particle_to_draw,
@@ -144,7 +156,22 @@ fn draw_only_onscreen_particles(
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
     particle_to_draw: &data_structure::IndividualParticle,
 ) -> () {
-    panic!("Implement something!")
+    let spatial_x = particle_to_draw.variable_values.horizontal_position;
+    let spatial_y = particle_to_draw.variable_values.vertical_position;
+    if (spatial_x >= pixel_window.left_border.as_position_unit())
+        && (spatial_x <= pixel_window.right_border.as_position_unit())
+        && (spatial_y >= pixel_window.lower_border.as_position_unit())
+        && (spatial_y <= pixel_window.upper_border.as_position_unit())
+    {
+        // The f64s have to fit into i32s because each was within a pair of i32 values.
+        let horizontal_pixel = HorizontalPixelAmount(spatial_x.0 as i32) - pixel_window.left_border;
+        let vertical_pixel = VerticalPixelAmount(spatial_y.0 as i32) - pixel_window.lower_border;
+        aggregation_matrix.add_brightness_without_bounds_check(
+            &horizontal_pixel,
+            &vertical_pixel,
+            &particle_to_draw.intrinsic_values.color_brightness,
+        )
+    }
 }
 
 fn draw_offscreen_particles_on_border(
@@ -178,12 +205,6 @@ pub fn new(
         right_border: right_border,
         upper_border: upper_border,
         lower_border: lower_border,
-        horizontal_offset_of_origin_from_picture_bottom_left: HorizontalPixelAmount(
-            (right_border + left_border).0 / 2,
-        ),
-        vertical_offset_of_origin_from_picture_bottom_left: VerticalPixelAmount(
-            (upper_border + lower_border).0 / 2,
-        ),
         width_in_pixels_including_border: HorizontalPixelAmount((right_border - left_border).0),
         height_in_pixels_including_border: VerticalPixelAmount((upper_border - lower_border).0),
     };
@@ -198,7 +219,9 @@ mod tests {
     use super::super::ColoredPixelMatrix;
     use super::*;
 
-    fn new_test_fraction(color_brightness: &ColorBrightness) -> Result<ColorFraction, String> {
+    fn new_test_fraction(
+        color_brightness: &data_structure::ColorTriplet,
+    ) -> Result<ColorFraction, String> {
         let reference_color = new_reference_brightness();
         match super::super::color::fraction_from_triplets(color_brightness, &reference_color) {
             Ok(color_fraction) => Ok(color_fraction),
@@ -211,32 +234,32 @@ mod tests {
         }
     }
 
-    fn new_lower_left_color() -> ColorBrightness {
-        super::super::color::brightness_from_values(
+    fn new_lower_left_color() -> data_structure::ColorTriplet {
+        data_structure::new_color_triplet(
             data_structure::RedColorUnit(1.0),
             data_structure::GreenColorUnit(0.0),
             data_structure::BlueColorUnit(0.0),
         )
     }
 
-    fn new_lower_right_color() -> ColorBrightness {
-        super::super::color::brightness_from_values(
+    fn new_lower_right_color() -> data_structure::ColorTriplet {
+        data_structure::new_color_triplet(
             data_structure::RedColorUnit(0.0),
             data_structure::GreenColorUnit(1.0),
             data_structure::BlueColorUnit(0.0),
         )
     }
 
-    fn new_upper_left_color() -> ColorBrightness {
-        super::super::color::brightness_from_values(
+    fn new_upper_left_color() -> data_structure::ColorTriplet {
+        data_structure::new_color_triplet(
             data_structure::RedColorUnit(0.0),
             data_structure::GreenColorUnit(0.0),
             data_structure::BlueColorUnit(1.0),
         )
     }
 
-    fn new_upper_right_color() -> ColorBrightness {
-        super::super::color::brightness_from_values(
+    fn new_upper_right_color() -> data_structure::ColorTriplet {
+        data_structure::new_color_triplet(
             data_structure::RedColorUnit(0.5),
             data_structure::GreenColorUnit(0.5),
             data_structure::BlueColorUnit(0.5),
@@ -254,8 +277,8 @@ mod tests {
         }
     }
 
-    fn new_reference_brightness() -> ColorBrightness {
-        super::super::color::brightness_from_values(
+    fn new_reference_brightness() -> data_structure::ColorTriplet {
+        data_structure::new_color_triplet(
             data_structure::RedColorUnit(1.0),
             data_structure::GreenColorUnit(1.0),
             data_structure::BlueColorUnit(1.0),
@@ -265,14 +288,11 @@ mod tests {
     fn new_test_particle_intrinsics(
         color_fraction: &ColorFraction,
     ) -> data_structure::ParticleIntrinsics {
-        let color_brightness = *color_fraction * &new_reference_brightness();
         data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(1.2),
             attractive_charge: data_structure::AttractiveChargeUnit(-3.4),
             repulsive_charge: data_structure::RepulsiveChargeUnit(5.6),
-            red_brightness: color_brightness.get_red(),
-            green_brightness: color_brightness.get_green(),
-            blue_brightness: color_brightness.get_blue(),
+            color_brightness: *color_fraction * &new_reference_brightness(),
         }
     }
 
@@ -768,13 +788,8 @@ mod tests {
     fn color_fraction_from_particle_intrinsics(
         particle_intrinsics: data_structure::ParticleIntrinsics,
     ) -> ColorFraction {
-        let particle_color_triplet = super::super::color::brightness_from_values(
-            particle_intrinsics.red_brightness,
-            particle_intrinsics.green_brightness,
-            particle_intrinsics.blue_brightness,
-        );
         super::super::color::fraction_from_triplets(
-            &particle_color_triplet,
+            &particle_intrinsics.color_brightness,
             &new_reference_brightness(),
         )
         .expect("How did the test constant end up as zero?")

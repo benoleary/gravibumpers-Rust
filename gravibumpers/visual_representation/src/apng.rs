@@ -3,7 +3,6 @@
 extern crate apng_encoder;
 extern crate data_structure;
 
-use super::color::BrightnessTriplet as ColorBrightness;
 use super::particles_to_pixels::ParticleToPixelMapper;
 use super::ColoredPixelMatrix;
 use super::HorizontalPixelAmount;
@@ -107,7 +106,7 @@ fn ceiling_as_byte(color_intensity: f64) -> u8 {
 // floating-point numbers representing red-green-blue quantities.
 fn flattened_color_bytes_from(
     pixel_matrix: impl ColoredPixelMatrix,
-    maximum_color_intensity: &ColorBrightness,
+    maximum_color_intensity: &data_structure::ColorTriplet,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let width_in_pixels = pixel_matrix.width_in_pixels().0;
     let height_in_pixels = pixel_matrix.height_in_pixels().0;
@@ -144,7 +143,6 @@ fn flattened_color_bytes_from(
 
 #[cfg(test)]
 mod tests {
-    use super::super::color::BrightnessTriplet as ColorBrightness;
     use super::super::color::FractionTriplet as ColorFraction;
     use super::super::OutOfBoundsError;
     use super::*;
@@ -160,7 +158,7 @@ mod tests {
     impl ColoredPixelMatrix for MockColoredPixelMatrix {
         fn color_fractions_at(
             &self,
-            _reference_intensity: &ColorBrightness,
+            _reference_intensity: &data_structure::ColorTriplet,
             horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
             vertical_pixels_from_bottom_left: &VerticalPixelAmount,
         ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
@@ -210,7 +208,7 @@ mod tests {
     fn test_flattened_color_bytes_from() {
         let mock_matrix = MockColoredPixelMatrix {};
 
-        let full_intensity = super::super::color::brightness_from_values(
+        let full_intensity = data_structure::new_color_triplet(
             RedColorUnit(1.0),
             GreenColorUnit(1.0),
             BlueColorUnit(1.0),

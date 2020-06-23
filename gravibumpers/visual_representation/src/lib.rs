@@ -57,6 +57,10 @@ impl HorizontalPixelAmount {
         // The abs takes care of the unsigned, and u32 must fit inside usize.
         self.0.abs() as usize
     }
+
+    pub fn as_position_unit(&self) -> data_structure::HorizontalPositionUnit {
+        data_structure::HorizontalPositionUnit(self.0 as f64)
+    }
 }
 
 impl std::ops::Add<HorizontalPixelAmount> for HorizontalPixelAmount {
@@ -83,6 +87,10 @@ impl VerticalPixelAmount {
         // The abs takes care of the unsigned, and u32 must fit inside usize.
         self.0.abs() as usize
     }
+
+    pub fn as_position_unit(&self) -> data_structure::VerticalPositionUnit {
+        data_structure::VerticalPositionUnit(self.0 as f64)
+    }
 }
 
 impl std::ops::Add<VerticalPixelAmount> for VerticalPixelAmount {
@@ -104,7 +112,7 @@ impl std::ops::Sub<VerticalPixelAmount> for VerticalPixelAmount {
 pub trait ColoredPixelMatrix {
     fn color_fractions_at(
         &self,
-        reference_brightness: &color::BrightnessTriplet,
+        reference_brightness: &data_structure::ColorTriplet,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<color::FractionTriplet, Box<dyn std::error::Error>>;
