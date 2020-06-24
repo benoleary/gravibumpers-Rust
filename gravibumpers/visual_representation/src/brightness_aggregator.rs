@@ -156,16 +156,18 @@ fn draw_only_onscreen_particles(
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
     particle_to_draw: &data_structure::IndividualParticle,
 ) -> () {
-    let spatial_x = particle_to_draw.variable_values.horizontal_position;
-    let spatial_y = particle_to_draw.variable_values.vertical_position;
-    if (spatial_x >= pixel_window.left_border.as_position_unit())
-        && (spatial_x <= pixel_window.right_border.as_position_unit())
-        && (spatial_y >= pixel_window.lower_border.as_position_unit())
-        && (spatial_y <= pixel_window.upper_border.as_position_unit())
+    let particle_horizontal_coordinate = particle_to_draw.variable_values.horizontal_position;
+    let particle_vertical_coordinate = particle_to_draw.variable_values.vertical_position;
+    if (particle_horizontal_coordinate >= pixel_window.left_border.as_position_unit())
+        && (particle_horizontal_coordinate <= pixel_window.right_border.as_position_unit())
+        && (particle_vertical_coordinate >= pixel_window.lower_border.as_position_unit())
+        && (particle_vertical_coordinate <= pixel_window.upper_border.as_position_unit())
     {
         // The f64s have to fit into i32s because each was within a pair of i32 values.
-        let horizontal_pixel = HorizontalPixelAmount(spatial_x.0 as i32) - pixel_window.left_border;
-        let vertical_pixel = VerticalPixelAmount(spatial_y.0 as i32) - pixel_window.lower_border;
+        let horizontal_pixel = HorizontalPixelAmount(particle_horizontal_coordinate.0 as i32)
+            - pixel_window.left_border;
+        let vertical_pixel =
+            VerticalPixelAmount(particle_vertical_coordinate.0 as i32) - pixel_window.lower_border;
         aggregation_matrix.add_brightness_without_bounds_check(
             &horizontal_pixel,
             &vertical_pixel,
@@ -179,7 +181,30 @@ fn draw_offscreen_particles_on_border(
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
     particle_to_draw: &data_structure::IndividualParticle,
 ) -> () {
-    panic!("Implement something!")
+    let particle_horizontal_coordinate = particle_to_draw.variable_values.horizontal_position;
+    let particle_vertical_coordinate = particle_to_draw.variable_values.vertical_position;
+    let horizontal_pixel = if particle_horizontal_coordinate
+        < pixel_window.left_border.as_position_unit()
+    {
+        HorizontalPixelAmount(0)
+    } else if particle_horizontal_coordinate > pixel_window.right_border.as_position_unit() {
+        pixel_window.width_in_pixels_including_border
+    } else {
+        HorizontalPixelAmount(particle_horizontal_coordinate.0 as i32) - pixel_window.left_border
+    };
+    let vertical_pixel =
+        if particle_vertical_coordinate < pixel_window.lower_border.as_position_unit() {
+            VerticalPixelAmount(0)
+        } else if particle_vertical_coordinate > pixel_window.upper_border.as_position_unit() {
+            pixel_window.height_in_pixels_including_border
+        } else {
+            VerticalPixelAmount(particle_vertical_coordinate.0 as i32) - pixel_window.lower_border
+        };
+    aggregation_matrix.add_brightness_without_bounds_check(
+        &horizontal_pixel,
+        &vertical_pixel,
+        &particle_to_draw.intrinsic_values.color_brightness,
+    )
 }
 
 pub fn new(
@@ -205,8 +230,8 @@ pub fn new(
         right_border: right_border,
         upper_border: upper_border,
         lower_border: lower_border,
-        width_in_pixels_including_border: HorizontalPixelAmount((right_border - left_border).0),
-        height_in_pixels_including_border: VerticalPixelAmount((upper_border - lower_border).0),
+        width_in_pixels_including_border: right_border - left_border,
+        height_in_pixels_including_border: upper_border - lower_border,
     };
     PixelBrightnessAggregator {
         pixel_window: pixel_window,
