@@ -67,6 +67,7 @@ impl super::ColoredPixelMatrix for AggregatedBrightnessMatrix {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 struct PixelWindow {
     pub left_border: HorizontalPixelAmount,
     pub right_border: HorizontalPixelAmount,
@@ -188,7 +189,7 @@ fn draw_offscreen_particles_on_border(
     {
         HorizontalPixelAmount(0)
     } else if particle_horizontal_coordinate > pixel_window.right_border.as_position_unit() {
-        pixel_window.width_in_pixels_including_border
+        pixel_window.right_border - pixel_window.left_border
     } else {
         HorizontalPixelAmount(particle_horizontal_coordinate.0 as i32) - pixel_window.left_border
     };
@@ -196,7 +197,7 @@ fn draw_offscreen_particles_on_border(
         if particle_vertical_coordinate < pixel_window.lower_border.as_position_unit() {
             VerticalPixelAmount(0)
         } else if particle_vertical_coordinate > pixel_window.upper_border.as_position_unit() {
-            pixel_window.height_in_pixels_including_border
+            pixel_window.upper_border - pixel_window.lower_border
         } else {
             VerticalPixelAmount(particle_vertical_coordinate.0 as i32) - pixel_window.lower_border
         };
@@ -225,13 +226,16 @@ pub fn new(
     } else {
         Box::new(draw_only_onscreen_particles)
     };
+
+    // The borders are included in the width, so if the left border is at -10 and the right at +20,
+    // the width is 31. The height is the difference plus one for the analogous reason.
     let pixel_window = PixelWindow {
         left_border: left_border,
         right_border: right_border,
         upper_border: upper_border,
         lower_border: lower_border,
-        width_in_pixels_including_border: right_border - left_border,
-        height_in_pixels_including_border: upper_border - lower_border,
+        width_in_pixels_including_border: right_border - left_border + HorizontalPixelAmount(1),
+        height_in_pixels_including_border: upper_border - lower_border + VerticalPixelAmount(1),
     };
     PixelBrightnessAggregator {
         pixel_window: pixel_window,
