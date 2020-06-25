@@ -248,6 +248,8 @@ mod tests {
     use super::super::ColoredPixelMatrix;
     use super::*;
 
+    const COLOR_FRACTION_TOLERANCE: f64 = 0.000001;
+
     fn new_test_fraction(
         color_brightness: &data_structure::ColorTriplet,
     ) -> Result<ColorFraction, String> {
@@ -453,7 +455,11 @@ mod tests {
             }
         }
 
-        if *actual_pixel != expected_pixel {
+        if !super::super::color::fraction_triplets_match(
+            actual_pixel,
+            &expected_pixel,
+            COLOR_FRACTION_TOLERANCE,
+        ) {
             Some(String::from(format!(
                 "({:?},{:?}): expected {:?}, actual {:?}",
                 horizontal_pixels_from_bottom_left,

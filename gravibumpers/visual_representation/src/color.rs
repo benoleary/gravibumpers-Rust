@@ -83,3 +83,15 @@ pub fn fraction_from_values(
 pub fn zero_fraction() -> FractionTriplet {
     fraction_from_values(0.0, 0.0, 0.0)
 }
+
+pub fn fraction_triplets_match(
+    expected_triplet: &FractionTriplet,
+    actual_triplet: &FractionTriplet,
+    absolute_tolerance: f64,
+) -> bool {
+    ((expected_triplet.red_fraction - actual_triplet.red_fraction).abs() <= absolute_tolerance)
+        && ((expected_triplet.green_fraction - actual_triplet.green_fraction).abs()
+            <= absolute_tolerance)
+        && ((expected_triplet.blue_fraction - actual_triplet.blue_fraction).abs()
+            <= absolute_tolerance)
+}
