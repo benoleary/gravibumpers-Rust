@@ -36,8 +36,8 @@ impl super::ColoredPixelMatrix for AggregatedBrightnessMatrix {
     ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
         let height_index = vertical_pixels_from_bottom_left.0;
         let width_index = horizontal_pixels_from_bottom_left.0;
-        if (horizontal_pixels_from_bottom_left > &self.width_in_pixels_including_border)
-            || (vertical_pixels_from_bottom_left > &self.height_in_pixels_including_border)
+        if (horizontal_pixels_from_bottom_left >= &self.width_in_pixels_including_border)
+            || (vertical_pixels_from_bottom_left >= &self.height_in_pixels_including_border)
             || (height_index < 0)
             || (width_index < 0)
         {
