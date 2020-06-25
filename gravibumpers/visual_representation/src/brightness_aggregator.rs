@@ -766,7 +766,7 @@ mod tests {
                 ),
                 variable_values: data_structure::ParticleVariables {
                     horizontal_position: data_structure::HorizontalPositionUnit(-500.0),
-                    vertical_position: data_structure::VerticalPositionUnit(0.0),
+                    vertical_position: data_structure::VerticalPositionUnit(1.0),
                     horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
                     vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
                 },
@@ -852,7 +852,7 @@ mod tests {
                 &super::super::color::fraction_from_values(0.0, 3.0, 3.0),
             ),
             variable_values: data_structure::ParticleVariables {
-                horizontal_position: data_structure::HorizontalPositionUnit(4.0),
+                horizontal_position: data_structure::HorizontalPositionUnit(14.0),
                 vertical_position: data_structure::VerticalPositionUnit(-100.001),
                 horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
                 vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
@@ -886,7 +886,7 @@ mod tests {
             ),
             (
                 left_edge,
-                VerticalPixelAmount(0),
+                VerticalPixelAmount(1),
                 color_fraction_from_particle_intrinsics(test_particles[4].intrinsic_values),
             ),
             (
