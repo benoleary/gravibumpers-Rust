@@ -697,7 +697,7 @@ mod tests {
             },
             // Only particle in pixel (8, 0).
             data_structure::IndividualParticle {
-                intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
+                intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[2].2),
                 variable_values: data_structure::ParticleVariables {
                     horizontal_position: data_structure::HorizontalPositionUnit(8.999),
                     vertical_position: data_structure::VerticalPositionUnit(0.001),
