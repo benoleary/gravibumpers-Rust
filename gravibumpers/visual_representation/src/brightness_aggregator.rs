@@ -71,8 +71,8 @@ impl super::ColoredPixelMatrix for AggregatedBrightnessMatrix {
 struct PixelWindow {
     pub left_border: HorizontalPixelAmount,
     pub right_border: HorizontalPixelAmount,
-    pub upper_border: VerticalPixelAmount,
     pub lower_border: VerticalPixelAmount,
+    pub upper_border: VerticalPixelAmount,
     pub width_in_pixels_including_border: HorizontalPixelAmount,
     pub height_in_pixels_including_border: VerticalPixelAmount,
 }
@@ -165,10 +165,12 @@ fn draw_only_onscreen_particles(
         && (particle_vertical_coordinate <= pixel_window.upper_border.as_position_unit())
     {
         // The f64s have to fit into i32s because each was within a pair of i32 values.
-        let horizontal_pixel = HorizontalPixelAmount(particle_horizontal_coordinate.0 as i32)
-            - pixel_window.left_border;
-        let vertical_pixel =
-            VerticalPixelAmount(particle_vertical_coordinate.0 as i32) - pixel_window.lower_border;
+        let horizontal_pixel = super::new_horizontal_pixel_unit_rounding_to_negative_infinity(
+            particle_horizontal_coordinate,
+        ) - pixel_window.left_border;
+        let vertical_pixel = super::new_vertical_pixel_unit_rounding_to_negative_infinity(
+            particle_vertical_coordinate,
+        ) - pixel_window.lower_border;
         aggregation_matrix.add_brightness_without_bounds_check(
             &horizontal_pixel,
             &vertical_pixel,
@@ -211,10 +213,17 @@ fn draw_offscreen_particles_on_border(
 pub fn new(
     left_border: HorizontalPixelAmount,
     right_border: HorizontalPixelAmount,
-    upper_border: VerticalPixelAmount,
     lower_border: VerticalPixelAmount,
+    upper_border: VerticalPixelAmount,
     draw_offscreen_on_border: bool,
-) -> PixelBrightnessAggregator {
+) -> Result<PixelBrightnessAggregator, Box<dyn std::error::Error>> {
+    if (right_border < left_border) || (upper_border < lower_border) {
+        return Err(Box::new(OutOfBoundsError::new(&format!(
+            "right border {:?} must not be less than left border {:?} \
+             and upper border {:?} must not be less than lower border {:?}",
+            right_border, left_border, upper_border, lower_border
+        ))));
+    }
     let add_particle_brightness: Box<
         dyn Fn(
             &PixelWindow,
@@ -232,15 +241,15 @@ pub fn new(
     let pixel_window = PixelWindow {
         left_border: left_border,
         right_border: right_border,
-        upper_border: upper_border,
         lower_border: lower_border,
+        upper_border: upper_border,
         width_in_pixels_including_border: right_border - left_border + HorizontalPixelAmount(1),
         height_in_pixels_including_border: upper_border - lower_border + VerticalPixelAmount(1),
     };
-    PixelBrightnessAggregator {
+    Ok(PixelBrightnessAggregator {
         pixel_window: pixel_window,
         add_brightness_from_particle: add_particle_brightness,
-    }
+    })
 }
 
 #[cfg(test)]
@@ -547,8 +556,10 @@ mod tests {
             VerticalPixelAmount(-10),
             VerticalPixelAmount(10),
             false,
-        );
-        // Since the view is 0 <= x <= 20, -10 <= y <= 10, the expected vertical
+        )
+        .expect("Test should not get borders mixed up");
+        // Since the view is 10 <= x <= 30, -10 <= y <= 10, the expected horizontal
+        // co-ordinate is 10 less than the particle x co-ordinate, and the expected vertical
         // co-ordinate is 10 higher than the particle y co-ordinate.
         let expected_colored_pixels = vec![
             (
@@ -571,7 +582,7 @@ mod tests {
             data_structure::IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(0.0),
+                    horizontal_position: data_structure::HorizontalPositionUnit(10.0),
                     vertical_position: data_structure::VerticalPositionUnit(0.0),
                     horizontal_velocity: data_structure::HorizontalVelocityUnit(-10.0),
                     vertical_velocity: data_structure::VerticalVelocityUnit(9.9),
@@ -580,16 +591,16 @@ mod tests {
             data_structure::IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[1].2),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(0.1),
+                    horizontal_position: data_structure::HorizontalPositionUnit(11.1),
                     vertical_position: data_structure::VerticalPositionUnit(1.0),
                     horizontal_velocity: data_structure::HorizontalVelocityUnit(0.001),
                     vertical_velocity: data_structure::VerticalVelocityUnit(0.99),
                 },
             },
             data_structure::IndividualParticle {
-                intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
+                intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[2].2),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(9.999),
+                    horizontal_position: data_structure::HorizontalPositionUnit(19.999),
                     vertical_position: data_structure::VerticalPositionUnit(-0.001),
                     horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
                     vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
@@ -608,10 +619,11 @@ mod tests {
         new(
             HorizontalPixelAmount(0),
             HorizontalPixelAmount(10),
-            VerticalPixelAmount(10),
             VerticalPixelAmount(0),
+            VerticalPixelAmount(10),
             draw_offscreen_on_border,
         )
+        .expect("Test should not get borders mixed up")
     }
 
     #[test]

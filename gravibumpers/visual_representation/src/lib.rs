@@ -52,6 +52,16 @@ pub trait SequenceAnimator {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct HorizontalPixelAmount(pub i32);
 
+pub fn new_horizontal_pixel_unit_rounding_to_negative_infinity(
+    horizontal_coordinate: data_structure::HorizontalPositionUnit,
+) -> HorizontalPixelAmount {
+    if horizontal_coordinate.0 < 0.0 {
+        HorizontalPixelAmount(horizontal_coordinate.0 as i32 - 1)
+    } else {
+        HorizontalPixelAmount(horizontal_coordinate.0 as i32)
+    }
+}
+
 impl HorizontalPixelAmount {
     pub fn abs_as_usize(&self) -> usize {
         // The abs takes care of the unsigned, and u32 must fit inside usize.
@@ -81,6 +91,16 @@ impl std::ops::Sub<HorizontalPixelAmount> for HorizontalPixelAmount {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct VerticalPixelAmount(pub i32);
+
+pub fn new_vertical_pixel_unit_rounding_to_negative_infinity(
+    vertical_coordinate: data_structure::VerticalPositionUnit,
+) -> VerticalPixelAmount {
+    if vertical_coordinate.0 < 0.0 {
+        VerticalPixelAmount(vertical_coordinate.0 as i32 - 1)
+    } else {
+        VerticalPixelAmount(vertical_coordinate.0 as i32)
+    }
+}
 
 impl VerticalPixelAmount {
     pub fn abs_as_usize(&self) -> usize {
