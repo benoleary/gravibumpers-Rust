@@ -95,12 +95,22 @@ fn run_from_configuration_file(
         "particle_map_sequence.len() = {}",
         particle_map_sequence.len()
     );
-    let mut output_file = std::fs::File::create(output_filename)?;
+    let mut raw_output_file = std::fs::File::create(format!("raw_{}", output_filename))?;
 
     // Here we copy into a vector so that we can print it as a placeholder until we implement
     // creating a pixel map out of a particle list.
     let particle_vector: std::vec::Vec<data_structure::IndividualParticle> =
         std::vec::Vec::from_iter(initial_particle_map.get());
-    write!(output_file, "{:?}", particle_vector)?;
-    Ok(())
+    write!(raw_output_file, "{:?}", particle_vector)?;
+
+    let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(
+        visual_representation::HorizontalPixelAmount(-10),
+        visual_representation::HorizontalPixelAmount(10),
+        visual_representation::VerticalPixelAmount(-10),
+        visual_representation::VerticalPixelAmount(10),
+        false,
+    )
+    .expect("Fixed borders should not be wrong");
+    let particle_animator = visual_representation::apng::new(pixel_brightness_aggregator, 1);
+    particle_animator.animate_sequence(particle_map_sequence, 100, output_filename)
 }
