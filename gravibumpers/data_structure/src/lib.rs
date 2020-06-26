@@ -79,6 +79,18 @@ impl ColorTriplet {
     pub fn get_blue(&self) -> BlueColorUnit {
         self.blue_brightness
     }
+
+    pub fn overwrite_each_color_if_brighter(&mut self, possible_brighter_values: &ColorTriplet) {
+        if possible_brighter_values.red_brightness > self.red_brightness {
+            self.red_brightness = possible_brighter_values.red_brightness;
+        }
+        if possible_brighter_values.green_brightness > self.green_brightness {
+            self.green_brightness = possible_brighter_values.green_brightness;
+        }
+        if possible_brighter_values.blue_brightness > self.blue_brightness {
+            self.blue_brightness = possible_brighter_values.blue_brightness;
+        }
+    }
 }
 
 pub fn new_color_triplet(
@@ -91,6 +103,19 @@ pub fn new_color_triplet(
         green_brightness: green_brightness,
         blue_brightness: blue_brightness,
     }
+}
+
+pub fn color_triplets_match(
+    expected_triplet: &ColorTriplet,
+    actual_triplet: &ColorTriplet,
+    absolute_tolerance: f64,
+) -> bool {
+    ((expected_triplet.red_brightness.0 - actual_triplet.red_brightness.0).abs()
+        <= absolute_tolerance)
+        && ((expected_triplet.green_brightness.0 - actual_triplet.green_brightness.0).abs()
+            <= absolute_tolerance)
+        && ((expected_triplet.blue_brightness.0 - actual_triplet.blue_brightness.0).abs()
+            <= absolute_tolerance)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]

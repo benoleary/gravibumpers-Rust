@@ -15,15 +15,18 @@ pub struct AggregatedBrightnessMatrix {
 }
 
 impl AggregatedBrightnessMatrix {
-    fn add_brightness_without_bounds_check(
+    fn add_brightness_without_bounds_check_returning_current_triplet(
         &mut self,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
         brightness_to_add: &data_structure::ColorTriplet,
-    ) {
+    ) -> &data_structure::ColorTriplet {
         let height_index = vertical_pixels_from_bottom_left.0;
         let width_index = horizontal_pixels_from_bottom_left.0;
-        self.brightness_matrix[height_index as usize][width_index as usize] += *brightness_to_add;
+        let pixel_to_update =
+            &mut self.brightness_matrix[height_index as usize][width_index as usize];
+        *pixel_to_update += *brightness_to_add;
+        pixel_to_update
     }
 }
 
@@ -79,12 +82,12 @@ struct PixelWindow {
 
 pub struct PixelBrightnessAggregator {
     pixel_window: PixelWindow,
-    add_brightness_from_particle: Box<
+    add_brightness_from_particle_returning_current_triplet: Box<
         dyn Fn(
             &PixelWindow,
             &mut AggregatedBrightnessMatrix,
             &data_structure::IndividualParticle,
-        ) -> (),
+        ) -> Option<data_structure::ColorTriplet>,
     >,
 }
 
@@ -92,7 +95,7 @@ impl PixelBrightnessAggregator {
     fn aggregate_over_particle_iterator(
         &self,
         particles_to_draw: impl std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle>,
-    ) -> AggregatedBrightnessMatrix {
+    ) -> (AggregatedBrightnessMatrix, data_structure::ColorTriplet) {
         let mut aggregated_brightnesses = AggregatedBrightnessMatrix {
             brightness_matrix: vec![
                 vec![
@@ -109,15 +112,19 @@ impl PixelBrightnessAggregator {
             height_in_pixels_including_border: self.pixel_window.height_in_pixels_including_border,
         };
 
-        let add_brightness_from = &*self.add_brightness_from_particle;
+        let mut maximum_brightnesses = super::color::zero_brightness();
+        let add_brightness_from = &*self.add_brightness_from_particle_returning_current_triplet;
         for particle_to_draw in particles_to_draw {
-            add_brightness_from(
+            let update_result = add_brightness_from(
                 &self.pixel_window,
                 &mut aggregated_brightnesses,
                 &particle_to_draw,
             );
+            if let Some(updated_pixel) = update_result {
+                maximum_brightnesses.overwrite_each_color_if_brighter(&updated_pixel);
+            }
         }
-        aggregated_brightnesses
+        (aggregated_brightnesses, maximum_brightnesses)
     }
 }
 
@@ -136,9 +143,14 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
             };
 
         for mut particle_map in particle_map_sequence {
+            let (aggregated_brightnesses_in_map, maximum_brightness_in_map) =
+                self.aggregate_over_particle_iterator(particle_map.get());
             aggregated_brightnesses
                 .colored_pixel_matrices
-                .push(self.aggregate_over_particle_iterator(particle_map.get()));
+                .push(aggregated_brightnesses_in_map);
+            aggregated_brightnesses
+                .maximum_brightness_per_color
+                .overwrite_each_color_if_brighter(&maximum_brightness_in_map);
         }
 
         Ok(aggregated_brightnesses)
@@ -156,7 +168,7 @@ fn draw_only_onscreen_particles(
     pixel_window: &PixelWindow,
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
     particle_to_draw: &data_structure::IndividualParticle,
-) -> () {
+) -> Option<data_structure::ColorTriplet> {
     let particle_horizontal_coordinate = particle_to_draw.variable_values.horizontal_position;
     let particle_vertical_coordinate = particle_to_draw.variable_values.vertical_position;
     if (particle_horizontal_coordinate >= pixel_window.left_border.as_position_unit())
@@ -171,11 +183,15 @@ fn draw_only_onscreen_particles(
         let vertical_pixel = super::new_vertical_pixel_unit_rounding_to_negative_infinity(
             particle_vertical_coordinate,
         ) - pixel_window.lower_border;
-        aggregation_matrix.add_brightness_without_bounds_check(
-            &horizontal_pixel,
-            &vertical_pixel,
-            &particle_to_draw.intrinsic_values.color_brightness,
+        Some(
+            *aggregation_matrix.add_brightness_without_bounds_check_returning_current_triplet(
+                &horizontal_pixel,
+                &vertical_pixel,
+                &particle_to_draw.intrinsic_values.color_brightness,
+            ),
         )
+    } else {
+        None
     }
 }
 
@@ -183,7 +199,7 @@ fn draw_offscreen_particles_on_border(
     pixel_window: &PixelWindow,
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
     particle_to_draw: &data_structure::IndividualParticle,
-) -> () {
+) -> Option<data_structure::ColorTriplet> {
     let particle_horizontal_coordinate = particle_to_draw.variable_values.horizontal_position;
     let particle_vertical_coordinate = particle_to_draw.variable_values.vertical_position;
     let horizontal_pixel = if particle_horizontal_coordinate
@@ -203,10 +219,13 @@ fn draw_offscreen_particles_on_border(
         } else {
             VerticalPixelAmount(particle_vertical_coordinate.0 as i32) - pixel_window.lower_border
         };
-    aggregation_matrix.add_brightness_without_bounds_check(
-        &horizontal_pixel,
-        &vertical_pixel,
-        &particle_to_draw.intrinsic_values.color_brightness,
+
+    Some(
+        *aggregation_matrix.add_brightness_without_bounds_check_returning_current_triplet(
+            &horizontal_pixel,
+            &vertical_pixel,
+            &particle_to_draw.intrinsic_values.color_brightness,
+        ),
     )
 }
 
@@ -229,7 +248,7 @@ pub fn new(
             &PixelWindow,
             &mut AggregatedBrightnessMatrix,
             &data_structure::IndividualParticle,
-        ) -> (),
+        ) -> Option<data_structure::ColorTriplet>,
     > = if draw_offscreen_on_border {
         Box::new(draw_offscreen_particles_on_border)
     } else {
@@ -248,7 +267,7 @@ pub fn new(
     };
     Ok(PixelBrightnessAggregator {
         pixel_window: pixel_window,
-        add_brightness_from_particle: add_particle_brightness,
+        add_brightness_from_particle_returning_current_triplet: add_particle_brightness,
     })
 }
 
@@ -500,20 +519,32 @@ mod tests {
     }
 
     fn assert_pixels_as_expected_with_implicit_black_background(
-        test_result: AggregatedBrightnessMatrix,
+        resulting_matrix: &AggregatedBrightnessMatrix,
+        resulting_maximum_brightnesses: &data_structure::ColorTriplet,
         expected_pixels: &std::vec::Vec<(
             HorizontalPixelAmount,
             VerticalPixelAmount,
             ColorFraction,
         )>,
+        expected_maximum_brightnesses: &data_structure::ColorTriplet,
     ) -> Result<(), String> {
         let reference_brightness = new_reference_brightness();
         let mut failure_messages: std::vec::Vec<String> = vec![];
+        if !data_structure::color_triplets_match(
+            expected_maximum_brightnesses,
+            resulting_maximum_brightnesses,
+            COLOR_FRACTION_TOLERANCE,
+        ) {
+            failure_messages.push(String::from(format!(
+                "Incorrect maximum brightnesses: expected {:?}, actual {:?}",
+                expected_maximum_brightnesses, resulting_maximum_brightnesses,
+            )));
+        }
         loop_over_all_pixels(
-            test_result.height_in_pixels(),
-            test_result.width_in_pixels(),
+            resulting_matrix.height_in_pixels(),
+            resulting_matrix.width_in_pixels(),
             &mut |horizontal_pixels_from_bottom_left, vertical_pixels_from_bottom_left| {
-                let actual_result = test_result.color_fractions_at(
+                let actual_result = resulting_matrix.color_fractions_at(
                     &reference_brightness,
                     &horizontal_pixels_from_bottom_left,
                     &vertical_pixels_from_bottom_left,
