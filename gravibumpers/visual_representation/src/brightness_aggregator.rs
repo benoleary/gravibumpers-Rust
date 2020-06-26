@@ -638,11 +638,17 @@ mod tests {
                 },
             },
         ];
-        let test_result = pixel_brightness_aggregator
+        let (resulting_matrix, resulting_maximum_brightnesses) = pixel_brightness_aggregator
             .aggregate_over_particle_iterator(test_particles.into_iter());
         assert_pixels_as_expected_with_implicit_black_background(
-            test_result,
+            &resulting_matrix,
+            &resulting_maximum_brightnesses,
             &expected_colored_pixels,
+            &data_structure::new_color_triplet(
+                data_structure::RedColorUnit(0.75),
+                data_structure::GreenColorUnit(0.9),
+                data_structure::BlueColorUnit(2.0),
+            ),
         )
     }
 
@@ -749,11 +755,17 @@ mod tests {
                 },
             },
         ];
-        let test_result = pixel_brightness_aggregator
+        let (resulting_matrix, resulting_maximum_brightnesses) = pixel_brightness_aggregator
             .aggregate_over_particle_iterator(test_particles.into_iter());
         assert_pixels_as_expected_with_implicit_black_background(
-            test_result,
+            &resulting_matrix,
+            &resulting_maximum_brightnesses,
             &expected_colored_pixels,
+            &data_structure::new_color_triplet(
+                data_structure::RedColorUnit(0.3),
+                data_structure::GreenColorUnit(2.0),
+                data_structure::BlueColorUnit(2.0),
+            ),
         )
     }
 
@@ -855,11 +867,17 @@ mod tests {
         let pixel_brightness_aggregator = new_test_ten_by_ten_aggregator(false);
         let expected_colored_pixels = vec![];
         let test_particles = new_test_particles_outside_frame();
-        let test_result = pixel_brightness_aggregator
+        let (resulting_matrix, resulting_maximum_brightnesses) = pixel_brightness_aggregator
             .aggregate_over_particle_iterator(test_particles.into_iter());
         assert_pixels_as_expected_with_implicit_black_background(
-            test_result,
+            &resulting_matrix,
+            &resulting_maximum_brightnesses,
             &expected_colored_pixels,
+            &data_structure::new_color_triplet(
+                data_structure::RedColorUnit(0.0),
+                data_structure::GreenColorUnit(0.0),
+                data_structure::BlueColorUnit(0.0),
+            ),
         )
     }
 
@@ -948,11 +966,17 @@ mod tests {
                 super::super::color::fraction_from_values(0.0, 3.0, 5.0),
             ),
         ];
-        let test_result = pixel_brightness_aggregator
+        let (resulting_matrix, resulting_maximum_brightnesses) = pixel_brightness_aggregator
             .aggregate_over_particle_iterator(test_particles.into_iter());
         assert_pixels_as_expected_with_implicit_black_background(
-            test_result,
+            &resulting_matrix,
+            &resulting_maximum_brightnesses,
             &expected_colored_pixels,
+            &data_structure::new_color_triplet(
+                data_structure::RedColorUnit(2.0),
+                data_structure::GreenColorUnit(3.0),
+                data_structure::BlueColorUnit(5.0),
+            ),
         )
     }
 }
