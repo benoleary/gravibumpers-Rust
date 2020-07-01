@@ -200,25 +200,46 @@ pub struct IndividualParticle {
     pub variable_values: ParticleVariables,
 }
 
-pub trait ParticleIteratorProvider {
-    fn get<'a>(&'a mut self)
-        -> &'a mut dyn std::iter::ExactSizeIterator<Item = IndividualParticle>;
+pub trait ParticleIteratorProvider<'a> {
+    fn get<'b>(&mut self) -> &mut dyn std::iter::ExactSizeIterator<Item = &'a IndividualParticle>
+    where
+        'a: 'b;
 }
 
-pub struct ParticleVector {
-    particle_iterator: Box<dyn std::iter::ExactSizeIterator<Item = IndividualParticle>>,
+pub struct BorrowedParticleIterator<'a> {
+    borrowed_iterator: &'a mut dyn std::iter::ExactSizeIterator<Item = &'a IndividualParticle>,
 }
 
-impl ParticleIteratorProvider for ParticleVector {
-    fn get<'a>(
-        &'a mut self,
-    ) -> &'a mut dyn std::iter::ExactSizeIterator<Item = IndividualParticle> {
-        &mut self.particle_iterator
+impl<'a> ParticleIteratorProvider<'a> for BorrowedParticleIterator<'a> {
+    fn get<'b>(&mut self) -> &mut dyn std::iter::ExactSizeIterator<Item = &'a IndividualParticle>
+    where
+        'a: 'b,
+    {
+        &mut self.borrowed_iterator
     }
 }
 
-pub fn wrap_particle_vector(particle_vector: std::vec::Vec<IndividualParticle>) -> ParticleVector {
-    ParticleVector {
-        particle_iterator: Box::new(particle_vector.into_iter()),
+pub struct ParticleVector {
+    particle_vector: std::vec::Vec<IndividualParticle>,
+}
+
+impl<'a> ParticleIteratorProvider<'a> for ParticleVector<'a> {
+    fn get<'b>(&mut self) -> &mut dyn std::iter::ExactSizeIterator<Item = &'a IndividualParticle>
+    where
+        'a: 'b,
+    {
+        // This is not working because I am thinking about it all wrong. I need to consider what
+        // is being moved and what has ownership of what. It probably does have to be a
+        // std::iter::ExactSizeIterator<Item = impl std::iter::ExactSizeIterator<Item = &'a IndividualParticle>>
+        // in the end.
+        &mut self.borrowed_iterator
+    }
+}
+
+pub fn wrap_particle_vector<'a>(
+    particle_vector: &'a std::vec::Vec<IndividualParticle>,
+) -> BorrowedParticleIterator<'a> {
+    BorrowedParticleIterator {
+        borrowed_iterator: &mut (&particle_vector).into_iter(),
     }
 }
