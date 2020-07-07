@@ -194,52 +194,40 @@ pub struct ParticleVariables {
     pub vertical_velocity: VerticalVelocityUnit,
 }
 
+pub trait ParticleRepresentation {
+    fn read_intrinsics(&self) -> &ParticleIntrinsics;
+    fn read_variables(&self) -> &ParticleVariables;
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct IndividualParticle {
     pub intrinsic_values: ParticleIntrinsics,
     pub variable_values: ParticleVariables,
 }
 
-pub trait ParticleIteratorProvider<'a> {
-    fn get<'b>(&mut self) -> &mut dyn std::iter::ExactSizeIterator<Item = &'a IndividualParticle>
-    where
-        'a: 'b;
-}
-
-pub struct BorrowedParticleIterator<'a> {
-    borrowed_iterator: &'a mut dyn std::iter::ExactSizeIterator<Item = &'a IndividualParticle>,
-}
-
-impl<'a> ParticleIteratorProvider<'a> for BorrowedParticleIterator<'a> {
-    fn get<'b>(&mut self) -> &mut dyn std::iter::ExactSizeIterator<Item = &'a IndividualParticle>
-    where
-        'a: 'b,
-    {
-        &mut self.borrowed_iterator
+impl ParticleRepresentation for IndividualParticle {
+    fn read_intrinsics(&self) -> &ParticleIntrinsics {
+        &self.intrinsic_values
+    }
+    fn read_variables(&self) -> &ParticleVariables {
+        &self.variable_values
     }
 }
 
-pub struct ParticleVector {
-    particle_vector: std::vec::Vec<IndividualParticle>,
-}
-
-impl<'a> ParticleIteratorProvider<'a> for ParticleVector<'a> {
-    fn get<'b>(&mut self) -> &mut dyn std::iter::ExactSizeIterator<Item = &'a IndividualParticle>
-    where
-        'a: 'b,
-    {
-        // This is not working because I am thinking about it all wrong. I need to consider what
-        // is being moved and what has ownership of what. It probably does have to be a
-        // std::iter::ExactSizeIterator<Item = impl std::iter::ExactSizeIterator<Item = &'a IndividualParticle>>
-        // in the end.
-        &mut self.borrowed_iterator
+impl ParticleRepresentation for &IndividualParticle {
+    fn read_intrinsics(&self) -> &ParticleIntrinsics {
+        &self.intrinsic_values
+    }
+    fn read_variables(&self) -> &ParticleVariables {
+        &self.variable_values
     }
 }
 
-pub fn wrap_particle_vector<'a>(
-    particle_vector: &'a std::vec::Vec<IndividualParticle>,
-) -> BorrowedParticleIterator<'a> {
-    BorrowedParticleIterator {
-        borrowed_iterator: &mut (&particle_vector).into_iter(),
+pub fn create_individual_from_representation(
+    particle_representation: impl ParticleRepresentation,
+) -> IndividualParticle {
+    IndividualParticle {
+        intrinsic_values: *particle_representation.read_intrinsics(),
+        variable_values: *particle_representation.read_variables(),
     }
 }

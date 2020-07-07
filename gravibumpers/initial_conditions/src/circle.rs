@@ -17,7 +17,7 @@ const BLUE_LABEL: &str = "blue";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
-) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
+) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
     let circle_displacement = super::parse_position(&given_configuration[DISPLACEMENT_LABEL])?;
     let circle_velocity = super::parse_velocity(&given_configuration[VELOCITY_LABEL])?;
     let circle_radius = super::parse_f64(RADIUS_LABEL, given_configuration)?;
@@ -56,7 +56,7 @@ fn particles_from_numbers(
     circle_population: i64,
     angular_velocity: f64,
     common_intrinsics: data_structure::ParticleIntrinsics,
-) -> Result<Box<dyn data_structure::ParticleIteratorProvider>, Box<dyn std::error::Error>> {
+) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
     if circle_population < 2 {
         return Err(Box::new(ConfigurationParseError::new(&format!(
             "Population {} is not large enough (must be 2 or larger)",
@@ -154,9 +154,7 @@ fn particles_from_numbers(
         }
     }
 
-    Ok(Box::new(data_structure::wrap_particle_vector(
-        circle_particles,
-    )))
+    Ok(circle_particles)
 }
 
 #[cfg(test)]
@@ -428,7 +426,7 @@ mod tests {
             serde_json::json!(test_angular_speed),
         );
         test_configuration[POPULATION_LABEL] = serde_json::json!(2);
-        let mut generated_particles =
+        let generated_particles =
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
@@ -446,8 +444,8 @@ mod tests {
         ];
 
         data_structure::comparison::unordered_within_tolerance(
-            &mut expected_particles.iter().cloned(),
-            generated_particles.get(),
+            &mut expected_particles.iter(),
+            &mut generated_particles.iter(),
             &new_particle_tolerance(),
         )
     }
@@ -468,7 +466,7 @@ mod tests {
             serde_json::json!(0.0),
         );
         test_configuration[POPULATION_LABEL] = serde_json::json!(3);
-        let mut generated_particles =
+        let generated_particles =
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let left_vertical_magnitude = 0.866;
         let left_horizontal_coordinate = data_structure::HorizontalPositionUnit(-0.5);
@@ -494,8 +492,8 @@ mod tests {
         ];
 
         data_structure::comparison::unordered_within_tolerance(
-            &mut expected_particles.iter().cloned(),
-            generated_particles.get(),
+            &mut expected_particles.iter(),
+            &mut generated_particles.iter(),
             &new_particle_tolerance(),
         )
     }
@@ -518,7 +516,7 @@ mod tests {
             serde_json::json!(test_angular_speed),
         );
         test_configuration[POPULATION_LABEL] = serde_json::json!(4);
-        let mut generated_particles =
+        let generated_particles =
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
@@ -552,8 +550,8 @@ mod tests {
         ];
 
         data_structure::comparison::unordered_within_tolerance(
-            &mut expected_particles.iter().cloned(),
-            generated_particles.get(),
+            &mut expected_particles.iter(),
+            &mut generated_particles.iter(),
             &new_particle_tolerance(),
         )
     }

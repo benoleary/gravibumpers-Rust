@@ -2,12 +2,15 @@
 /// sequences of collections of particles.
 extern crate data_structure;
 
-pub trait ParticlesInTimeEvolver<T: std::iter::ExactSizeIterator<Item = Self::Output>> {
-    type Output: data_structure::ParticleIteratorProvider;
+pub trait ParticlesInTimeEvolver<T: std::iter::ExactSizeIterator<Item = Self::EmittedIterator>> {
+    type EmittedParticle: data_structure::ParticleRepresentation;
+    type EmittedIterator: std::iter::ExactSizeIterator<Item = Self::EmittedParticle>;
 
     fn create_time_sequence(
-        &self,
-        initial_conditions: impl std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle>,
+        &mut self,
+        initial_conditions: impl std::iter::ExactSizeIterator<
+            Item = impl data_structure::ParticleRepresentation,
+        >,
     ) -> Result<T, Box<dyn std::error::Error>>;
 }
 
@@ -15,16 +18,20 @@ pub struct DummyEvolver {
     pub number_of_copies: usize,
 }
 
-impl ParticlesInTimeEvolver<std::vec::IntoIter<data_structure::ParticleVector>> for DummyEvolver {
+impl ParticlesInTimeEvolver<std::vec::IntoIter<std::vec::IntoIter<data_structure::ParticleVector>>>
+    for DummyEvolver
+{
     type Output = data_structure::ParticleVector;
 
-    fn create_time_sequence(
-        &self,
-        initial_conditions: impl std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle>,
+    fn create_time_sequence<'a>(
+        &mut self,
+        initial_conditions: impl std::iter::ExactSizeIterator<
+            Item = &'a data_structure::IndividualParticle,
+        >,
     ) -> Result<std::vec::IntoIter<data_structure::ParticleVector>, Box<dyn std::error::Error>>
     {
         let number_of_particles = initial_conditions.len();
-        let mut vector_of_copies: std::vec::Vec<std::vec::Vec<data_structure::IndividualParticle>> =
+        self.vector_of_copies: std::vec::Vec<std::vec::Vec<data_structure::IndividualParticle>> =
             std::vec::Vec::with_capacity(self.number_of_copies);
         for _ in 0..self.number_of_copies {
             let particle_vector: std::vec::Vec<data_structure::IndividualParticle> =
@@ -34,7 +41,7 @@ impl ParticlesInTimeEvolver<std::vec::IntoIter<data_structure::ParticleVector>> 
 
         for initial_particle in initial_conditions {
             for copy_vector in &mut vector_of_copies {
-                copy_vector.push(initial_particle);
+                copy_vector.push(*initial_particle);
             }
         }
 

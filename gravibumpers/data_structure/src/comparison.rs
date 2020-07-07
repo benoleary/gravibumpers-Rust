@@ -7,10 +7,10 @@
 /// any actual elements which were not matched, an error will be returned. Because of the nature
 /// of matching within a tolerance, if the tolerances are too large, some matches might happen
 /// between wrong pairings, and the result might be a false negative.
-pub fn unordered_within_tolerance<'a>(
-    expected_set: &mut impl std::iter::ExactSizeIterator<Item = &'a super::IndividualParticle>,
-    actual_set: impl std::iter::ExactSizeIterator<Item = &'a super::IndividualParticle>,
-    tolerances_as_particle: &super::IndividualParticle,
+pub fn unordered_within_tolerance(
+    expected_set: &mut impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
+    actual_set: impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
+    tolerances_as_particle: impl super::ParticleRepresentation,
 ) -> Result<(), String> {
     let expected_length = expected_set.len();
     if actual_set.len() != expected_length {
@@ -35,11 +35,11 @@ pub fn unordered_within_tolerance<'a>(
     let mut previous_unmatched_length = expected_length;
 
     let mut unmatched_actuals =
-        list_unmatched_particles(&first_expected, actual_set, tolerances_as_particle);
+        list_unmatched_particles(&first_expected, actual_set, &tolerances_as_particle);
 
     // If there was a match, we expect 1 less actual to come back from the above function.
     if unmatched_actuals.len() == previous_unmatched_length {
-        unmatched_expecteds.push(first_expected.clone());
+        unmatched_expecteds.push(super::create_individual_from_representation(first_expected));
     } else {
         previous_unmatched_length = unmatched_actuals.len();
     }
@@ -49,13 +49,15 @@ pub fn unordered_within_tolerance<'a>(
     for expected_particle in expected_set {
         unmatched_actuals = list_unmatched_particles(
             &expected_particle,
-            (&unmatched_actuals).iter(),
-            tolerances_as_particle,
+            unmatched_actuals.into_iter(),
+            &tolerances_as_particle,
         );
 
         // If there was a match, we expect 1 less actual to come back from the above function.
         if unmatched_actuals.len() == previous_unmatched_length {
-            unmatched_expecteds.push(expected_particle.clone());
+            unmatched_expecteds.push(super::create_individual_from_representation(
+                expected_particle,
+            ));
         } else {
             previous_unmatched_length = unmatched_actuals.len();
         }
@@ -71,10 +73,10 @@ pub fn unordered_within_tolerance<'a>(
     }
 }
 
-fn list_unmatched_particles<'a>(
-    expected_particle: &super::IndividualParticle,
-    unmatched_actuals: impl std::iter::ExactSizeIterator<Item = &'a super::IndividualParticle>,
-    tolerances_as_particle: &super::IndividualParticle,
+fn list_unmatched_particles(
+    expected_particle: &impl super::ParticleRepresentation,
+    unmatched_actuals: impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
+    tolerances_as_particle: &impl super::ParticleRepresentation,
 ) -> std::vec::Vec<super::IndividualParticle> {
     let mut found_match = false;
     let mut returned_unmatcheds: std::vec::Vec<super::IndividualParticle> =
@@ -89,7 +91,9 @@ fn list_unmatched_particles<'a>(
         {
             found_match = true;
         } else {
-            returned_unmatcheds.push(unmatched_actual.clone());
+            returned_unmatcheds.push(super::create_individual_from_representation(
+                unmatched_actual,
+            ));
         }
     }
 
@@ -97,18 +101,18 @@ fn list_unmatched_particles<'a>(
 }
 
 fn particle_within_tolerance(
-    expected_particle: &super::IndividualParticle,
-    actual_particle: &super::IndividualParticle,
-    tolerances_as_particle: &super::IndividualParticle,
+    expected_particle: &impl super::ParticleRepresentation,
+    actual_particle: &impl super::ParticleRepresentation,
+    tolerances_as_particle: &impl super::ParticleRepresentation,
 ) -> bool {
     intrinsics_within_tolerance(
-        &expected_particle.intrinsic_values,
-        &actual_particle.intrinsic_values,
-        &tolerances_as_particle.intrinsic_values,
+        expected_particle.read_intrinsics(),
+        &actual_particle.read_intrinsics(),
+        &tolerances_as_particle.read_intrinsics(),
     ) && variables_within_tolerance(
-        &expected_particle.variable_values,
-        &actual_particle.variable_values,
-        &tolerances_as_particle.variable_values,
+        &expected_particle.read_variables(),
+        &actual_particle.read_variables(),
+        &tolerances_as_particle.read_variables(),
     )
 }
 
