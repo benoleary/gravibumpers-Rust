@@ -224,7 +224,7 @@ impl ParticleRepresentation for &IndividualParticle {
 }
 
 pub fn create_individual_from_representation(
-    particle_representation: impl ParticleRepresentation,
+    particle_representation: &impl ParticleRepresentation,
 ) -> IndividualParticle {
     IndividualParticle {
         intrinsic_values: *particle_representation.read_intrinsics(),

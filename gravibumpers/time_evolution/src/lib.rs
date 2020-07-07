@@ -18,20 +18,22 @@ pub struct DummyEvolver {
     pub number_of_copies: usize,
 }
 
-impl ParticlesInTimeEvolver<std::vec::IntoIter<std::vec::IntoIter<data_structure::ParticleVector>>>
-    for DummyEvolver
+impl
+    ParticlesInTimeEvolver<
+        std::vec::IntoIter<std::vec::IntoIter<data_structure::IndividualParticle>>,
+    > for DummyEvolver
 {
-    type Output = data_structure::ParticleVector;
+    type EmittedParticle = data_structure::IndividualParticle;
+    type EmittedIterator = std::vec::IntoIter<Self::EmittedParticle>;
 
-    fn create_time_sequence<'a>(
+    fn create_time_sequence(
         &mut self,
         initial_conditions: impl std::iter::ExactSizeIterator<
-            Item = &'a data_structure::IndividualParticle,
+            Item = impl data_structure::ParticleRepresentation,
         >,
-    ) -> Result<std::vec::IntoIter<data_structure::ParticleVector>, Box<dyn std::error::Error>>
-    {
+    ) -> Result<std::vec::IntoIter<Self::EmittedIterator>, Box<dyn std::error::Error>> {
         let number_of_particles = initial_conditions.len();
-        self.vector_of_copies: std::vec::Vec<std::vec::Vec<data_structure::IndividualParticle>> =
+        let mut vector_of_copies: std::vec::Vec<std::vec::Vec<data_structure::IndividualParticle>> =
             std::vec::Vec::with_capacity(self.number_of_copies);
         for _ in 0..self.number_of_copies {
             let particle_vector: std::vec::Vec<data_structure::IndividualParticle> =
@@ -40,15 +42,17 @@ impl ParticlesInTimeEvolver<std::vec::IntoIter<std::vec::IntoIter<data_structure
         }
 
         for initial_particle in initial_conditions {
+            let copied_particle =
+                data_structure::create_individual_from_representation(initial_particle);
             for copy_vector in &mut vector_of_copies {
-                copy_vector.push(*initial_particle);
+                copy_vector.push(copied_particle);
             }
         }
 
-        let mut vector_of_iterators: std::vec::Vec<data_structure::ParticleVector> =
+        let mut vector_of_iterators: std::vec::Vec<Self::EmittedIterator> =
             std::vec::Vec::with_capacity(self.number_of_copies);
         for copy_vector in vector_of_copies {
-            vector_of_iterators.push(data_structure::wrap_particle_vector(copy_vector));
+            vector_of_iterators.push(copy_vector.into_iter());
         }
 
         Ok(vector_of_iterators.into_iter())
@@ -62,7 +66,7 @@ mod tests {
     #[test]
     fn check_dummy_produces_correct_length() -> Result<(), String> {
         let expected_length = 23;
-        let particles_in_time_evolver = super::DummyEvolver {
+        let mut particles_in_time_evolver = super::DummyEvolver {
             number_of_copies: expected_length,
         };
         let empty_initial_conditions: std::vec::Vec<data_structure::IndividualParticle> = vec![];
