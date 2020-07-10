@@ -44,12 +44,33 @@ fn create_rgb_demonstration(
         visual_representation::demonstration::DemonstrationMapper {},
         0,
     );
-    let mut dummy_sequence: Vec<visual_representation::demonstration::DummyParticleVector> =
-        Vec::new();
+    let ignored_particle = data_structure::IndividualParticle {
+        intrinsic_values: data_structure::ParticleIntrinsics {
+            inertial_mass: data_structure::InertialMassUnit(1.9),
+            attractive_charge: data_structure::AttractiveChargeUnit(2.8),
+            repulsive_charge: data_structure::RepulsiveChargeUnit(3.7),
+            color_brightness: data_structure::new_color_triplet(
+                data_structure::RedColorUnit(4.6),
+                data_structure::GreenColorUnit(5.5),
+                data_structure::BlueColorUnit(6.4),
+            ),
+        },
+        variable_values: data_structure::ParticleVariables {
+            horizontal_position: data_structure::HorizontalPositionUnit(1.0),
+            vertical_position: data_structure::VerticalPositionUnit(-1.0),
+            horizontal_velocity: data_structure::HorizontalVelocityUnit(0.1),
+            vertical_velocity: data_structure::VerticalVelocityUnit(-0.1),
+        },
+    };
+    let mut dummy_sequence: std::vec::Vec<
+        visual_representation::demonstration::SingleParticleCopyIterator,
+    > = std::vec::Vec::new();
     for _ in 0..100 {
-        dummy_sequence.push(visual_representation::demonstration::DummyParticleVector {});
+        dummy_sequence.push(visual_representation::demonstration::new_copy_iterator(
+            &ignored_particle,
+        ));
     }
-    demonstration_animator.animate_sequence(dummy_sequence.iter().cloned(), 100, output_filename)
+    demonstration_animator.animate_sequence(dummy_sequence.into_iter(), 100, output_filename)
 }
 
 fn run_from_configuration_file(
@@ -72,7 +93,7 @@ fn run_from_configuration_file(
         serde_json::from_str(&configuration_content)?;
     let parsed_configuration =
         initial_conditions::parse_deserialized_configuration(&deserialized_configuration)?;
-    let mut initial_particle_map = match parsed_configuration.generator_name {
+    let initial_particle_map = match parsed_configuration.generator_name {
         "circle" => {
             initial_conditions::circle::from_json(parsed_configuration.generator_configuration)
         }
@@ -86,11 +107,11 @@ fn run_from_configuration_file(
         }
     }?;
 
-    let particles_in_time_evolver = time_evolution::DummyEvolver {
+    let mut particles_in_time_evolver = time_evolution::DummyEvolver {
         number_of_copies: 23,
     };
     let particle_map_sequence =
-        particles_in_time_evolver.create_time_sequence(initial_particle_map.get())?;
+        particles_in_time_evolver.create_time_sequence(initial_particle_map.iter())?;
     println!(
         "particle_map_sequence.len() = {}",
         particle_map_sequence.len()
@@ -100,7 +121,9 @@ fn run_from_configuration_file(
     // Here we copy into a vector so that we can print it as a placeholder until we implement
     // creating a pixel map out of a particle list.
     let particle_vector: std::vec::Vec<data_structure::IndividualParticle> =
-        std::vec::Vec::from_iter(initial_particle_map.get());
+        std::vec::Vec::from_iter(initial_particle_map.iter().map(|particle_representation| {
+            data_structure::create_individual_from_representation(particle_representation)
+        }));
     write!(raw_output_file, "{:?}", particle_vector)?;
 
     let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(

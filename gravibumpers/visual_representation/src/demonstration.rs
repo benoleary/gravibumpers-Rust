@@ -152,6 +152,80 @@ impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
     }
 }
 
+pub struct SingleParticleCopyIterator {
+    single_particle: data_structure::IndividualParticle,
+    is_finished: bool,
+}
+
+pub fn new_copy_iterator(
+    single_particle: &impl data_structure::ParticleRepresentation,
+) -> SingleParticleCopyIterator {
+    SingleParticleCopyIterator {
+        single_particle: data_structure::create_individual_from_representation(single_particle),
+        is_finished: false,
+    }
+}
+
+impl std::iter::Iterator for SingleParticleCopyIterator {
+    type Item = data_structure::IndividualParticle;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.is_finished {
+            None
+        } else {
+            self.is_finished = true;
+            Some(data_structure::create_individual_from_representation(
+                &self.single_particle,
+            ))
+        }
+    }
+}
+
+impl std::iter::ExactSizeIterator for SingleParticleCopyIterator {
+    fn len(&self) -> usize {
+        if self.is_finished {
+            0
+        } else {
+            1
+        }
+    }
+}
+
+pub struct SingleParticleBorrowIterator<'a> {
+    pub single_particle: &'a data_structure::IndividualParticle,
+    is_finished: bool,
+}
+
+pub fn new_borrow_iterator<'a>(
+    single_particle: &'a data_structure::IndividualParticle,
+) -> SingleParticleBorrowIterator {
+    SingleParticleBorrowIterator {
+        single_particle: single_particle,
+        is_finished: false,
+    }
+}
+
+impl<'a> std::iter::Iterator for SingleParticleBorrowIterator<'a> {
+    type Item = &'a data_structure::IndividualParticle;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.is_finished {
+            None
+        } else {
+            self.is_finished = true;
+            Some(self.single_particle)
+        }
+    }
+}
+
+impl<'a> std::iter::ExactSizeIterator for SingleParticleBorrowIterator<'a> {
+    fn len(&self) -> usize {
+        if self.is_finished {
+            0
+        } else {
+            1
+        }
+    }
+}
+
 pub struct DemonstrationMapper {}
 
 impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {

@@ -10,8 +10,8 @@
       "x": -0.1,
       "y": 0.0
     },
-    "radius": 4,
-    "population": 100,
+    "radius": 6,
+    "population": 6,
     "rotation": 3,
     "mass": 1,
     "grav": 1,
