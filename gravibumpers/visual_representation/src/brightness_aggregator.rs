@@ -80,21 +80,24 @@ struct PixelWindow {
     pub height_in_pixels_including_border: VerticalPixelAmount,
 }
 
-pub struct PixelBrightnessAggregator<T: data_structure::ParticleRepresentation> {
+pub struct PixelBrightnessAggregator {
     pixel_window: PixelWindow,
     add_brightness_from_particle_returning_current_triplet: Box<
         dyn Fn(
             &PixelWindow,
             &mut AggregatedBrightnessMatrix,
-            &T,
+            &data_structure::ParticleIntrinsics,
+            &data_structure::ParticleVariables,
         ) -> Option<data_structure::ColorTriplet>,
     >,
 }
 
-impl<T> PixelBrightnessAggregator<T> {
+impl PixelBrightnessAggregator {
     fn aggregate_over_particle_iterator(
         &self,
-        particles_to_draw: impl std::iter::ExactSizeIterator<Item = T>,
+        particles_to_draw: impl std::iter::ExactSizeIterator<
+            Item = impl data_structure::ParticleRepresentation,
+        >,
     ) -> (AggregatedBrightnessMatrix, data_structure::ColorTriplet) {
         let mut aggregated_brightnesses = AggregatedBrightnessMatrix {
             brightness_matrix: vec![
@@ -118,7 +121,8 @@ impl<T> PixelBrightnessAggregator<T> {
             let update_result = add_brightness_from(
                 &self.pixel_window,
                 &mut aggregated_brightnesses,
-                &particle_to_draw,
+                particle_to_draw.read_intrinsics(),
+                particle_to_draw.read_variables(),
             );
             if let Some(updated_pixel) = update_result {
                 maximum_brightnesses.overwrite_each_color_if_brighter(&updated_pixel);
@@ -128,15 +132,12 @@ impl<T> PixelBrightnessAggregator<T> {
     }
 }
 
-impl<T> super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggregator<T>
-where
-    T: data_structure::ParticleRepresentation,
-{
+impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggregator {
     type Output = AggregatedBrightnessMatrix;
     fn aggregate_particle_colors_to_pixels(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl std::iter::ExactSizeIterator<Item = T>,
+            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
         >,
     ) -> Result<PixelMatrixSequence<Self::Output>, Box<dyn std::error::Error>> {
         let mut aggregated_brightnesses: PixelMatrixSequence<AggregatedBrightnessMatrix> =
@@ -145,7 +146,7 @@ where
                 maximum_brightness_per_color: super::color::zero_brightness(),
             };
 
-        for mut particle_map in particle_map_sequence {
+        for particle_map in particle_map_sequence {
             let (aggregated_brightnesses_in_map, maximum_brightness_in_map) =
                 self.aggregate_over_particle_iterator(particle_map);
             aggregated_brightnesses
@@ -170,9 +171,9 @@ where
 fn draw_only_onscreen_particles(
     pixel_window: &PixelWindow,
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
-    particle_to_draw: &impl data_structure::ParticleRepresentation,
+    particle_intrinsics: &data_structure::ParticleIntrinsics,
+    particle_variables: &data_structure::ParticleVariables,
 ) -> Option<data_structure::ColorTriplet> {
-    let particle_variables = particle_to_draw.read_variables();
     let particle_horizontal_coordinate = particle_variables.horizontal_position;
     let particle_vertical_coordinate = particle_variables.vertical_position;
     if (particle_horizontal_coordinate >= pixel_window.left_border.as_position_unit())
@@ -191,7 +192,7 @@ fn draw_only_onscreen_particles(
             *aggregation_matrix.add_brightness_without_bounds_check_returning_current_triplet(
                 &horizontal_pixel,
                 &vertical_pixel,
-                &particle_to_draw.read_intrinsics().color_brightness,
+                &particle_intrinsics.color_brightness,
             ),
         )
     } else {
@@ -202,9 +203,9 @@ fn draw_only_onscreen_particles(
 fn draw_offscreen_particles_on_border(
     pixel_window: &PixelWindow,
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
-    particle_to_draw: &impl data_structure::ParticleRepresentation,
+    particle_intrinsics: &data_structure::ParticleIntrinsics,
+    particle_variables: &data_structure::ParticleVariables,
 ) -> Option<data_structure::ColorTriplet> {
-    let particle_variables = particle_to_draw.read_variables();
     let particle_horizontal_coordinate = particle_variables.horizontal_position;
     let particle_vertical_coordinate = particle_variables.vertical_position;
     let horizontal_pixel = if particle_horizontal_coordinate
@@ -229,7 +230,7 @@ fn draw_offscreen_particles_on_border(
         *aggregation_matrix.add_brightness_without_bounds_check_returning_current_triplet(
             &horizontal_pixel,
             &vertical_pixel,
-            &particle_to_draw.read_intrinsics().color_brightness,
+            &particle_intrinsics.color_brightness,
         ),
     )
 }
@@ -252,7 +253,8 @@ pub fn new(
         dyn Fn(
             &PixelWindow,
             &mut AggregatedBrightnessMatrix,
-            &data_structure::IndividualParticle,
+            &data_structure::ParticleIntrinsics,
+            &data_structure::ParticleVariables,
         ) -> Option<data_structure::ColorTriplet>,
     > = if draw_offscreen_on_border {
         Box::new(draw_offscreen_particles_on_border)
