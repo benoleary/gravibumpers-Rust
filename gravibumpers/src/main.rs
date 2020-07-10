@@ -63,10 +63,10 @@ fn create_rgb_demonstration(
         },
     };
     let mut dummy_sequence: std::vec::Vec<
-        visual_representation::demonstration::SingleParticleCopyIterator,
+        visual_representation::demonstration::SingleParticleBorrowIterator,
     > = std::vec::Vec::new();
     for _ in 0..100 {
-        dummy_sequence.push(visual_representation::demonstration::new_copy_iterator(
+        dummy_sequence.push(visual_representation::demonstration::new_borrow_iterator(
             &ignored_particle,
         ));
     }
