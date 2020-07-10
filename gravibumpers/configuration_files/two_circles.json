@@ -25,6 +25,31 @@
         "green": 0,
         "blue": 100
       }
+    },
+    {
+      "generatorName": "circle",
+      "generatorConfiguration":
+      {
+        "displacement":
+        {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "velocity":
+        {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "radius": 4,
+        "population": 9,
+        "rotation": 3,
+        "mass": 1,
+        "grav": 1,
+        "bump": 0.5,
+        "red": 50,
+        "green": 100,
+        "blue": 0
+      }
     }
   ]
 }

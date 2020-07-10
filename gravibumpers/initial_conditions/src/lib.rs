@@ -6,6 +6,7 @@ extern crate serde_json;
 pub mod circle;
 use std::error::Error;
 
+const GENERATOR_CONFIGURATIONS_LABEL: &str = "generatorConfigurations";
 const GENERATOR_NAME_LABEL: &str = "generatorName";
 const GENERATOR_CONFIGURATION_LABEL: &str = "generatorConfiguration";
 const HORIZONTAL_LABEL: &str = "x";
@@ -42,32 +43,48 @@ pub struct ParsedConfiguration<'a> {
     pub generator_configuration: &'a serde_json::Value,
 }
 
-pub fn parse_deserialized_configuration<'a>(
+pub fn parse_deserialized_configurations<'a>(
     deserialized_configuration: &'a serde_json::Value,
-) -> Result<ParsedConfiguration, Box<dyn std::error::Error>> {
-    let generator_name = match deserialized_configuration[GENERATOR_NAME_LABEL].as_str() {
-        Some(parsed_string) => parsed_string,
-        _ => {
-            return Err(Box::new(ConfigurationParseError::new(&format!(
-                "Could not parse \"{}\" from {}",
-                GENERATOR_NAME_LABEL, deserialized_configuration
-            ))))
-        }
-    };
-    let generator_configuration =
-        match deserialized_configuration.get(GENERATOR_CONFIGURATION_LABEL) {
-            Some(parsed_value) => parsed_value,
+) -> Result<std::vec::Vec<ParsedConfiguration>, Box<dyn std::error::Error>> {
+    let mut parsed_configurations: std::vec::Vec<ParsedConfiguration> = vec![];
+    let configuration_objects =
+        match deserialized_configuration[GENERATOR_CONFIGURATIONS_LABEL].as_array() {
+            Some(parsed_array) => parsed_array,
             _ => {
                 return Err(Box::new(ConfigurationParseError::new(&format!(
-                    "Could not parse \"{}\" from {}",
-                    GENERATOR_CONFIGURATION_LABEL, deserialized_configuration
+                    "Could not parse \"{}\" from {} as a JSON array.",
+                    GENERATOR_CONFIGURATIONS_LABEL, deserialized_configuration
                 ))))
             }
         };
-    Ok(ParsedConfiguration {
-        generator_name: generator_name,
-        generator_configuration: generator_configuration,
-    })
+
+    for configuration_object in configuration_objects {
+        let generator_name = match configuration_object[GENERATOR_NAME_LABEL].as_str() {
+            Some(parsed_string) => parsed_string,
+            _ => {
+                return Err(Box::new(ConfigurationParseError::new(&format!(
+                    "Could not parse \"{}\" from {} in {}",
+                    GENERATOR_NAME_LABEL, configuration_object, deserialized_configuration
+                ))))
+            }
+        };
+        let generator_configuration = match configuration_object.get(GENERATOR_CONFIGURATION_LABEL)
+        {
+            Some(parsed_value) => parsed_value,
+            _ => {
+                return Err(Box::new(ConfigurationParseError::new(&format!(
+                    "Could not parse \"{}\" from {} in {}",
+                    GENERATOR_CONFIGURATION_LABEL, configuration_object, deserialized_configuration
+                ))))
+            }
+        };
+        parsed_configurations.push(ParsedConfiguration {
+            generator_name: generator_name,
+            generator_configuration: generator_configuration,
+        });
+    }
+
+    Ok(parsed_configurations)
 }
 
 pub fn parse_f64(
@@ -123,15 +140,46 @@ mod tests {
     use super::*;
 
     #[test]
-    fn check_reject_when_no_generator_name() -> Result<(), String> {
-        let nameless_configuration = serde_json::json!({
-            "gneratrNmae": "typo",
-            GENERATOR_CONFIGURATION_LABEL: {
+    fn check_reject_when_not_an_array() -> Result<(), String> {
+        let generator_name = "acceptable";
+        let generator_configuration = serde_json::json!(
+            {
                 "internalNumber": 9001,
-                "internalStringArray": ["we're", "the", "kids", "in", "America"]
+                "internalStringArray": ["we're", "the", "kids", "in", "America"],
             }
-        });
-        let parsing_result = parse_deserialized_configuration(&nameless_configuration);
+        );
+        let valid_configuration_element = serde_json::json!(
+            {
+                GENERATOR_NAME_LABEL: generator_name,
+                GENERATOR_CONFIGURATION_LABEL: generator_configuration,
+            }
+        );
+        let parsing_result = parse_deserialized_configurations(&valid_configuration_element);
+        if parsing_result.is_err() {
+            Ok(())
+        } else {
+            Err(String::from("Did not get an error"))
+        }
+    }
+
+    #[test]
+    fn check_reject_when_no_generator_name() -> Result<(), String> {
+        let nameless_configuration = serde_json::json!(
+            {
+                GENERATOR_CONFIGURATIONS_LABEL:
+                [
+                    {
+                        "gneratrNmae": "typo",
+                        GENERATOR_CONFIGURATION_LABEL:
+                        {
+                            "internalNumber": 9001,
+                            "internalStringArray": ["we're", "the", "kids", "in", "America"]
+                        }
+                    }
+                ]
+            }
+        );
+        let parsing_result = parse_deserialized_configurations(&nameless_configuration);
         if parsing_result.is_err() {
             Ok(())
         } else {
@@ -141,14 +189,22 @@ mod tests {
 
     #[test]
     fn check_reject_when_malformed_generator_name() -> Result<(), String> {
-        let nameless_configuration = serde_json::json!({
-            GENERATOR_NAME_LABEL: [],
-            GENERATOR_CONFIGURATION_LABEL: {
-                "internalNumber": 9001,
-                "internalStringArray": ["we're", "the", "kids", "in", "America"]
+        let nameless_configuration = serde_json::json!(
+            {
+                GENERATOR_CONFIGURATIONS_LABEL:
+                [
+                    {
+                        GENERATOR_NAME_LABEL: [],
+                        GENERATOR_CONFIGURATION_LABEL:
+                        {
+                            "internalNumber": 9001,
+                            "internalStringArray": ["we're", "the", "kids", "in", "America"]
+                        }
+                    }
+                ]
             }
-        });
-        let parsing_result = parse_deserialized_configuration(&nameless_configuration);
+        );
+        let parsing_result = parse_deserialized_configurations(&nameless_configuration);
         if parsing_result.is_err() {
             Ok(())
         } else {
@@ -158,14 +214,22 @@ mod tests {
 
     #[test]
     fn check_reject_when_no_generator_configuration() -> Result<(), String> {
-        let configurationless_configuration = serde_json::json!({
-            GENERATOR_NAME_LABEL: "acceptable",
-            format!("{}{}", GENERATOR_CONFIGURATION_LABEL, "x"): {
-                "internalNumber": 9001,
-                "internalStringArray": ["we're", "the", "kids", "in", "America"]
+        let configurationless_configuration = serde_json::json!(
+            {
+                GENERATOR_CONFIGURATIONS_LABEL:
+                [
+                    {
+                        GENERATOR_NAME_LABEL: "acceptable",
+                        format!("{}{}", GENERATOR_CONFIGURATION_LABEL, "x"):
+                        {
+                            "internalNumber": 9001,
+                            "internalStringArray": ["we're", "the", "kids", "in", "America"]
+                        }
+                    }
+                ]
             }
-        });
-        let parsing_result = parse_deserialized_configuration(&configurationless_configuration);
+        );
+        let parsing_result = parse_deserialized_configurations(&configurationless_configuration);
         if parsing_result.is_err() {
             Ok(())
         } else {
@@ -174,26 +238,108 @@ mod tests {
     }
 
     #[test]
-    fn check_parse_valid_configuration() -> Result<(), String> {
+    fn check_parse_valid_single_configuration() -> Result<(), String> {
         let expected_name = "acceptable";
-        let expected_configuration = serde_json::json!({
-            "internalNumber": 9001,
-            "internalStringArray": ["we're", "the", "kids", "in", "America"],
-        });
-        let valid_configuration = serde_json::json!({
-            GENERATOR_NAME_LABEL: expected_name,
-            GENERATOR_CONFIGURATION_LABEL: expected_configuration,
-        });
-        let parsing_result = parse_deserialized_configuration(&valid_configuration)
+        let expected_configuration = serde_json::json!(
+            {
+                "internalNumber": 9001,
+                "internalStringArray": ["we're", "the", "kids", "in", "America"],
+            }
+        );
+        let valid_configuration = serde_json::json!(
+            {
+                GENERATOR_CONFIGURATIONS_LABEL:
+                [
+                    {
+                        GENERATOR_NAME_LABEL: expected_name,
+                        GENERATOR_CONFIGURATION_LABEL: expected_configuration,
+                    }
+                ]
+            }
+        );
+        let parsing_result = parse_deserialized_configurations(&valid_configuration)
             .expect("Should parse valid JSON object");
-        if (parsing_result.generator_name == expected_name)
-            && (parsing_result.generator_configuration == &expected_configuration)
+        if parsing_result.len() != 1 {
+            return Err(String::from(format!(
+                "Expected vector of 1 element, actually parsed {:?}",
+                parsing_result
+            )));
+        }
+        let actual_single_configuration = &parsing_result[0];
+        if (actual_single_configuration.generator_name == expected_name)
+            && (actual_single_configuration.generator_configuration == &expected_configuration)
         {
             Ok(())
         } else {
             Err(String::from(format!(
                 "Expected name = {}, configuration = {}, actually parsed {:?}",
-                expected_name, expected_configuration, parsing_result
+                expected_name, expected_configuration, actual_single_configuration
+            )))
+        }
+    }
+
+    #[test]
+    fn check_parse_two_valid_configurations() -> Result<(), String> {
+        let expected_names = ["acceptable", "unproblematic"];
+        let expected_configurations = [
+            serde_json::json!(
+                {
+                    "internalNumber": 9001,
+                    "internalStringArray": ["we're", "the", "kids", "in", "America"],
+                }
+            ),
+            serde_json::json!(
+                {
+                    "internalNumber": 9002,
+                    "internalStringArray": ["oh-wo-oh"],
+                }
+            ),
+        ];
+        let valid_configuration = serde_json::json!(
+            {
+                GENERATOR_CONFIGURATIONS_LABEL:
+                [
+                    {
+                        GENERATOR_NAME_LABEL: expected_names[0],
+                        GENERATOR_CONFIGURATION_LABEL: expected_configurations[0],
+                    },
+                    {
+                        GENERATOR_NAME_LABEL: expected_names[1],
+                        GENERATOR_CONFIGURATION_LABEL: expected_configurations[1],
+                    }
+                ]
+            }
+        );
+        let parsing_result = parse_deserialized_configurations(&valid_configuration)
+            .expect("Should parse valid JSON object");
+        if parsing_result.len() != 2 {
+            return Err(String::from(format!(
+                "Expected vector of 2 element, actually parsed {:?}",
+                parsing_result
+            )));
+        }
+        let mut error_messages: std::vec::Vec<String> = vec![];
+        for comparison_index in 0..2 {
+            let actual_configuration_element = &parsing_result[comparison_index];
+            if (actual_configuration_element.generator_name != expected_names[comparison_index])
+                || (actual_configuration_element.generator_configuration
+                    != &expected_configurations[comparison_index])
+            {
+                error_messages.push(String::from(format!(
+                    "Expected name = {}, configuration = {}, actually parsed {:?}",
+                    expected_names[comparison_index],
+                    expected_configurations[comparison_index],
+                    actual_configuration_element
+                )));
+            }
+        }
+
+        if error_messages.is_empty() {
+            Ok(())
+        } else {
+            Err(String::from(format!(
+                "Failed comparisons: {:?}",
+                error_messages
             )))
         }
     }

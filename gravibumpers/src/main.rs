@@ -88,24 +88,28 @@ fn run_from_configuration_file(
         input_filename, output_filename
     );
 
+    let mut initial_particle_map: std::vec::Vec<data_structure::IndividualParticle> = vec![];
     let configuration_content = std::fs::read_to_string(input_filename)?;
     let deserialized_configuration: serde_json::Value =
         serde_json::from_str(&configuration_content)?;
-    let parsed_configuration =
-        initial_conditions::parse_deserialized_configuration(&deserialized_configuration)?;
-    let initial_particle_map = match parsed_configuration.generator_name {
-        "circle" => {
-            initial_conditions::circle::from_json(parsed_configuration.generator_configuration)
-        }
-        _ => {
-            return Err(Box::new(initial_conditions::ConfigurationParseError::new(
-                &format!(
-                    "Generator name \"{}\" is unknown",
-                    parsed_configuration.generator_name
-                ),
-            )))
-        }
-    }?;
+    let parsed_configurations =
+        initial_conditions::parse_deserialized_configurations(&deserialized_configuration)?;
+    for parsed_configuration in parsed_configurations {
+        let initial_particles_from_configuration = match parsed_configuration.generator_name {
+            "circle" => {
+                initial_conditions::circle::from_json(parsed_configuration.generator_configuration)
+            }
+            _ => {
+                return Err(Box::new(initial_conditions::ConfigurationParseError::new(
+                    &format!(
+                        "Generator name \"{}\" is unknown",
+                        parsed_configuration.generator_name
+                    ),
+                )))
+            }
+        }?;
+        initial_particle_map.extend(initial_particles_from_configuration.iter());
+    }
 
     let mut particles_in_time_evolver = time_evolution::DummyEvolver {
         number_of_copies: 23,
