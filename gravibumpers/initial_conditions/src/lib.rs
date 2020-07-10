@@ -4,6 +4,7 @@
 extern crate data_structure;
 extern crate serde_json;
 pub mod circle;
+pub mod single;
 use std::error::Error;
 
 const GENERATOR_CONFIGURATIONS_LABEL: &str = "generatorConfigurations";

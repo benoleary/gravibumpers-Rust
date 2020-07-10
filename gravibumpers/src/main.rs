@@ -2,8 +2,6 @@ extern crate data_structure;
 extern crate serde_json;
 extern crate visual_representation;
 
-use std::io::Write;
-use std::iter::FromIterator;
 use time_evolution::ParticlesInTimeEvolver;
 use visual_representation::SequenceAnimator;
 
@@ -26,8 +24,10 @@ fn print_help() -> Result<(), Box<dyn std::error::Error>> {
     println!("The first argument should be the mode. Currently implemented: rgb_demo, read_file");
     println!("rgb_demo expects 1 further argument: the filename for the output APNG.");
     println!(
-        "read_file expects 2 further argument: the filename of the configuration, then the \
-        filename for the output."
+        "read_file expects 3 further argument: the filename of the configuration, then the \
+        filename for the output, then a single word to determine if off-screen particles should \
+        be drawn on the border (case-insensitive 'yes' or 'true' to drawn them, 'no' or 'false' \
+        leave them undrawn)."
     );
     Ok(())
 }
@@ -77,12 +77,23 @@ fn run_from_configuration_file(
     command_line_arguments: &[String],
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("This will become GraviBumpers!");
-    if command_line_arguments.len() != 4 {
+    if command_line_arguments.len() != 5 {
         return print_help();
     }
 
     let input_filename = &command_line_arguments[2];
     let output_filename = &command_line_arguments[3];
+    let input_for_drawing_offscreen = &command_line_arguments[4];
+    let should_draw_offscreen_on_border = String::from("yes")
+        .eq_ignore_ascii_case(input_for_drawing_offscreen)
+        || String::from("true").eq_ignore_ascii_case(input_for_drawing_offscreen);
+    if !should_draw_offscreen_on_border
+        && !(String::from("no").eq_ignore_ascii_case(input_for_drawing_offscreen)
+            || String::from("false").eq_ignore_ascii_case(input_for_drawing_offscreen))
+    {
+        return print_help();
+    }
+
     println!(
         "reading configuration from {}, will write to {}",
         input_filename, output_filename
@@ -96,6 +107,9 @@ fn run_from_configuration_file(
         initial_conditions::parse_deserialized_configurations(&deserialized_configuration)?;
     for parsed_configuration in parsed_configurations {
         let initial_particles_from_configuration = match parsed_configuration.generator_name {
+            "single" => {
+                initial_conditions::single::from_json(parsed_configuration.generator_configuration)
+            }
             "circle" => {
                 initial_conditions::circle::from_json(parsed_configuration.generator_configuration)
             }
@@ -116,26 +130,13 @@ fn run_from_configuration_file(
     };
     let particle_map_sequence =
         particles_in_time_evolver.create_time_sequence(initial_particle_map.iter())?;
-    println!(
-        "particle_map_sequence.len() = {}",
-        particle_map_sequence.len()
-    );
-    let mut raw_output_file = std::fs::File::create(format!("raw_{}", output_filename))?;
-
-    // Here we copy into a vector so that we can print it as a placeholder until we implement
-    // creating a pixel map out of a particle list.
-    let particle_vector: std::vec::Vec<data_structure::IndividualParticle> =
-        std::vec::Vec::from_iter(initial_particle_map.iter().map(|particle_representation| {
-            data_structure::create_individual_from_representation(particle_representation)
-        }));
-    write!(raw_output_file, "{:?}", particle_vector)?;
 
     let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(
         visual_representation::HorizontalPixelAmount(-10),
         visual_representation::HorizontalPixelAmount(10),
         visual_representation::VerticalPixelAmount(-10),
         visual_representation::VerticalPixelAmount(10),
-        false,
+        should_draw_offscreen_on_border,
     )
     .expect("Fixed borders should not be wrong");
     let particle_animator = visual_representation::apng::new(pixel_brightness_aggregator, 1);
