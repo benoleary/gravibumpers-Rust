@@ -43,7 +43,7 @@ impl
 
         for initial_particle in initial_conditions {
             let copied_particle =
-                data_structure::create_individual_from_representation(initial_particle);
+                data_structure::create_individual_from_representation(&initial_particle);
             for copy_vector in &mut vector_of_copies {
                 copy_vector.push(copied_particle);
             }

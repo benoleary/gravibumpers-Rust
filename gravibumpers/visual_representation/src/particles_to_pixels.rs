@@ -14,7 +14,7 @@ pub trait ParticleToPixelMapper {
     fn aggregate_particle_colors_to_pixels(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl data_structure::ParticleIteratorProvider,
+            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
         >,
     ) -> Result<ColoredPixelMatrixSequence<Self::Output>, Box<dyn std::error::Error>>;
 

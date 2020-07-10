@@ -40,7 +40,7 @@ pub trait SequenceAnimator {
     fn animate_sequence(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl data_structure::ParticleIteratorProvider,
+            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
         >,
         milliseconds_per_frame: u32,
         output_filename: &str,

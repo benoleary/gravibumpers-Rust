@@ -39,7 +39,9 @@ pub fn unordered_within_tolerance(
 
     // If there was a match, we expect 1 less actual to come back from the above function.
     if unmatched_actuals.len() == previous_unmatched_length {
-        unmatched_expecteds.push(super::create_individual_from_representation(first_expected));
+        unmatched_expecteds.push(super::create_individual_from_representation(
+            &first_expected,
+        ));
     } else {
         previous_unmatched_length = unmatched_actuals.len();
     }
@@ -56,7 +58,7 @@ pub fn unordered_within_tolerance(
         // If there was a match, we expect 1 less actual to come back from the above function.
         if unmatched_actuals.len() == previous_unmatched_length {
             unmatched_expecteds.push(super::create_individual_from_representation(
-                expected_particle,
+                &expected_particle,
             ));
         } else {
             previous_unmatched_length = unmatched_actuals.len();
@@ -92,7 +94,7 @@ fn list_unmatched_particles(
             found_match = true;
         } else {
             returned_unmatcheds.push(super::create_individual_from_representation(
-                unmatched_actual,
+                &unmatched_actual,
             ));
         }
     }

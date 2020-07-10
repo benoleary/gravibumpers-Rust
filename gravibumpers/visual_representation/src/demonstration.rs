@@ -152,17 +152,6 @@ impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct DummyParticleVector {}
-
-impl data_structure::ParticleIteratorProvider for DummyParticleVector {
-    fn get(
-        &mut self,
-    ) -> &mut dyn std::iter::ExactSizeIterator<Item = data_structure::IndividualParticle> {
-        panic!("The APNG demonstration code should never actually attempt to get any particles.")
-    }
-}
-
 pub struct DemonstrationMapper {}
 
 impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
@@ -170,7 +159,7 @@ impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
     fn aggregate_particle_colors_to_pixels(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl data_structure::ParticleIteratorProvider,
+            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
         >,
     ) -> Result<
         super::particles_to_pixels::ColoredPixelMatrixSequence<Self::Output>,
