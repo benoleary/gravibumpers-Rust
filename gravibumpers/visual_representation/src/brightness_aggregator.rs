@@ -174,8 +174,8 @@ fn draw_only_onscreen_particles(
     particle_intrinsics: &data_structure::ParticleIntrinsics,
     particle_variables: &data_structure::ParticleVariables,
 ) -> Option<data_structure::ColorTriplet> {
-    let particle_horizontal_coordinate = particle_variables.horizontal_position;
-    let particle_vertical_coordinate = particle_variables.vertical_position;
+    let particle_horizontal_coordinate = particle_variables.position_vector.horizontal_component;
+    let particle_vertical_coordinate = particle_variables.position_vector.vertical_component;
     if (particle_horizontal_coordinate >= pixel_window.left_border.as_position_unit())
         && (particle_horizontal_coordinate <= pixel_window.right_border.as_position_unit())
         && (particle_vertical_coordinate >= pixel_window.lower_border.as_position_unit())
@@ -206,8 +206,8 @@ fn draw_offscreen_particles_on_border(
     particle_intrinsics: &data_structure::ParticleIntrinsics,
     particle_variables: &data_structure::ParticleVariables,
 ) -> Option<data_structure::ColorTriplet> {
-    let particle_horizontal_coordinate = particle_variables.horizontal_position;
-    let particle_vertical_coordinate = particle_variables.vertical_position;
+    let particle_horizontal_coordinate = particle_variables.position_vector.horizontal_component;
+    let particle_vertical_coordinate = particle_variables.position_vector.vertical_component;
     let horizontal_pixel = if particle_horizontal_coordinate
         < pixel_window.left_border.as_position_unit()
     {
@@ -620,28 +620,40 @@ mod tests {
             data_structure::IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(10.0),
-                    vertical_position: data_structure::VerticalPositionUnit(0.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(-10.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(9.9),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(10.0),
+                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(-10.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(9.9),
+                    },
                 },
             },
             data_structure::IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[1].2),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(11.1),
-                    vertical_position: data_structure::VerticalPositionUnit(1.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.001),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.99),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(11.1),
+                        vertical_component: data_structure::VerticalPositionUnit(1.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.001),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.99),
+                    },
                 },
             },
             data_structure::IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[2].2),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(19.999),
-                    vertical_position: data_structure::VerticalPositionUnit(-0.001),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(19.999),
+                        vertical_component: data_structure::VerticalPositionUnit(-0.001),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
         ];
@@ -697,10 +709,14 @@ mod tests {
                     &super::super::color::fraction_from_values(0.1, 0.0, 0.1),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(3.0),
-                    vertical_position: data_structure::VerticalPositionUnit(3.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(10.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(10.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(3.0),
+                        vertical_component: data_structure::VerticalPositionUnit(3.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(10.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(10.0),
+                    },
                 },
             },
             // Second of 3 in pixel (3, 3).
@@ -709,10 +725,14 @@ mod tests {
                     &super::super::color::fraction_from_values(0.1, 0.1, 0.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(3.0),
-                    vertical_position: data_structure::VerticalPositionUnit(3.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(-1.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(1.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(3.0),
+                        vertical_component: data_structure::VerticalPositionUnit(3.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(-1.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(1.0),
+                    },
                 },
             },
             // Third of 3 in pixel (3, 3).
@@ -721,10 +741,14 @@ mod tests {
                     &super::super::color::fraction_from_values(0.1, 0.1, 0.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(3.5),
-                    vertical_position: data_structure::VerticalPositionUnit(3.8),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(3.5),
+                        vertical_component: data_structure::VerticalPositionUnit(3.8),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             // First of 2 in pixel (5, 9).
@@ -733,10 +757,14 @@ mod tests {
                     &super::super::color::fraction_from_values(0.0, 2.0, 0.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(5.9),
-                    vertical_position: data_structure::VerticalPositionUnit(9.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(5.9),
+                        vertical_component: data_structure::VerticalPositionUnit(9.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             // Second of 2 in pixel (5, 9).
@@ -745,20 +773,28 @@ mod tests {
                     &super::super::color::fraction_from_values(0.0, 0.0, 2.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(5.0),
-                    vertical_position: data_structure::VerticalPositionUnit(9.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(5.0),
+                        vertical_component: data_structure::VerticalPositionUnit(9.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             // Only particle in pixel (8, 0).
             data_structure::IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[2].2),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(8.999),
-                    vertical_position: data_structure::VerticalPositionUnit(0.001),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(8.999),
+                        vertical_component: data_structure::VerticalPositionUnit(0.001),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
         ];
@@ -783,10 +819,14 @@ mod tests {
                     &super::super::color::fraction_from_values(0.0, 0.0, 1.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(11.0),
-                    vertical_position: data_structure::VerticalPositionUnit(3.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(-10.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(11.0),
+                        vertical_component: data_structure::VerticalPositionUnit(3.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(-10.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             data_structure::IndividualParticle {
@@ -794,10 +834,14 @@ mod tests {
                     &super::super::color::fraction_from_values(0.0, 1.0, 0.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(30.0),
-                    vertical_position: data_structure::VerticalPositionUnit(30.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(-1.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(1.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(30.0),
+                        vertical_component: data_structure::VerticalPositionUnit(30.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(-1.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(1.0),
+                    },
                 },
             },
             data_structure::IndividualParticle {
@@ -805,10 +849,14 @@ mod tests {
                     &super::super::color::fraction_from_values(0.0, 1.0, 1.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(3.5),
-                    vertical_position: data_structure::VerticalPositionUnit(13.8),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(3.5),
+                        vertical_component: data_structure::VerticalPositionUnit(13.8),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             data_structure::IndividualParticle {
@@ -816,10 +864,14 @@ mod tests {
                     &super::super::color::fraction_from_values(1.0, 0.0, 0.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(-0.001),
-                    vertical_position: data_structure::VerticalPositionUnit(10.001),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(-0.001),
+                        vertical_component: data_structure::VerticalPositionUnit(10.001),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             data_structure::IndividualParticle {
@@ -827,10 +879,14 @@ mod tests {
                     &super::super::color::fraction_from_values(1.0, 0.0, 1.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(-500.0),
-                    vertical_position: data_structure::VerticalPositionUnit(1.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(-500.0),
+                        vertical_component: data_structure::VerticalPositionUnit(1.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             data_structure::IndividualParticle {
@@ -838,10 +894,14 @@ mod tests {
                     &super::super::color::fraction_from_values(1.0, 1.0, 0.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(-1.0),
-                    vertical_position: data_structure::VerticalPositionUnit(-1.0),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(-1.0),
+                        vertical_component: data_structure::VerticalPositionUnit(-1.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             data_structure::IndividualParticle {
@@ -849,10 +909,14 @@ mod tests {
                     &super::super::color::fraction_from_values(1.0, 1.0, 1.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(8.999),
-                    vertical_position: data_structure::VerticalPositionUnit(-0.001),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(8.999),
+                        vertical_component: data_structure::VerticalPositionUnit(-0.001),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
             data_structure::IndividualParticle {
@@ -860,10 +924,14 @@ mod tests {
                     &super::super::color::fraction_from_values(0.0, 0.0, 2.0),
                 ),
                 variable_values: data_structure::ParticleVariables {
-                    horizontal_position: data_structure::HorizontalPositionUnit(88.999),
-                    vertical_position: data_structure::VerticalPositionUnit(-100.001),
-                    horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(88.999),
+                        vertical_component: data_structure::VerticalPositionUnit(-100.001),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
                 },
             },
         ]
@@ -909,10 +977,14 @@ mod tests {
                 &super::super::color::fraction_from_values(1.0, 1.0, 3.0),
             ),
             variable_values: data_structure::ParticleVariables {
-                horizontal_position: data_structure::HorizontalPositionUnit(8.1),
-                vertical_position: data_structure::VerticalPositionUnit(-2.2),
-                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                position_vector: data_structure::PositionVector {
+                    horizontal_component: data_structure::HorizontalPositionUnit(8.1),
+                    vertical_component: data_structure::VerticalPositionUnit(-2.2),
+                },
+                velocity_vector: data_structure::VelocityVector {
+                    horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                },
             },
         });
         test_particles.push(data_structure::IndividualParticle {
@@ -920,10 +992,14 @@ mod tests {
                 &super::super::color::fraction_from_values(0.0, 3.0, 3.0),
             ),
             variable_values: data_structure::ParticleVariables {
-                horizontal_position: data_structure::HorizontalPositionUnit(14.0),
-                vertical_position: data_structure::VerticalPositionUnit(-100.001),
-                horizontal_velocity: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_velocity: data_structure::VerticalVelocityUnit(0.0),
+                position_vector: data_structure::PositionVector {
+                    horizontal_component: data_structure::HorizontalPositionUnit(14.0),
+                    vertical_component: data_structure::VerticalPositionUnit(-100.001),
+                },
+                velocity_vector: data_structure::VelocityVector {
+                    horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                    vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                },
             },
         });
 

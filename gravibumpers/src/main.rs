@@ -56,10 +56,14 @@ fn create_rgb_demonstration(
             ),
         },
         variable_values: data_structure::ParticleVariables {
-            horizontal_position: data_structure::HorizontalPositionUnit(1.0),
-            vertical_position: data_structure::VerticalPositionUnit(-1.0),
-            horizontal_velocity: data_structure::HorizontalVelocityUnit(0.1),
-            vertical_velocity: data_structure::VerticalVelocityUnit(-0.1),
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
+                vertical_component: data_structure::VerticalPositionUnit(-1.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.1),
+                vertical_component: data_structure::VerticalVelocityUnit(-0.1),
+            },
         },
     };
     let mut dummy_sequence: std::vec::Vec<
@@ -125,11 +129,12 @@ fn run_from_configuration_file(
         initial_particle_map.extend(initial_particles_from_configuration.iter());
     }
 
-    let mut particles_in_time_evolver = time_evolution::DummyEvolver {
-        number_of_copies: 23,
-    };
+    // The number of internal steps per time slice will need to be a configuration parameter at some
+    // point.
+    let mut particles_in_time_evolver =
+        time_evolution::vec_of_pure_struct::new_maximally_contiguous_euler(10)?;
     let particle_map_sequence =
-        particles_in_time_evolver.create_time_sequence(initial_particle_map.iter())?;
+        particles_in_time_evolver.create_time_sequence(initial_particle_map.iter(), 23)?;
 
     let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(
         visual_representation::HorizontalPixelAmount(-10),

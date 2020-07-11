@@ -33,10 +33,8 @@ pub fn from_json(
             ),
         },
         variable_values: data_structure::ParticleVariables {
-            horizontal_position: particle_displacement.horizontal_position,
-            vertical_position: particle_displacement.vertical_position,
-            horizontal_velocity: particle_velocity.horizontal_velocity,
-            vertical_velocity: particle_velocity.vertical_velocity,
+            position_vector: particle_displacement,
+            velocity_vector: particle_velocity,
         },
     }])
 }

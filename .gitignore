@@ -15,3 +15,5 @@ gravibumpers/.vscode
 **/*.code-workspace
 **/*.out
 
+# A convenience file...
+occasional_commands.txt

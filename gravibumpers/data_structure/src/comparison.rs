@@ -7,10 +7,10 @@
 /// any actual elements which were not matched, an error will be returned. Because of the nature
 /// of matching within a tolerance, if the tolerances are too large, some matches might happen
 /// between wrong pairings, and the result might be a false negative.
-pub fn unordered_within_tolerance(
+pub fn unordered_particles_match_within_tolerance(
     expected_set: &mut impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
     actual_set: impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
-    tolerances_as_particle: impl super::ParticleRepresentation,
+    tolerances_as_particle: &impl super::ParticleRepresentation,
 ) -> Result<(), String> {
     let expected_length = expected_set.len();
     if actual_set.len() != expected_length {
@@ -35,7 +35,7 @@ pub fn unordered_within_tolerance(
     let mut previous_unmatched_length = expected_length;
 
     let mut unmatched_actuals =
-        list_unmatched_particles(&first_expected, actual_set, &tolerances_as_particle);
+        list_unmatched_particles(&first_expected, actual_set, tolerances_as_particle);
 
     // If there was a match, we expect 1 less actual to come back from the above function.
     if unmatched_actuals.len() == previous_unmatched_length {
@@ -52,7 +52,7 @@ pub fn unordered_within_tolerance(
         unmatched_actuals = list_unmatched_particles(
             &expected_particle,
             unmatched_actuals.into_iter(),
-            &tolerances_as_particle,
+            tolerances_as_particle,
         );
 
         // If there was a match, we expect 1 less actual to come back from the above function.
@@ -72,6 +72,54 @@ pub fn unordered_within_tolerance(
         )))
     } else {
         Ok(())
+    }
+}
+
+pub fn ordered_sequences_match_unordered_particles_within_tolerance(
+    expected_sequence: impl std::iter::ExactSizeIterator<
+        Item = impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
+    >,
+    actual_sequence: impl std::iter::ExactSizeIterator<
+        Item = impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
+    >,
+    tolerances_as_particle: &impl super::ParticleRepresentation,
+) -> Result<(), String> {
+    let number_of_time_slices = actual_sequence.len();
+    if expected_sequence.len() != number_of_time_slices {
+        return Err(String::from(format!(
+            "Lengths of sequences did not match: expected {}, actual {}",
+            expected_sequence.len(),
+            number_of_time_slices,
+        )));
+    }
+
+    let mut mismatched_time_slice_messages: std::vec::Vec<String> = vec![];
+
+    for (sequence_index, (mut expected_set, actual_set)) in
+        expected_sequence.zip(actual_sequence).enumerate()
+    {
+        let result_for_time_slice = unordered_particles_match_within_tolerance(
+            &mut expected_set,
+            actual_set,
+            tolerances_as_particle,
+        );
+
+        if result_for_time_slice.is_err() {
+            mismatched_time_slice_messages.push(String::from(format!(
+                "Time slice {} did not match: {}",
+                sequence_index,
+                result_for_time_slice.unwrap_err(),
+            )));
+        }
+    }
+
+    if mismatched_time_slice_messages.is_empty() {
+        Ok(())
+    } else {
+        Err(String::from(format!(
+            "Mismatch: {:?}",
+            mismatched_time_slice_messages,
+        )))
     }
 }
 
@@ -154,12 +202,35 @@ fn variables_within_tolerance(
     actual_variables: &super::ParticleVariables,
     tolerances_as_variables: &super::ParticleVariables,
 ) -> bool {
-    (expected_variables.horizontal_position.0 - actual_variables.horizontal_position.0).abs()
-        < tolerances_as_variables.horizontal_position.0.abs()
-        && (expected_variables.vertical_position.0 - actual_variables.vertical_position.0).abs()
-            <= tolerances_as_variables.vertical_position.0.abs()
-        && (expected_variables.horizontal_velocity.0 - actual_variables.horizontal_velocity.0).abs()
-            <= tolerances_as_variables.horizontal_velocity.0.abs()
-        && (expected_variables.vertical_velocity.0 - actual_variables.vertical_velocity.0).abs()
-            <= tolerances_as_variables.vertical_velocity.0.abs()
+    positions_within_tolerance(
+        &expected_variables.position_vector,
+        &actual_variables.position_vector,
+        &tolerances_as_variables.position_vector,
+    ) && velocities_within_tolerance(
+        &expected_variables.velocity_vector,
+        &actual_variables.velocity_vector,
+        &tolerances_as_variables.velocity_vector,
+    )
+}
+
+fn positions_within_tolerance(
+    expected_vector: &super::PositionVector,
+    actual_vector: &super::PositionVector,
+    tolerances_as_vector: &super::PositionVector,
+) -> bool {
+    (expected_vector.horizontal_component.0 - actual_vector.horizontal_component.0).abs()
+        < tolerances_as_vector.horizontal_component.0.abs()
+        && (expected_vector.vertical_component.0 - actual_vector.vertical_component.0).abs()
+            <= tolerances_as_vector.vertical_component.0.abs()
+}
+
+fn velocities_within_tolerance(
+    expected_vector: &super::VelocityVector,
+    actual_vector: &super::VelocityVector,
+    tolerances_as_vector: &super::VelocityVector,
+) -> bool {
+    (expected_vector.horizontal_component.0 - actual_vector.horizontal_component.0).abs()
+        < tolerances_as_vector.horizontal_component.0.abs()
+        && (expected_vector.vertical_component.0 - actual_vector.vertical_component.0).abs()
+            <= tolerances_as_vector.vertical_component.0.abs()
 }

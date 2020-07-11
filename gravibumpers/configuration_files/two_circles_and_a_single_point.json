@@ -12,12 +12,12 @@
         },
         "velocity":
         {
-          "x": -0.1,
+          "x": -0.05,
           "y": 0.0
         },
         "radius": 6,
         "population": 6,
-        "rotation": 3,
+        "rotation": 0.0,
         "mass": 1,
         "grav": 1,
         "bump": 0.5,
@@ -37,7 +37,7 @@
         },
         "velocity":
         {
-          "x": 0.0,
+          "x": 0.35,
           "y": 0.0
         },
         "mass": 1,
@@ -64,7 +64,7 @@
         },
         "radius": 5,
         "population": 12,
-        "rotation": 3,
+        "rotation": 0.1,
         "mass": 1,
         "grav": 1,
         "bump": 0.5,

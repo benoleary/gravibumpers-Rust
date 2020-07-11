@@ -19,8 +19,8 @@ pub struct ConfigurationParseError {
 }
 
 impl ConfigurationParseError {
-    pub fn new(error_message: &str) -> ConfigurationParseError {
-        ConfigurationParseError {
+    pub fn new(error_message: &str) -> Self {
+        Self {
             error_message: error_message.to_string(),
         }
     }
@@ -120,8 +120,8 @@ pub fn parse_position(
     let horizontal_position = parse_f64(HORIZONTAL_LABEL, given_position)?;
     let vertical_position = parse_f64(VERTICAL_LABEL, given_position)?;
     Ok(data_structure::PositionVector {
-        horizontal_position: data_structure::HorizontalPositionUnit(horizontal_position),
-        vertical_position: data_structure::VerticalPositionUnit(vertical_position),
+        horizontal_component: data_structure::HorizontalPositionUnit(horizontal_position),
+        vertical_component: data_structure::VerticalPositionUnit(vertical_position),
     })
 }
 
@@ -131,8 +131,8 @@ pub fn parse_velocity(
     let horizontal_velocity = parse_f64(HORIZONTAL_LABEL, given_position)?;
     let vertical_velocity = parse_f64(VERTICAL_LABEL, given_position)?;
     Ok(data_structure::VelocityVector {
-        horizontal_velocity: data_structure::HorizontalVelocityUnit(horizontal_velocity),
-        vertical_velocity: data_structure::VerticalVelocityUnit(vertical_velocity),
+        horizontal_component: data_structure::HorizontalVelocityUnit(horizontal_velocity),
+        vertical_component: data_structure::VerticalVelocityUnit(vertical_velocity),
     })
 }
 

@@ -17,8 +17,8 @@ pub struct OutOfBoundsError {
 }
 
 impl OutOfBoundsError {
-    pub fn new(error_message: &str) -> OutOfBoundsError {
-        OutOfBoundsError {
+    pub fn new(error_message: &str) -> Self {
+        Self {
             error_message: error_message.to_string(),
         }
     }
