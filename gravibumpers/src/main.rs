@@ -26,7 +26,7 @@ fn print_help() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "read_file expects 3 further argument: the filename of the configuration, then the \
         filename for the output, then a single word to determine if off-screen particles should \
-        be drawn on the border (case-insensitive 'yes' or 'true' to drawn them, 'no' or 'false' \
+        be drawn on the border (case-insensitive 'yes' or 'true' to draw them, 'no' or 'false' \
         leave them undrawn)."
     );
     Ok(())
