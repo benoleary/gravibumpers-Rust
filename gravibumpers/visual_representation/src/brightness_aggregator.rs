@@ -236,10 +236,10 @@ fn draw_offscreen_particles_on_border(
 }
 
 pub fn new(
-    left_border: HorizontalPixelAmount,
     right_border: HorizontalPixelAmount,
-    lower_border: VerticalPixelAmount,
     upper_border: VerticalPixelAmount,
+    left_border: HorizontalPixelAmount,
+    lower_border: VerticalPixelAmount,
     draw_offscreen_on_border: bool,
 ) -> Result<PixelBrightnessAggregator, Box<dyn std::error::Error>> {
     if (right_border < left_border) || (upper_border < lower_border) {
@@ -589,10 +589,10 @@ mod tests {
     fn check_three_particles_in_three_separate_pixels() -> Result<(), String> {
         // We have a view on co-ordinates with 10 <= x <= 30, -10 <= y <= 10.
         let pixel_brightness_aggregator = new(
-            HorizontalPixelAmount(10),
             HorizontalPixelAmount(30),
-            VerticalPixelAmount(-10),
             VerticalPixelAmount(10),
+            HorizontalPixelAmount(10),
+            VerticalPixelAmount(-10),
             false,
         )
         .expect("Test should not get borders mixed up");
@@ -673,10 +673,10 @@ mod tests {
 
     fn new_test_ten_by_ten_aggregator(draw_offscreen_on_border: bool) -> PixelBrightnessAggregator {
         new(
-            HorizontalPixelAmount(0),
             HorizontalPixelAmount(10),
-            VerticalPixelAmount(0),
             VerticalPixelAmount(10),
+            HorizontalPixelAmount(0),
+            VerticalPixelAmount(0),
             draw_offscreen_on_border,
         )
         .expect("Test should not get borders mixed up")

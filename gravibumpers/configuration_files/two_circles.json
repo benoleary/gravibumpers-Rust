@@ -1,4 +1,12 @@
 {
+  "memoryLayout": "VecOfPureStruct",
+  "millisecondsPerFrame": 100,
+  "numberOfFrames": 40,
+  "numberOfStepsPerFrame": 10,
+  "rightBorderCoordinate": 10,
+  "upperBorderCoordinate": 10,
+  "leftBorderCoordinate": -10,
+  "lowerBorderCoordinate": -10,
   "generatorConfigurations":
   [
     {

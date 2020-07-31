@@ -5,8 +5,17 @@ extern crate data_structure;
 extern crate serde_json;
 pub mod circle;
 pub mod single;
+use std::convert::TryInto;
 use std::error::Error;
 
+const MEMORY_LAYOUT_LABEL: &str = "memoryLayout";
+const MILLISECONDS_PER_FRAME_LABEL: &str = "millisecondsPerFrame";
+const NUMBER_OF_FRAMES_LABEL: &str = "numberOfFrames";
+const NUMBER_OF_STEPS_PER_FRAME_LABEL: &str = "numberOfStepsPerFrame";
+const RIGHT_BORDER_COORDINATE_LABEL: &str = "rightBorderCoordinate";
+const UPPER_BORDER_COORDINATE_LABEL: &str = "upperBorderCoordinate";
+const LEFT_BORDER_COORDINATE_LABEL: &str = "leftBorderCoordinate";
+const LOWER_BORDER_COORDINATE_LABEL: &str = "lowerBorderCoordinate";
 const GENERATOR_CONFIGURATIONS_LABEL: &str = "generatorConfigurations";
 const GENERATOR_NAME_LABEL: &str = "generatorName";
 const GENERATOR_CONFIGURATION_LABEL: &str = "generatorConfiguration";
@@ -38,16 +47,126 @@ impl std::fmt::Display for ConfigurationParseError {
     }
 }
 
+pub fn parse_str<'a>(
+    attribute_label: &str,
+    given_configuration: &'a serde_json::Value,
+) -> Result<&'a str, Box<dyn std::error::Error>> {
+    match given_configuration[attribute_label].as_str() {
+        Some(parsed_string) => Ok(parsed_string),
+        _ => Err(Box::new(ConfigurationParseError::new(&format!(
+            "Could not parse \"{}\" from {}",
+            attribute_label, given_configuration
+        )))),
+    }
+}
+
+pub fn parse_f64(
+    attribute_label: &str,
+    given_configuration: &serde_json::Value,
+) -> Result<f64, Box<dyn std::error::Error>> {
+    match given_configuration[attribute_label].as_f64() {
+        Some(parsed_number) => Ok(parsed_number),
+        _ => Err(Box::new(ConfigurationParseError::new(&format!(
+            "Could not parse \"{}\" from {}",
+            attribute_label, given_configuration
+        )))),
+    }
+}
+
+pub fn parse_i64(
+    attribute_label: &str,
+    given_configuration: &serde_json::Value,
+) -> Result<i64, Box<dyn std::error::Error>> {
+    match given_configuration[attribute_label].as_i64() {
+        Some(parsed_number) => Ok(parsed_number),
+        _ => Err(Box::new(ConfigurationParseError::new(&format!(
+            "Could not parse \"{}\" from {}",
+            attribute_label, given_configuration
+        )))),
+    }
+}
+
+pub fn parse_i64_as_u32(
+    attribute_label: &str,
+    given_configuration: &serde_json::Value,
+) -> Result<u32, Box<dyn std::error::Error>> {
+    Ok(parse_i64(attribute_label, given_configuration)?.try_into()?)
+}
+
+pub fn parse_i64_as_usize(
+    attribute_label: &str,
+    given_configuration: &serde_json::Value,
+) -> Result<usize, Box<dyn std::error::Error>> {
+    Ok(parse_i64(attribute_label, given_configuration)?.try_into()?)
+}
+
+pub fn parse_i64_as_i32(
+    attribute_label: &str,
+    given_configuration: &serde_json::Value,
+) -> Result<i32, Box<dyn std::error::Error>> {
+    Ok(parse_i64(attribute_label, given_configuration)?.try_into()?)
+}
+
+pub fn parse_position(
+    given_position: &serde_json::Value,
+) -> Result<data_structure::PositionVector, Box<dyn std::error::Error>> {
+    let horizontal_position = parse_f64(HORIZONTAL_LABEL, given_position)?;
+    let vertical_position = parse_f64(VERTICAL_LABEL, given_position)?;
+    Ok(data_structure::PositionVector {
+        horizontal_component: data_structure::HorizontalPositionUnit(horizontal_position),
+        vertical_component: data_structure::VerticalPositionUnit(vertical_position),
+    })
+}
+
+pub fn parse_velocity(
+    given_position: &serde_json::Value,
+) -> Result<data_structure::VelocityVector, Box<dyn std::error::Error>> {
+    let horizontal_velocity = parse_f64(HORIZONTAL_LABEL, given_position)?;
+    let vertical_velocity = parse_f64(VERTICAL_LABEL, given_position)?;
+    Ok(data_structure::VelocityVector {
+        horizontal_component: data_structure::HorizontalVelocityUnit(horizontal_velocity),
+        vertical_component: data_structure::VerticalVelocityUnit(vertical_velocity),
+    })
+}
+
 #[derive(Debug)]
-pub struct ParsedConfiguration<'a> {
+pub struct InitialParticleGeneratorConfiguration<'a> {
     pub generator_name: &'a str,
     pub generator_configuration: &'a serde_json::Value,
 }
 
-pub fn parse_deserialized_configurations<'a>(
+#[derive(Debug)]
+pub struct ParsedConfiguration<'a> {
+    pub memory_layout: &'a str,
+    pub milliseconds_per_frame: u32,
+    pub number_of_frames: usize,
+    pub number_of_steps_per_frame: u32,
+    pub right_border_coordinate: i32,
+    pub upper_border_coordinate: i32,
+    pub left_border_coordinate: i32,
+    pub lower_border_coordinate: i32,
+    pub generator_configurations: std::vec::Vec<InitialParticleGeneratorConfiguration<'a>>,
+}
+
+pub fn parse_deserialized_configuration<'a>(
     deserialized_configuration: &'a serde_json::Value,
-) -> Result<std::vec::Vec<ParsedConfiguration>, Box<dyn std::error::Error>> {
-    let mut parsed_configurations: std::vec::Vec<ParsedConfiguration> = vec![];
+) -> Result<ParsedConfiguration<'a>, Box<dyn std::error::Error>> {
+    let memory_layout = parse_str(MEMORY_LAYOUT_LABEL, &deserialized_configuration)?;
+    let milliseconds_per_frame =
+        parse_i64_as_u32(MILLISECONDS_PER_FRAME_LABEL, &deserialized_configuration)?;
+    let number_of_frames = parse_i64_as_usize(NUMBER_OF_FRAMES_LABEL, &deserialized_configuration)?;
+    let number_of_steps_per_frame =
+        parse_i64_as_u32(NUMBER_OF_STEPS_PER_FRAME_LABEL, &deserialized_configuration)?;
+    let right_border_coordinate =
+        parse_i64_as_i32(RIGHT_BORDER_COORDINATE_LABEL, &deserialized_configuration)?;
+    let upper_border_coordinate =
+        parse_i64_as_i32(UPPER_BORDER_COORDINATE_LABEL, &deserialized_configuration)?;
+    let left_border_coordinate =
+        parse_i64_as_i32(LEFT_BORDER_COORDINATE_LABEL, &deserialized_configuration)?;
+    let lower_border_coordinate =
+        parse_i64_as_i32(LOWER_BORDER_COORDINATE_LABEL, &deserialized_configuration)?;
+
+    let mut particle_generators: std::vec::Vec<InitialParticleGeneratorConfiguration> = vec![];
     let configuration_objects =
         match deserialized_configuration[GENERATOR_CONFIGURATIONS_LABEL].as_array() {
             Some(parsed_array) => parsed_array,
@@ -79,60 +198,22 @@ pub fn parse_deserialized_configurations<'a>(
                 ))))
             }
         };
-        parsed_configurations.push(ParsedConfiguration {
+        particle_generators.push(InitialParticleGeneratorConfiguration {
             generator_name: generator_name,
             generator_configuration: generator_configuration,
         });
     }
 
-    Ok(parsed_configurations)
-}
-
-pub fn parse_f64(
-    attribute_label: &str,
-    given_configuration: &serde_json::Value,
-) -> Result<f64, Box<dyn std::error::Error>> {
-    match given_configuration[attribute_label].as_f64() {
-        Some(parsed_number) => Ok(parsed_number),
-        _ => Err(Box::new(ConfigurationParseError::new(&format!(
-            "Could not parse \"{}\" from {}",
-            attribute_label, given_configuration
-        )))),
-    }
-}
-
-pub fn parse_i64(
-    attribute_label: &str,
-    given_configuration: &serde_json::Value,
-) -> Result<i64, Box<dyn std::error::Error>> {
-    match given_configuration[attribute_label].as_i64() {
-        Some(parsed_number) => Ok(parsed_number),
-        _ => Err(Box::new(ConfigurationParseError::new(&format!(
-            "Could not parse \"{}\" from {}",
-            attribute_label, given_configuration
-        )))),
-    }
-}
-
-pub fn parse_position(
-    given_position: &serde_json::Value,
-) -> Result<data_structure::PositionVector, Box<dyn std::error::Error>> {
-    let horizontal_position = parse_f64(HORIZONTAL_LABEL, given_position)?;
-    let vertical_position = parse_f64(VERTICAL_LABEL, given_position)?;
-    Ok(data_structure::PositionVector {
-        horizontal_component: data_structure::HorizontalPositionUnit(horizontal_position),
-        vertical_component: data_structure::VerticalPositionUnit(vertical_position),
-    })
-}
-
-pub fn parse_velocity(
-    given_position: &serde_json::Value,
-) -> Result<data_structure::VelocityVector, Box<dyn std::error::Error>> {
-    let horizontal_velocity = parse_f64(HORIZONTAL_LABEL, given_position)?;
-    let vertical_velocity = parse_f64(VERTICAL_LABEL, given_position)?;
-    Ok(data_structure::VelocityVector {
-        horizontal_component: data_structure::HorizontalVelocityUnit(horizontal_velocity),
-        vertical_component: data_structure::VerticalVelocityUnit(vertical_velocity),
+    Ok(ParsedConfiguration {
+        memory_layout: memory_layout,
+        milliseconds_per_frame: milliseconds_per_frame,
+        number_of_frames: number_of_frames,
+        number_of_steps_per_frame: number_of_steps_per_frame,
+        right_border_coordinate: right_border_coordinate,
+        upper_border_coordinate: upper_border_coordinate,
+        left_border_coordinate: left_border_coordinate,
+        lower_border_coordinate: lower_border_coordinate,
+        generator_configurations: particle_generators,
     })
 }
 
@@ -155,18 +236,25 @@ mod tests {
                 GENERATOR_CONFIGURATION_LABEL: generator_configuration,
             }
         );
-        let parsing_result = parse_deserialized_configurations(&valid_configuration_element);
+        let parsing_result = parse_deserialized_configuration(&valid_configuration_element);
         if parsing_result.is_err() {
             Ok(())
         } else {
             Err(String::from("Did not get an error"))
         }
     }
-
     #[test]
     fn check_reject_when_no_generator_name() -> Result<(), String> {
         let nameless_configuration = serde_json::json!(
             {
+                MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
+                MILLISECONDS_PER_FRAME_LABEL: 100,
+                NUMBER_OF_FRAMES_LABEL: 40,
+                NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                RIGHT_BORDER_COORDINATE_LABEL: 10,
+                UPPER_BORDER_COORDINATE_LABEL: 10,
+                LEFT_BORDER_COORDINATE_LABEL: -10,
+                LOWER_BORDER_COORDINATE_LABEL: -10,
                 GENERATOR_CONFIGURATIONS_LABEL:
                 [
                     {
@@ -180,7 +268,7 @@ mod tests {
                 ]
             }
         );
-        let parsing_result = parse_deserialized_configurations(&nameless_configuration);
+        let parsing_result = parse_deserialized_configuration(&nameless_configuration);
         if parsing_result.is_err() {
             Ok(())
         } else {
@@ -192,6 +280,14 @@ mod tests {
     fn check_reject_when_malformed_generator_name() -> Result<(), String> {
         let nameless_configuration = serde_json::json!(
             {
+                MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
+                MILLISECONDS_PER_FRAME_LABEL: 100,
+                NUMBER_OF_FRAMES_LABEL: 40,
+                NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                RIGHT_BORDER_COORDINATE_LABEL: 10,
+                UPPER_BORDER_COORDINATE_LABEL: 10,
+                LEFT_BORDER_COORDINATE_LABEL: -10,
+                LOWER_BORDER_COORDINATE_LABEL: -10,
                 GENERATOR_CONFIGURATIONS_LABEL:
                 [
                     {
@@ -205,7 +301,7 @@ mod tests {
                 ]
             }
         );
-        let parsing_result = parse_deserialized_configurations(&nameless_configuration);
+        let parsing_result = parse_deserialized_configuration(&nameless_configuration);
         if parsing_result.is_err() {
             Ok(())
         } else {
@@ -217,6 +313,14 @@ mod tests {
     fn check_reject_when_no_generator_configuration() -> Result<(), String> {
         let configurationless_configuration = serde_json::json!(
             {
+                MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
+                MILLISECONDS_PER_FRAME_LABEL: 100,
+                NUMBER_OF_FRAMES_LABEL: 40,
+                NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                RIGHT_BORDER_COORDINATE_LABEL: 10,
+                UPPER_BORDER_COORDINATE_LABEL: 10,
+                LEFT_BORDER_COORDINATE_LABEL: -10,
+                LOWER_BORDER_COORDINATE_LABEL: -10,
                 GENERATOR_CONFIGURATIONS_LABEL:
                 [
                     {
@@ -230,7 +334,7 @@ mod tests {
                 ]
             }
         );
-        let parsing_result = parse_deserialized_configurations(&configurationless_configuration);
+        let parsing_result = parse_deserialized_configuration(&configurationless_configuration);
         if parsing_result.is_err() {
             Ok(())
         } else {
@@ -249,6 +353,14 @@ mod tests {
         );
         let valid_configuration = serde_json::json!(
             {
+                MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
+                MILLISECONDS_PER_FRAME_LABEL: 100,
+                NUMBER_OF_FRAMES_LABEL: 40,
+                NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                RIGHT_BORDER_COORDINATE_LABEL: 10,
+                UPPER_BORDER_COORDINATE_LABEL: 10,
+                LEFT_BORDER_COORDINATE_LABEL: -10,
+                LOWER_BORDER_COORDINATE_LABEL: -10,
                 GENERATOR_CONFIGURATIONS_LABEL:
                 [
                     {
@@ -258,15 +370,15 @@ mod tests {
                 ]
             }
         );
-        let parsing_result = parse_deserialized_configurations(&valid_configuration)
+        let parsing_result = parse_deserialized_configuration(&valid_configuration)
             .expect("Should parse valid JSON object");
-        if parsing_result.len() != 1 {
+        if parsing_result.generator_configurations.len() != 1 {
             return Err(String::from(format!(
                 "Expected vector of 1 element, actually parsed {:?}",
                 parsing_result
             )));
         }
-        let actual_single_configuration = &parsing_result[0];
+        let actual_single_configuration = &parsing_result.generator_configurations[0];
         if (actual_single_configuration.generator_name == expected_name)
             && (actual_single_configuration.generator_configuration == &expected_configuration)
         {
@@ -298,6 +410,14 @@ mod tests {
         ];
         let valid_configuration = serde_json::json!(
             {
+                MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
+                MILLISECONDS_PER_FRAME_LABEL: 100,
+                NUMBER_OF_FRAMES_LABEL: 40,
+                NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                RIGHT_BORDER_COORDINATE_LABEL: 10,
+                UPPER_BORDER_COORDINATE_LABEL: 10,
+                LEFT_BORDER_COORDINATE_LABEL: -10,
+                LOWER_BORDER_COORDINATE_LABEL: -10,
                 GENERATOR_CONFIGURATIONS_LABEL:
                 [
                     {
@@ -311,9 +431,9 @@ mod tests {
                 ]
             }
         );
-        let parsing_result = parse_deserialized_configurations(&valid_configuration)
+        let parsing_result = parse_deserialized_configuration(&valid_configuration)
             .expect("Should parse valid JSON object");
-        if parsing_result.len() != 2 {
+        if parsing_result.generator_configurations.len() != 2 {
             return Err(String::from(format!(
                 "Expected vector of 2 element, actually parsed {:?}",
                 parsing_result
@@ -321,7 +441,8 @@ mod tests {
         }
         let mut error_messages: std::vec::Vec<String> = vec![];
         for comparison_index in 0..2 {
-            let actual_configuration_element = &parsing_result[comparison_index];
+            let actual_configuration_element =
+                &parsing_result.generator_configurations[comparison_index];
             if (actual_configuration_element.generator_name != expected_names[comparison_index])
                 || (actual_configuration_element.generator_configuration
                     != &expected_configurations[comparison_index])

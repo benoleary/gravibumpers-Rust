@@ -107,21 +107,21 @@ fn run_from_configuration_file(
     let configuration_content = std::fs::read_to_string(input_filename)?;
     let deserialized_configuration: serde_json::Value =
         serde_json::from_str(&configuration_content)?;
-    let parsed_configurations =
-        initial_conditions::parse_deserialized_configurations(&deserialized_configuration)?;
-    for parsed_configuration in parsed_configurations {
-        let initial_particles_from_configuration = match parsed_configuration.generator_name {
-            "single" => {
-                initial_conditions::single::from_json(parsed_configuration.generator_configuration)
-            }
-            "circle" => {
-                initial_conditions::circle::from_json(parsed_configuration.generator_configuration)
-            }
+    let parsed_configuration =
+        initial_conditions::parse_deserialized_configuration(&deserialized_configuration)?;
+    for generator_configuration in parsed_configuration.generator_configurations {
+        let initial_particles_from_configuration = match generator_configuration.generator_name {
+            "single" => initial_conditions::single::from_json(
+                generator_configuration.generator_configuration,
+            ),
+            "circle" => initial_conditions::circle::from_json(
+                generator_configuration.generator_configuration,
+            ),
             _ => {
                 return Err(Box::new(initial_conditions::ConfigurationParseError::new(
                     &format!(
                         "Generator name \"{}\" is unknown",
-                        parsed_configuration.generator_name
+                        generator_configuration.generator_name
                     ),
                 )))
             }
@@ -129,21 +129,27 @@ fn run_from_configuration_file(
         initial_particle_map.extend(initial_particles_from_configuration.iter());
     }
 
-    // The number of internal steps per time slice will need to be a configuration parameter at some
-    // point.
+    // The memory layout configuration parameter will eventually control something here.
     let mut particles_in_time_evolver =
-        time_evolution::vec_of_pure_struct::new_maximally_contiguous_euler(10)?;
-    let particle_map_sequence =
-        particles_in_time_evolver.create_time_sequence(initial_particle_map.iter(), 23)?;
+        time_evolution::vec_of_pure_struct::new_maximally_contiguous_euler(
+            parsed_configuration.number_of_steps_per_frame,
+        )?;
+    let particle_map_sequence = particles_in_time_evolver.create_time_sequence(
+        initial_particle_map.iter(),
+        parsed_configuration.number_of_frames,
+    )?;
 
     let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(
-        visual_representation::HorizontalPixelAmount(-10),
-        visual_representation::HorizontalPixelAmount(10),
-        visual_representation::VerticalPixelAmount(-10),
-        visual_representation::VerticalPixelAmount(10),
+        visual_representation::HorizontalPixelAmount(parsed_configuration.right_border_coordinate),
+        visual_representation::VerticalPixelAmount(parsed_configuration.upper_border_coordinate),
+        visual_representation::HorizontalPixelAmount(parsed_configuration.left_border_coordinate),
+        visual_representation::VerticalPixelAmount(parsed_configuration.lower_border_coordinate),
         should_draw_offscreen_on_border,
-    )
-    .expect("Fixed borders should not be wrong");
+    )?;
     let particle_animator = visual_representation::apng::new(pixel_brightness_aggregator, 1);
-    particle_animator.animate_sequence(particle_map_sequence, 100, output_filename)
+    particle_animator.animate_sequence(
+        particle_map_sequence,
+        parsed_configuration.milliseconds_per_frame,
+        output_filename,
+    )
 }
