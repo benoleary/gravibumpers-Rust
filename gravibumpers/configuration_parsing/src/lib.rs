@@ -9,6 +9,7 @@ use std::error::Error;
 pub const SECONDS_PER_MILLISECOND: f64 = 0.001;
 const MEMORY_LAYOUT_LABEL: &str = "memoryLayout";
 const NUMBER_OF_STEPS_PER_FRAME_LABEL: &str = "numberOfStepsPerFrame";
+const DEAD_ZONE_RADIUS_LABEL: &str = "deadZoneRadius";
 const INVERSE_SQUARED_COUPLING_LABEL: &str = "inverseSquaredCoupling";
 const INVERSE_FOURTH_COUPLING_LABEL: &str = "inverseFourthCoupling";
 const MILLISECONDS_PER_FRAME_LABEL: &str = "millisecondsPerFrame";
@@ -115,6 +116,7 @@ pub fn parse_i64_as_i32(
 
 #[derive(Debug)]
 pub struct EvolutionConfiguration {
+    pub dead_zone_radius: f64,
     pub inverse_squared_coupling: f64,
     pub inverse_fourth_coupling: f64,
     pub milliseconds_per_time_slice: u16,
@@ -155,6 +157,7 @@ pub fn parse_deserialized_configuration<'a>(
     let memory_layout = parse_str(MEMORY_LAYOUT_LABEL, &deserialized_configuration)?;
     let number_of_steps_per_time_slice =
         parse_i64_as_u32(NUMBER_OF_STEPS_PER_FRAME_LABEL, &deserialized_configuration)?;
+    let dead_zone_radius = parse_f64(DEAD_ZONE_RADIUS_LABEL, &deserialized_configuration)?;
     let inverse_squared_coupling =
         parse_f64(INVERSE_SQUARED_COUPLING_LABEL, &deserialized_configuration)?;
     let inverse_fourth_coupling =
@@ -215,6 +218,7 @@ pub fn parse_deserialized_configuration<'a>(
             number_of_steps_per_time_slice: number_of_steps_per_time_slice,
         },
         evolution_configuration: EvolutionConfiguration {
+            dead_zone_radius: dead_zone_radius,
             inverse_squared_coupling: inverse_squared_coupling,
             inverse_fourth_coupling: inverse_fourth_coupling,
             milliseconds_per_time_slice: milliseconds_per_time_slice,
@@ -262,6 +266,7 @@ mod tests {
             {
                 MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
                 NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                DEAD_ZONE_RADIUS_LABEL: 1.0,
                 INVERSE_SQUARED_COUPLING_LABEL: -1.0,
                 INVERSE_FOURTH_COUPLING_LABEL: 1.0,
                 MILLISECONDS_PER_FRAME_LABEL: 100,
@@ -297,6 +302,7 @@ mod tests {
             {
                 MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
                 NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                DEAD_ZONE_RADIUS_LABEL: 1.0,
                 INVERSE_SQUARED_COUPLING_LABEL: -1.0,
                 INVERSE_FOURTH_COUPLING_LABEL: 1.0,
                 MILLISECONDS_PER_FRAME_LABEL: 100,
@@ -332,6 +338,7 @@ mod tests {
             {
                 MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
                 NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                DEAD_ZONE_RADIUS_LABEL: 1.0,
                 INVERSE_SQUARED_COUPLING_LABEL: -1.0,
                 INVERSE_FOURTH_COUPLING_LABEL: 1.0,
                 MILLISECONDS_PER_FRAME_LABEL: 100,
@@ -374,6 +381,7 @@ mod tests {
             {
                 MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
                 NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                DEAD_ZONE_RADIUS_LABEL: 1.0,
                 INVERSE_SQUARED_COUPLING_LABEL: -1.0,
                 INVERSE_FOURTH_COUPLING_LABEL: 1.0,
                 MILLISECONDS_PER_FRAME_LABEL: 100,
@@ -433,6 +441,7 @@ mod tests {
             {
                 MEMORY_LAYOUT_LABEL: "VecOfPureStruct",
                 NUMBER_OF_STEPS_PER_FRAME_LABEL: 10,
+                DEAD_ZONE_RADIUS_LABEL: 1.0,
                 INVERSE_SQUARED_COUPLING_LABEL: -1.0,
                 INVERSE_FOURTH_COUPLING_LABEL: 1.0,
                 MILLISECONDS_PER_FRAME_LABEL: 100,
