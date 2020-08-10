@@ -104,6 +104,11 @@ impl
         >,
         Box<dyn std::error::Error>,
     > {
+        if evolution_configuration.dead_zone_radius <= 0.0 {
+            return Err(Box::new(super::ParameterError::new(
+                "Dead zone radius must be > 0.",
+            )));
+        }
         let seconds_between_configurations = (evolution_configuration.milliseconds_per_time_slice
             as f64)
             * configuration_parsing::SECONDS_PER_MILLISECOND;
@@ -197,6 +202,8 @@ pub fn new_maximally_contiguous_euler(
 mod tests {
     use super::*;
 
+    const TEST_DEAD_ZONE_RADIUS: f64 = 1.0;
+
     fn new_maximally_contiguous_euler_for_test() -> Result<MaximallyContiguousEuler, String> {
         new_maximally_contiguous_euler(100).or_else(|construction_error| {
             Err(String::from(format!(
@@ -227,6 +234,15 @@ mod tests {
         let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
         super::super::test_functions::test_uncharged_particles_do_not_accelerate(
             &mut evolver_implementation,
+        )
+    }
+
+    #[test]
+    fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest() -> Result<(), String> {
+        let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
+        super::super::test_functions::test_immobile_repelling_particles_within_dead_zone_stay_at_rest(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS
         )
     }
 }
