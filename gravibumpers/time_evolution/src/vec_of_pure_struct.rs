@@ -200,6 +200,7 @@ pub fn new_maximally_contiguous_euler(
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_functions as evolver_tests;
     use super::*;
 
     const TEST_DEAD_ZONE_RADIUS: f64 = 1.0;
@@ -216,33 +217,35 @@ mod tests {
     #[test]
     fn test_single_particle_at_rest_stays_at_rest() -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
-        super::super::test_functions::test_single_particle_at_rest_stays_at_rest(
-            &mut evolver_implementation,
-        )
+        evolver_tests::test_single_particle_at_rest_stays_at_rest(&mut evolver_implementation)
     }
 
     #[test]
     fn test_single_particle_at_constant_speed() -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
-        super::super::test_functions::test_single_particle_at_constant_speed(
-            &mut evolver_implementation,
-        )
+        evolver_tests::test_single_particle_at_constant_speed(&mut evolver_implementation)
     }
 
     #[test]
     fn test_uncharged_particles_do_not_accelerate() -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
-        super::super::test_functions::test_uncharged_particles_do_not_accelerate(
-            &mut evolver_implementation,
-        )
+        evolver_tests::test_uncharged_particles_do_not_accelerate(&mut evolver_implementation)
     }
 
     #[test]
     fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest() -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
-        super::super::test_functions::test_immobile_repelling_particles_within_dead_zone_stay_at_rest(
+        evolver_tests::test_immobile_repelling_particles_within_dead_zone_stay_at_rest(
             &mut evolver_implementation,
-            &TEST_DEAD_ZONE_RADIUS
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
+    fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally() -> Result<(), String> {
+        let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
+        evolver_tests::test_equal_masses_repelling_inverse_fourth_accelerate_away_equally(
+            &mut evolver_implementation,
         )
     }
 }
