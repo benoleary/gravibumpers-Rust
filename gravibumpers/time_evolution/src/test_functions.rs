@@ -32,6 +32,7 @@ fn create_test_evolution_configuration(
     number_of_time_slices: usize,
 ) -> super::configuration_parsing::EvolutionConfiguration {
     super::configuration_parsing::EvolutionConfiguration {
+        dead_zone_radius: 1.0,
         inverse_squared_coupling: -1.0,
         inverse_fourth_coupling: 1.0,
         milliseconds_per_time_slice: 1000,
@@ -415,4 +416,17 @@ where
         expected_sequence.into_iter(),
         &test_tolerances,
     );
+}
+
+pub fn test_immobile_charged_particles_within_dead_zone_stay_at_rest<T, U>(
+    tested_implementation: &mut T,
+    dead_zone_radius: &f64,
+) -> Result<(), String>
+where
+    T: super::ParticlesInTimeEvolver<U>,
+    U: std::iter::ExactSizeIterator<
+        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
+    >,
+{
+    Err(String::from(format!("Not yet implemented")))
 }
