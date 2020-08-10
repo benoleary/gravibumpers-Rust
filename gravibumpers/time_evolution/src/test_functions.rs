@@ -418,7 +418,7 @@ where
     );
 }
 
-pub fn test_immobile_charged_particles_within_dead_zone_stay_at_rest<T, U>(
+pub fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest<T, U>(
     tested_implementation: &mut T,
     dead_zone_radius: &f64,
 ) -> Result<(), String>
@@ -428,5 +428,68 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    Err(String::from(format!("Not yet implemented")))
+    let particle_intrinsics = data_structure::ParticleIntrinsics {
+        inertial_mass: data_structure::InertialMassUnit(1.0),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.0),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
+        color_brightness: data_structure::new_color_triplet(
+            data_structure::RedColorUnit(4.0),
+            data_structure::GreenColorUnit(5.0),
+            data_structure::BlueColorUnit(6.0),
+        ),
+    };
+
+    let left_particle = data_structure::IndividualParticle {
+        intrinsic_values: particle_intrinsics,
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(
+                    0.2 * dead_zone_radius,
+                ),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+    let right_particle = data_structure::IndividualParticle {
+        intrinsic_values: particle_intrinsics,
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(
+                    0.7 * dead_zone_radius,
+                ),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+
+    let initial_conditions = vec![left_particle.clone(), right_particle.clone()];
+    let expected_sequence = vec![
+        initial_conditions
+            .iter()
+            .cloned()
+            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .into_iter(),
+        vec![left_particle.clone(), right_particle.clone()].into_iter(),
+        vec![left_particle.clone(), right_particle.clone()].into_iter(),
+        vec![left_particle.clone(), right_particle.clone()].into_iter(),
+    ];
+
+    let number_of_time_slices = expected_sequence.len();
+    let evolution_configuration = create_test_evolution_configuration(number_of_time_slices);
+    let evolution_result = tested_implementation
+        .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
+    let test_tolerances = create_test_tolerances();
+    return compare_time_slices_to_expected(
+        evolution_result,
+        expected_sequence.into_iter(),
+        &test_tolerances,
+    );
 }
