@@ -90,7 +90,7 @@ pub fn unordered_particles_match_within_tolerance(
     }
 }
 
-pub fn ordered_sequences_match_unordered_particles_within_tolerance(
+pub fn ordered_sequences_match_unordered_particles(
     expected_sequence: impl std::iter::ExactSizeIterator<
         Item = impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
     >,

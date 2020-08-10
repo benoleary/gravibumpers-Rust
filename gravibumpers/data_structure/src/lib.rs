@@ -464,3 +464,32 @@ pub fn create_individual_from_representation(
         variable_values: *particle_representation.read_variables(),
     }
 }
+
+/// This holds the inverse of a distance, so 1/r.
+pub struct InverseSeparationUnit(f64);
+
+impl InverseSeparationUnit {
+    pub fn get_value(&self) -> f64 {
+        self.0
+    }
+}
+
+pub fn get_inverse_separation(
+    first_position: &PositionVector,
+    second_position: &PositionVector,
+) -> Result<InverseSeparationUnit, Box<dyn std::error::Error>> {
+    let horizontal_separation =
+        first_position.horizontal_component - second_position.horizontal_component;
+    let vertical_separation =
+        first_position.vertical_component - second_position.vertical_component;
+    let squared_separation = (horizontal_separation.0 * horizontal_separation.0)
+        + (vertical_separation.0 * vertical_separation.0);
+    if squared_separation == 0.0 {
+        Err(Box::new(DimensionError::new(&format!(
+            "Cannot invert zero separation between {:?} and (presumably equal) {:?}",
+            first_position, second_position
+        ))))
+    } else {
+        Ok(InverseSeparationUnit(1.0 / squared_separation.sqrt()))
+    }
+}
