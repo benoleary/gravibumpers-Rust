@@ -1,6 +1,6 @@
 /// This module provides a function to put particles evenly around a circle, with a common angular
 /// speed around the center.
-use super::ConfigurationParseError;
+use super::configuration_parsing::ConfigurationParseError;
 use std::convert::TryInto;
 
 const COMMON_DISPLACEMENT_IN_PIXELS_LABEL: &str = "commonDisplacementInPixels";
@@ -25,24 +25,34 @@ pub fn from_json(
         super::parse_position(&given_configuration[COMMON_DISPLACEMENT_IN_PIXELS_LABEL])?;
     let circle_velocity =
         super::parse_velocity(&given_configuration[LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL])?;
-    let circle_radius = super::parse_f64(RADIUS_IN_PIXELS_LABEL, given_configuration)?;
-    let circle_population = super::parse_i64(TOTAL_PARTICLES_ON_CIRCLE_LABEL, given_configuration)?;
-    let circle_rotation = super::parse_f64(
+    let circle_radius =
+        super::configuration_parsing::parse_f64(RADIUS_IN_PIXELS_LABEL, given_configuration)?;
+    let circle_population = super::configuration_parsing::parse_i64(
+        TOTAL_PARTICLES_ON_CIRCLE_LABEL,
+        given_configuration,
+    )?;
+    let circle_rotation = super::configuration_parsing::parse_f64(
         ANGULAR_VELOCITY_IN_PIXEL_RADIANS_PER_SECOND_LABEL,
         given_configuration,
     )?;
-    let inertial_mass = super::parse_f64(INERTIAL_MASS_IN_MASS_UNITS_LABEL, given_configuration)?;
-    let inverse_squared_charge = super::parse_f64(
+    let inertial_mass = super::configuration_parsing::parse_f64(
+        INERTIAL_MASS_IN_MASS_UNITS_LABEL,
+        given_configuration,
+    )?;
+    let inverse_squared_charge = super::configuration_parsing::parse_f64(
         INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
         given_configuration,
     )?;
-    let inverse_fourth_charge = super::parse_f64(
+    let inverse_fourth_charge = super::configuration_parsing::parse_f64(
         INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
         given_configuration,
     )?;
-    let red_brightness = super::parse_f64(RED_PIXEL_STRENGTH_LABEL, given_configuration)?;
-    let green_brightness = super::parse_f64(GREEN_PIXEL_STRENGTH_LABEL, given_configuration)?;
-    let blue_brightness = super::parse_f64(BLUE_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let red_brightness =
+        super::configuration_parsing::parse_f64(RED_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let green_brightness =
+        super::configuration_parsing::parse_f64(GREEN_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let blue_brightness =
+        super::configuration_parsing::parse_f64(BLUE_PIXEL_STRENGTH_LABEL, given_configuration)?;
     let common_intrinsics = data_structure::ParticleIntrinsics {
         inertial_mass: data_structure::InertialMassUnit(inertial_mass),
         inverse_squared_charge: data_structure::InverseSquaredChargeUnit(inverse_squared_charge),

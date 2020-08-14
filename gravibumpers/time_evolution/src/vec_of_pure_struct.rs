@@ -14,13 +14,13 @@ struct ParticleInForceField {
 
 pub struct MaximallyContiguousEuler {
     number_of_internal_slices_per_time_slice: u32,
-    time_difference_per_internal_slice: data_structure::TimeDifferenceUnit,
 }
 
 impl MaximallyContiguousEuler {
     /// This updates the velocities and positions assuming a constant acceleration for the time interval.
     fn update_velocities_and_positions(
         &self,
+        time_difference_per_internal_slice: &data_structure::TimeDifferenceUnit,
         particles_and_forces: &mut std::vec::Vec<ParticleInForceField>,
     ) {
         for particle_and_force in particles_and_forces.iter_mut() {
@@ -39,7 +39,7 @@ impl MaximallyContiguousEuler {
                 .position_vector
                 .increment_by_velocity_for_time_difference(
                     &average_velocity,
-                    &self.time_difference_per_internal_slice,
+                    &time_difference_per_internal_slice,
                 );
         }
     }
@@ -92,24 +92,44 @@ impl
 
     fn create_time_sequence(
         &mut self,
+        evolution_configuration: &configuration_parsing::EvolutionConfiguration,
         initial_conditions: impl std::iter::ExactSizeIterator<
             Item = impl data_structure::ParticleRepresentation,
         >,
-        number_of_time_slices: usize,
-    ) -> Result<std::vec::IntoIter<Self::EmittedIterator>, Box<dyn std::error::Error>> {
-        if number_of_time_slices < 1 {
-            return Ok(vec![].into_iter());
+    ) -> Result<
+        super::ParticleSetEvolution<
+            Self::EmittedParticle,
+            Self::EmittedIterator,
+            std::vec::IntoIter<Self::EmittedIterator>,
+        >,
+        Box<dyn std::error::Error>,
+    > {
+        let seconds_between_configurations = (evolution_configuration.milliseconds_per_time_slice
+            as f64)
+            * configuration_parsing::SECONDS_PER_MILLISECOND;
+
+        if evolution_configuration.number_of_time_slices < 1 {
+            return Ok(super::ParticleSetEvolution {
+                particle_configurations: vec![].into_iter(),
+                milliseconds_between_configurations: evolution_configuration
+                    .milliseconds_per_time_slice,
+            });
         }
         let mut evaluations_at_time_slices: std::vec::Vec<Self::EmittedIterator> =
-            std::vec::Vec::with_capacity(number_of_time_slices);
+            std::vec::Vec::with_capacity(evolution_configuration.number_of_time_slices);
 
+        // The calculation uses a smaller time interval than the output time difference between the
+        // configurations.
+        let time_interval_per_internal_slice = data_structure::TimeDifferenceUnit(
+            seconds_between_configurations / (self.number_of_internal_slices_per_time_slice as f64),
+        );
         let mut evolving_particles: std::vec::Vec<ParticleInForceField> =
             std::vec::Vec::with_capacity(initial_conditions.len());
         let mut initial_condition_errors: std::vec::Vec<(usize, Box<dyn std::error::Error>)> =
             vec![];
         for (initial_particle_index, initial_particle) in initial_conditions.enumerate() {
             match data_structure::divide_time_by_mass(
-                &self.time_difference_per_internal_slice,
+                &time_interval_per_internal_slice,
                 &initial_particle.read_intrinsics().inertial_mass,
             ) {
                 Ok(time_over_mass) => evolving_particles.push(ParticleInForceField {
@@ -138,19 +158,24 @@ impl
         evaluations_at_time_slices.push(create_time_slice_copy_without_force(
             evolving_particles.iter(),
         ));
-
-        for _ in 1..number_of_time_slices {
+        for _ in 1..evolution_configuration.number_of_time_slices {
             for _ in 0..self.number_of_internal_slices_per_time_slice {
                 update_forces(&mut evolving_particles);
-                self.update_velocities_and_positions(&mut evolving_particles);
+                self.update_velocities_and_positions(
+                    &time_interval_per_internal_slice,
+                    &mut evolving_particles,
+                );
             }
 
             evaluations_at_time_slices.push(create_time_slice_copy_without_force(
                 evolving_particles.iter(),
             ));
         }
-
-        Ok(evaluations_at_time_slices.into_iter())
+        Ok(super::ParticleSetEvolution {
+            particle_configurations: evaluations_at_time_slices.into_iter(),
+            milliseconds_between_configurations: evolution_configuration
+                .milliseconds_per_time_slice,
+        })
     }
 }
 
@@ -164,9 +189,6 @@ pub fn new_maximally_contiguous_euler(
     } else {
         Ok(MaximallyContiguousEuler {
             number_of_internal_slices_per_time_slice: number_of_internal_slices_per_time_slice,
-            time_difference_per_internal_slice: data_structure::TimeDifferenceUnit(
-                1.0 / (number_of_internal_slices_per_time_slice as f64),
-            ),
         })
     }
 }

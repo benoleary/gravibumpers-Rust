@@ -41,12 +41,12 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
         particle_map_sequence: impl std::iter::ExactSizeIterator<
             Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
         >,
-        milliseconds_per_frame: u32,
+        milliseconds_per_frame: u16,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let common_frame_information = apng_encoder::Frame {
             delay: Some(apng_encoder::Delay::new(
-                milliseconds_per_frame.try_into()?,
+                milliseconds_per_frame,
                 MILLISECONDS_PER_SECOND,
             )),
             ..Default::default()

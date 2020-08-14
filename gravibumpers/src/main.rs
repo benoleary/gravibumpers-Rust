@@ -108,7 +108,7 @@ fn run_from_configuration_file(
     let deserialized_configuration: serde_json::Value =
         serde_json::from_str(&configuration_content)?;
     let parsed_configuration =
-        initial_conditions::parse_deserialized_configuration(&deserialized_configuration)?;
+        configuration_parsing::parse_deserialized_configuration(&deserialized_configuration)?;
     for generator_configuration in parsed_configuration.generator_configurations {
         let initial_particles_from_configuration = match generator_configuration.generator_name {
             "single" => initial_conditions::single::from_json(
@@ -118,12 +118,12 @@ fn run_from_configuration_file(
                 generator_configuration.generator_configuration,
             ),
             _ => {
-                return Err(Box::new(initial_conditions::ConfigurationParseError::new(
-                    &format!(
+                return Err(Box::new(
+                    configuration_parsing::ConfigurationParseError::new(&format!(
                         "Generator name \"{}\" is unknown",
                         generator_configuration.generator_name
-                    ),
-                )))
+                    )),
+                ))
             }
         }?;
         initial_particle_map.extend(initial_particles_from_configuration.iter());
@@ -132,24 +132,27 @@ fn run_from_configuration_file(
     // The memory layout configuration parameter will eventually control something here.
     let mut particles_in_time_evolver =
         time_evolution::vec_of_pure_struct::new_maximally_contiguous_euler(
-            parsed_configuration.number_of_steps_per_frame,
+            parsed_configuration
+                .evolver_configuration
+                .number_of_steps_per_time_slice,
         )?;
-    let particle_map_sequence = particles_in_time_evolver.create_time_sequence(
+    let particle_set_evolution = particles_in_time_evolver.create_time_sequence(
+        &parsed_configuration.evolution_configuration,
         initial_particle_map.iter(),
-        parsed_configuration.number_of_frames,
     )?;
 
+    let picture_configuration = parsed_configuration.picture_configuration;
     let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(
-        visual_representation::HorizontalPixelAmount(parsed_configuration.right_border_coordinate),
-        visual_representation::VerticalPixelAmount(parsed_configuration.upper_border_coordinate),
-        visual_representation::HorizontalPixelAmount(parsed_configuration.left_border_coordinate),
-        visual_representation::VerticalPixelAmount(parsed_configuration.lower_border_coordinate),
+        visual_representation::HorizontalPixelAmount(picture_configuration.right_border_coordinate),
+        visual_representation::VerticalPixelAmount(picture_configuration.upper_border_coordinate),
+        visual_representation::HorizontalPixelAmount(picture_configuration.left_border_coordinate),
+        visual_representation::VerticalPixelAmount(picture_configuration.lower_border_coordinate),
         should_draw_offscreen_on_border,
     )?;
     let particle_animator = visual_representation::apng::new(pixel_brightness_aggregator, 1);
     particle_animator.animate_sequence(
-        particle_map_sequence,
-        parsed_configuration.milliseconds_per_frame,
+        particle_set_evolution.particle_configurations,
+        particle_set_evolution.milliseconds_between_configurations,
         output_filename,
     )
 }

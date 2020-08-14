@@ -27,8 +27,20 @@ fn create_test_tolerances() -> data_structure::IndividualParticle {
     }
 }
 
+/// It is easiest to work out expected values for whole 1-second time slices, so 1000 milliseconds.
+fn create_test_evolution_configuration(
+    number_of_time_slices: usize,
+) -> super::configuration_parsing::EvolutionConfiguration {
+    super::configuration_parsing::EvolutionConfiguration {
+        inverse_squared_coupling: -1.0,
+        inverse_fourth_coupling: 1.0,
+        milliseconds_per_time_slice: 1000,
+        number_of_time_slices: number_of_time_slices,
+    }
+}
+
 fn compare_time_slices_to_expected<T, U, V, W, X, Y>(
-    evolution_result: Result<V, Box<dyn std::error::Error>>,
+    evolution_result: Result<super::ParticleSetEvolution<T, U, V>, Box<dyn std::error::Error>>,
     expected_sequence: Y,
     tolerances_as_particle: &impl data_structure::ParticleRepresentation,
 ) -> Result<(), String>
@@ -41,8 +53,9 @@ where
     Y: std::iter::ExactSizeIterator<Item = X>,
 {
     match evolution_result {
-        Ok(actual_sequence) => {
+        Ok(actual_evolution) => {
             let number_of_time_slices = expected_sequence.len();
+            let actual_sequence = actual_evolution.particle_configurations;
             if actual_sequence.len() == number_of_time_slices {
                 return data_structure::comparison::ordered_sequences_match_unordered_particles_within_tolerance(
                 expected_sequence, actual_sequence, tolerances_as_particle);
@@ -93,6 +106,7 @@ where
     let initial_conditions = vec![expected_particle];
 
     let number_of_time_slices: usize = 8;
+    let evolution_configuration = create_test_evolution_configuration(number_of_time_slices);
     let mut expected_sequence: std::vec::Vec<
         std::vec::IntoIter<data_structure::IndividualParticle>,
     > = vec![];
@@ -102,7 +116,7 @@ where
         expected_sequence.push(unchanged_state.into_iter());
     }
     let evolution_result = tested_implementation
-        .create_time_sequence(initial_conditions.into_iter(), number_of_time_slices);
+        .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
     let test_tolerances = create_test_tolerances();
     return compare_time_slices_to_expected(
         evolution_result,
@@ -221,8 +235,9 @@ where
         vec![initial_particle];
 
     let number_of_time_slices = expected_sequence.len();
+    let evolution_configuration = create_test_evolution_configuration(number_of_time_slices);
     let evolution_result = tested_implementation
-        .create_time_sequence(initial_conditions.into_iter(), number_of_time_slices);
+        .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
     let test_tolerances = create_test_tolerances();
     return compare_time_slices_to_expected(
         evolution_result,
@@ -391,8 +406,9 @@ where
     ];
 
     let number_of_time_slices = expected_sequence.len();
+    let evolution_configuration = create_test_evolution_configuration(number_of_time_slices);
     let evolution_result = tested_implementation
-        .create_time_sequence(initial_conditions.into_iter(), number_of_time_slices);
+        .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
     let test_tolerances = create_test_tolerances();
     return compare_time_slices_to_expected(
         evolution_result,

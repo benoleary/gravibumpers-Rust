@@ -1,5 +1,6 @@
 /// This crate provides structs, traits, and functions for evolving initial conditions into
 /// sequences of collections of particles.
+extern crate configuration_parsing;
 extern crate data_structure;
 pub mod test_functions;
 pub mod vec_of_pure_struct;
@@ -55,17 +56,32 @@ impl std::fmt::Display for ParameterError {
     }
 }
 
+pub struct ParticleSetEvolution<T, U, V>
+where
+    T: data_structure::ParticleRepresentation,
+    U: std::iter::ExactSizeIterator<Item = T>,
+    V: std::iter::ExactSizeIterator<Item = U>,
+{
+    pub particle_configurations: V,
+    pub milliseconds_between_configurations: u16,
+}
+
 pub trait ParticlesInTimeEvolver<T: std::iter::ExactSizeIterator<Item = Self::EmittedIterator>> {
     type EmittedParticle: data_structure::ParticleRepresentation;
     type EmittedIterator: std::iter::ExactSizeIterator<Item = Self::EmittedParticle>;
 
     fn create_time_sequence(
         &mut self,
+        evolution_configuration: &configuration_parsing::EvolutionConfiguration,
         initial_conditions: impl std::iter::ExactSizeIterator<
             Item = impl data_structure::ParticleRepresentation,
         >,
-        number_of_time_slices: usize,
-    ) -> Result<T, Box<dyn std::error::Error>>;
+    ) -> Result<
+        ParticleSetEvolution<Self::EmittedParticle, Self::EmittedIterator, T>,
+        Box<dyn std::error::Error>,
+    >
+    where
+        <Self as ParticlesInTimeEvolver<T>>::EmittedIterator: std::iter::ExactSizeIterator;
 }
 
 fn force_on_first_particle_from_second_particle(

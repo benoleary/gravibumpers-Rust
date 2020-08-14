@@ -42,7 +42,7 @@ pub trait SequenceAnimator {
         particle_map_sequence: impl std::iter::ExactSizeIterator<
             Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
         >,
-        milliseconds_per_frame: u32,
+        milliseconds_per_frame: u16,
         output_filename: &str,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }

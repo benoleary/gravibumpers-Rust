@@ -8,14 +8,15 @@ edition = "2018"
 
 [dependencies]
 serde_json = "1.0.53"
+configuration_parsing = { path = "configuration_parsing" }
 data_structure = { path = "data_structure" }
 initial_conditions = { path = "initial_conditions" }
 time_evolution = { path = "time_evolution" }
 visual_representation = { path = "visual_representation" }
 
 [workspace]
-
 members = [
+    "configuration_parsing",
     "data_structure",
     "initial_conditions",
     "time_evolution",

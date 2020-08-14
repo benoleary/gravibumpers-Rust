@@ -18,18 +18,24 @@ pub fn from_json(
         super::parse_position(&given_configuration[COMMON_DISPLACEMENT_IN_PIXELS_LABEL])?;
     let particle_velocity =
         super::parse_velocity(&given_configuration[LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL])?;
-    let inertial_mass = super::parse_f64(INERTIAL_MASS_IN_MASS_UNITS_LABEL, given_configuration)?;
-    let inverse_squared_charge = super::parse_f64(
+    let inertial_mass = super::configuration_parsing::parse_f64(
+        INERTIAL_MASS_IN_MASS_UNITS_LABEL,
+        given_configuration,
+    )?;
+    let inverse_squared_charge = super::configuration_parsing::parse_f64(
         INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
         given_configuration,
     )?;
-    let inverse_fourth_charge = super::parse_f64(
+    let inverse_fourth_charge = super::configuration_parsing::parse_f64(
         INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
         given_configuration,
     )?;
-    let red_brightness = super::parse_f64(RED_PIXEL_STRENGTH_LABEL, given_configuration)?;
-    let green_brightness = super::parse_f64(GREEN_PIXEL_STRENGTH_LABEL, given_configuration)?;
-    let blue_brightness = super::parse_f64(BLUE_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let red_brightness =
+        super::configuration_parsing::parse_f64(RED_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let green_brightness =
+        super::configuration_parsing::parse_f64(GREEN_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let blue_brightness =
+        super::configuration_parsing::parse_f64(BLUE_PIXEL_STRENGTH_LABEL, given_configuration)?;
 
     Ok(vec![data_structure::IndividualParticle {
         intrinsic_values: data_structure::ParticleIntrinsics {

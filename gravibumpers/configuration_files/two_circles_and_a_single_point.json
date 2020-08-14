@@ -1,8 +1,10 @@
 {
   "memoryLayout": "VecOfPureStruct",
+  "numberOfStepsPerFrame": 10,
   "millisecondsPerFrame": 100,
   "numberOfFrames": 40,
-  "numberOfStepsPerFrame": 10,
+  "inverseSquaredCoupling": -1.0,
+  "inverseFourthCoupling": 1.0,
   "rightBorderCoordinate": 10,
   "upperBorderCoordinate": 10,
   "leftBorderCoordinate": -10,
@@ -20,7 +22,7 @@
         },
         "linearVelocityInPixelsPerSecond":
         {
-          "x": -0.05,
+          "x": -0.5,
           "y": 0.0
         },
         "radiusInPixels": 6,
@@ -45,7 +47,7 @@
         },
         "linearVelocityInPixelsPerSecond":
         {
-          "x": 0.35,
+          "x": 2.3,
           "y": 0.0
         },
         "inertialMassInMassUnits": 1,
@@ -72,7 +74,7 @@
         },
         "radiusInPixels": 5,
         "totalParticlesOnCircle": 12,
-        "angularVelocityInPixelRadiansPerSecond": 0.1,
+        "angularVelocityInPixelRadiansPerSecond": 1.5,
         "inertialMassInMassUnits": 1,
         "inverseSquaredChargeInDimensionlessUnits": 1,
         "inverseFourthChargeInDimensionlessUnits": 0.5,

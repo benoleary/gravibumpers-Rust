@@ -152,10 +152,12 @@ pub fn color_triplets_match(
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct InertialMassUnit(pub f64);
 
+// This corresponds to seconds so as to keep things reasonable to estimate.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct TimeDifferenceUnit(pub f64);
 
-// This particular combination has no physical meaning but allows for
+// This particular combination has no physical meaning but allows for an efficient preparation of a
+// constant multiplicative factor.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct TimeOverMassUnit(pub f64);
 
@@ -322,6 +324,7 @@ pub fn sum_velocity_with_scaled_velocity(
     }
 }
 
+// This corresponds to pixels so as to keep things reasonable to estimate.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct HorizontalPositionUnit(pub f64);
 
@@ -347,6 +350,7 @@ impl AddAssign for HorizontalPositionUnit {
     }
 }
 
+// This corresponds to pixels so as to keep things reasonable to estimate.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct VerticalPositionUnit(pub f64);
 
