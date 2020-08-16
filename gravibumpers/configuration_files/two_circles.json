@@ -13,50 +13,50 @@
       "generatorName": "circle",
       "generatorConfiguration":
       {
-        "displacement":
+        "commonDisplacementInPixels":
         {
           "x": 2.5,
           "y": -1.0
         },
-        "velocity":
+        "linearVelocityInPixelsPerSecond":
         {
           "x": -0.1,
           "y": 0.0
         },
-        "radius": 6,
-        "population": 6,
-        "rotation": 3,
-        "mass": 1,
-        "grav": 1,
-        "bump": 0.5,
-        "red": 0,
-        "green": 0,
-        "blue": 100
+        "radiusInPixels": 6,
+        "totalParticlesOnCircle": 6,
+        "angularVelocityInPixelRadiansPerSecond": 3,
+        "inertialMassInMassUnits": 1,
+        "inverseSquaredChargeInDimensionlessUnits": 1,
+        "inverseFourthChargeInDimensionlessUnits": 0.5,
+        "redPixelStrength": 0,
+        "greenPixelStrength": 0,
+        "bluePixelStrength": 100
       }
     },
     {
       "generatorName": "circle",
       "generatorConfiguration":
       {
-        "displacement":
+        "commonDisplacementInPixels":
         {
           "x": 0.0,
           "y": 0.0
         },
-        "velocity":
+        "linearVelocityInPixelsPerSecond":
         {
           "x": 0.0,
           "y": 0.0
         },
-        "radius": 4,
-        "population": 9,
-        "rotation": 3,
-        "mass": 1,
-        "grav": 1,
-        "bump": 0.5,
-        "red": 50,
-        "green": 100,
-        "blue": 0
+        "radiusInPixels": 4,
+        "totalParticlesOnCircle": 9,
+        "angularVelocityInPixelRadiansPerSecond": 3,
+        "inertialMassInMassUnits": 1,
+        "inverseSquaredChargeInDimensionlessUnits": 1,
+        "inverseFourthChargeInDimensionlessUnits": 0.5,
+        "redPixelStrength": 50,
+        "greenPixelStrength": 100,
+        "bluePixelStrength": 0
       }
     }
   ]

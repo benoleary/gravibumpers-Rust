@@ -47,8 +47,8 @@ fn create_rgb_demonstration(
     let ignored_particle = data_structure::IndividualParticle {
         intrinsic_values: data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(1.9),
-            attractive_charge: data_structure::AttractiveChargeUnit(2.8),
-            repulsive_charge: data_structure::RepulsiveChargeUnit(3.7),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(2.8),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(3.7),
             color_brightness: data_structure::new_color_triplet(
                 data_structure::RedColorUnit(4.6),
                 data_structure::GreenColorUnit(5.5),

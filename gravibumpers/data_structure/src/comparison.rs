@@ -173,12 +173,17 @@ fn intrinsics_within_tolerance(
 ) -> bool {
     (expected_intrinsics.inertial_mass.0 - actual_intrinsics.inertial_mass.0).abs()
         < tolerances_as_intrinsics.inertial_mass.0.abs()
-        && (expected_intrinsics.attractive_charge.0 - actual_intrinsics.attractive_charge.0).abs()
-            <= tolerances_as_intrinsics.attractive_charge.0.abs()
-        && (expected_intrinsics.attractive_charge.0 - actual_intrinsics.attractive_charge.0).abs()
-            <= tolerances_as_intrinsics.attractive_charge.0.abs()
-        && (expected_intrinsics.repulsive_charge.0 - actual_intrinsics.repulsive_charge.0).abs()
-            <= tolerances_as_intrinsics.repulsive_charge.0.abs()
+        && (expected_intrinsics.inverse_squared_charge.0
+            - actual_intrinsics.inverse_squared_charge.0)
+            .abs()
+            <= tolerances_as_intrinsics.inverse_squared_charge.0.abs()
+        && (expected_intrinsics.inverse_squared_charge.0
+            - actual_intrinsics.inverse_squared_charge.0)
+            .abs()
+            <= tolerances_as_intrinsics.inverse_squared_charge.0.abs()
+        && (expected_intrinsics.inverse_fourth_charge.0 - actual_intrinsics.inverse_fourth_charge.0)
+            .abs()
+            <= tolerances_as_intrinsics.inverse_fourth_charge.0.abs()
         && (expected_intrinsics.color_brightness.get_red().0
             - actual_intrinsics.color_brightness.get_red().0)
             .abs()

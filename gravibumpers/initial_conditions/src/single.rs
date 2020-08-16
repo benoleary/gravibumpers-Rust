@@ -1,31 +1,43 @@
 /// This module provides a function to put a single particle in a vector.
 
-const DISPLACEMENT_LABEL: &str = "displacement";
-const VELOCITY_LABEL: &str = "velocity";
-const MASS_LABEL: &str = "mass";
-const GRAV_LABEL: &str = "grav";
-const BUMP_LABEL: &str = "bump";
-const RED_LABEL: &str = "red";
-const GREEN_LABEL: &str = "green";
-const BLUE_LABEL: &str = "blue";
+const COMMON_DISPLACEMENT_IN_PIXELS_LABEL: &str = "commonDisplacementInPixels";
+const LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL: &str = "linearVelocityInPixelsPerSecond";
+const INERTIAL_MASS_IN_MASS_UNITS_LABEL: &str = "inertialMassInMassUnits";
+const INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL: &str =
+    "inverseSquaredChargeInDimensionlessUnits";
+const INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL: &str =
+    "inverseFourthChargeInDimensionlessUnits";
+const RED_PIXEL_STRENGTH_LABEL: &str = "redPixelStrength";
+const GREEN_PIXEL_STRENGTH_LABEL: &str = "greenPixelStrength";
+const BLUE_PIXEL_STRENGTH_LABEL: &str = "bluePixelStrength";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
 ) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
-    let particle_displacement = super::parse_position(&given_configuration[DISPLACEMENT_LABEL])?;
-    let particle_velocity = super::parse_velocity(&given_configuration[VELOCITY_LABEL])?;
-    let inertial_mass = super::parse_f64(MASS_LABEL, given_configuration)?;
-    let attractive_charge = super::parse_f64(GRAV_LABEL, given_configuration)?;
-    let repulsive_charge = super::parse_f64(BUMP_LABEL, given_configuration)?;
-    let red_brightness = super::parse_f64(RED_LABEL, given_configuration)?;
-    let green_brightness = super::parse_f64(GREEN_LABEL, given_configuration)?;
-    let blue_brightness = super::parse_f64(BLUE_LABEL, given_configuration)?;
+    let particle_displacement =
+        super::parse_position(&given_configuration[COMMON_DISPLACEMENT_IN_PIXELS_LABEL])?;
+    let particle_velocity =
+        super::parse_velocity(&given_configuration[LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL])?;
+    let inertial_mass = super::parse_f64(INERTIAL_MASS_IN_MASS_UNITS_LABEL, given_configuration)?;
+    let inverse_squared_charge = super::parse_f64(
+        INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+        given_configuration,
+    )?;
+    let inverse_fourth_charge = super::parse_f64(
+        INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+        given_configuration,
+    )?;
+    let red_brightness = super::parse_f64(RED_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let green_brightness = super::parse_f64(GREEN_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let blue_brightness = super::parse_f64(BLUE_PIXEL_STRENGTH_LABEL, given_configuration)?;
 
     Ok(vec![data_structure::IndividualParticle {
         intrinsic_values: data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(inertial_mass),
-            attractive_charge: data_structure::AttractiveChargeUnit(attractive_charge),
-            repulsive_charge: data_structure::RepulsiveChargeUnit(repulsive_charge),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(
+                inverse_squared_charge,
+            ),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(inverse_fourth_charge),
             color_brightness: data_structure::new_color_triplet(
                 data_structure::RedColorUnit(red_brightness),
                 data_structure::GreenColorUnit(green_brightness),
@@ -46,14 +58,14 @@ mod tests {
     #[test]
     fn check_reject_when_missing_attribute() -> Result<(), String> {
         let required_attributes = vec![
-            DISPLACEMENT_LABEL,
-            VELOCITY_LABEL,
-            MASS_LABEL,
-            GRAV_LABEL,
-            BUMP_LABEL,
-            RED_LABEL,
-            GREEN_LABEL,
-            BLUE_LABEL,
+            COMMON_DISPLACEMENT_IN_PIXELS_LABEL,
+            LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL,
+            INERTIAL_MASS_IN_MASS_UNITS_LABEL,
+            INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+            INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+            RED_PIXEL_STRENGTH_LABEL,
+            GREEN_PIXEL_STRENGTH_LABEL,
+            BLUE_PIXEL_STRENGTH_LABEL,
         ];
 
         let mut failed_cases: std::vec::Vec<String> = vec![];
@@ -86,14 +98,14 @@ mod tests {
     #[test]
     fn check_reject_when_malformed_attribute() -> Result<(), String> {
         let required_attributes = vec![
-            DISPLACEMENT_LABEL,
-            VELOCITY_LABEL,
-            MASS_LABEL,
-            GRAV_LABEL,
-            BUMP_LABEL,
-            RED_LABEL,
-            GREEN_LABEL,
-            BLUE_LABEL,
+            COMMON_DISPLACEMENT_IN_PIXELS_LABEL,
+            LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL,
+            INERTIAL_MASS_IN_MASS_UNITS_LABEL,
+            INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+            INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+            RED_PIXEL_STRENGTH_LABEL,
+            GREEN_PIXEL_STRENGTH_LABEL,
+            BLUE_PIXEL_STRENGTH_LABEL,
         ];
 
         let mut failed_cases: std::vec::Vec<String> = vec![];

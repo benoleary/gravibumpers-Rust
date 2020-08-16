@@ -3,36 +3,50 @@
 use super::ConfigurationParseError;
 use std::convert::TryInto;
 
-const DISPLACEMENT_LABEL: &str = "displacement";
-const VELOCITY_LABEL: &str = "velocity";
-const RADIUS_LABEL: &str = "radius";
-const POPULATION_LABEL: &str = "population";
-const ANGULAR_VELOCITY_LABEL: &str = "rotation";
-const MASS_LABEL: &str = "mass";
-const GRAV_LABEL: &str = "grav";
-const BUMP_LABEL: &str = "bump";
-const RED_LABEL: &str = "red";
-const GREEN_LABEL: &str = "green";
-const BLUE_LABEL: &str = "blue";
+const COMMON_DISPLACEMENT_IN_PIXELS_LABEL: &str = "commonDisplacementInPixels";
+const LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL: &str = "linearVelocityInPixelsPerSecond";
+const RADIUS_IN_PIXELS_LABEL: &str = "radiusInPixels";
+const TOTAL_PARTICLES_ON_CIRCLE_LABEL: &str = "totalParticlesOnCircle";
+const ANGULAR_VELOCITY_IN_PIXEL_RADIANS_PER_SECOND_LABEL: &str =
+    "angularVelocityInPixelRadiansPerSecond";
+const INERTIAL_MASS_IN_MASS_UNITS_LABEL: &str = "inertialMassInMassUnits";
+const INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL: &str =
+    "inverseSquaredChargeInDimensionlessUnits";
+const INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL: &str =
+    "inverseFourthChargeInDimensionlessUnits";
+const RED_PIXEL_STRENGTH_LABEL: &str = "redPixelStrength";
+const GREEN_PIXEL_STRENGTH_LABEL: &str = "greenPixelStrength";
+const BLUE_PIXEL_STRENGTH_LABEL: &str = "bluePixelStrength";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
 ) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
-    let circle_displacement = super::parse_position(&given_configuration[DISPLACEMENT_LABEL])?;
-    let circle_velocity = super::parse_velocity(&given_configuration[VELOCITY_LABEL])?;
-    let circle_radius = super::parse_f64(RADIUS_LABEL, given_configuration)?;
-    let circle_population = super::parse_i64(POPULATION_LABEL, given_configuration)?;
-    let circle_rotation = super::parse_f64(ANGULAR_VELOCITY_LABEL, given_configuration)?;
-    let inertial_mass = super::parse_f64(MASS_LABEL, given_configuration)?;
-    let attractive_charge = super::parse_f64(GRAV_LABEL, given_configuration)?;
-    let repulsive_charge = super::parse_f64(BUMP_LABEL, given_configuration)?;
-    let red_brightness = super::parse_f64(RED_LABEL, given_configuration)?;
-    let green_brightness = super::parse_f64(GREEN_LABEL, given_configuration)?;
-    let blue_brightness = super::parse_f64(BLUE_LABEL, given_configuration)?;
+    let circle_displacement =
+        super::parse_position(&given_configuration[COMMON_DISPLACEMENT_IN_PIXELS_LABEL])?;
+    let circle_velocity =
+        super::parse_velocity(&given_configuration[LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL])?;
+    let circle_radius = super::parse_f64(RADIUS_IN_PIXELS_LABEL, given_configuration)?;
+    let circle_population = super::parse_i64(TOTAL_PARTICLES_ON_CIRCLE_LABEL, given_configuration)?;
+    let circle_rotation = super::parse_f64(
+        ANGULAR_VELOCITY_IN_PIXEL_RADIANS_PER_SECOND_LABEL,
+        given_configuration,
+    )?;
+    let inertial_mass = super::parse_f64(INERTIAL_MASS_IN_MASS_UNITS_LABEL, given_configuration)?;
+    let inverse_squared_charge = super::parse_f64(
+        INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+        given_configuration,
+    )?;
+    let inverse_fourth_charge = super::parse_f64(
+        INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+        given_configuration,
+    )?;
+    let red_brightness = super::parse_f64(RED_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let green_brightness = super::parse_f64(GREEN_PIXEL_STRENGTH_LABEL, given_configuration)?;
+    let blue_brightness = super::parse_f64(BLUE_PIXEL_STRENGTH_LABEL, given_configuration)?;
     let common_intrinsics = data_structure::ParticleIntrinsics {
         inertial_mass: data_structure::InertialMassUnit(inertial_mass),
-        attractive_charge: data_structure::AttractiveChargeUnit(attractive_charge),
-        repulsive_charge: data_structure::RepulsiveChargeUnit(repulsive_charge),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(inverse_squared_charge),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(inverse_fourth_charge),
         color_brightness: data_structure::new_color_triplet(
             data_structure::RedColorUnit(red_brightness),
             data_structure::GreenColorUnit(green_brightness),
@@ -180,8 +194,8 @@ mod tests {
     fn new_intrinsics_tolerance() -> data_structure::ParticleIntrinsics {
         data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(0.01),
-            attractive_charge: data_structure::AttractiveChargeUnit(0.01),
-            repulsive_charge: data_structure::RepulsiveChargeUnit(0.01),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.01),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.01),
             color_brightness: data_structure::new_color_triplet(
                 data_structure::RedColorUnit(0.01),
                 data_structure::GreenColorUnit(0.01),
@@ -213,8 +227,8 @@ mod tests {
     fn new_test_intrinsics() -> data_structure::ParticleIntrinsics {
         data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(1.9),
-            attractive_charge: data_structure::AttractiveChargeUnit(2.8),
-            repulsive_charge: data_structure::RepulsiveChargeUnit(3.7),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(2.8),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(3.7),
             color_brightness: data_structure::new_color_triplet(
                 data_structure::RedColorUnit(4.6),
                 data_structure::GreenColorUnit(5.5),
@@ -233,22 +247,22 @@ mod tests {
     ) -> serde_json::Value {
         let test_intrinsics = new_test_intrinsics();
         serde_json::json!({
-            DISPLACEMENT_LABEL: {
+            COMMON_DISPLACEMENT_IN_PIXELS_LABEL: {
                 super::super::HORIZONTAL_LABEL: test_horizontal_displacement,
                 super::super::VERTICAL_LABEL: test_vertical_displacement,
             },
-            VELOCITY_LABEL: {
+            LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL: {
                 super::super::HORIZONTAL_LABEL: test_horizontal_velocity,
                 super::super::VERTICAL_LABEL: test_vertical_velocity,
             },
-            RADIUS_LABEL: test_radius,
-            ANGULAR_VELOCITY_LABEL: test_rotation,
-            MASS_LABEL: test_intrinsics.inertial_mass.0,
-            GRAV_LABEL: test_intrinsics.attractive_charge.0,
-            BUMP_LABEL: test_intrinsics.repulsive_charge.0,
-            RED_LABEL: test_intrinsics.color_brightness.get_red().0,
-            GREEN_LABEL: test_intrinsics.color_brightness.get_green().0,
-            BLUE_LABEL: test_intrinsics.color_brightness.get_blue().0,
+            RADIUS_IN_PIXELS_LABEL: test_radius,
+            ANGULAR_VELOCITY_IN_PIXEL_RADIANS_PER_SECOND_LABEL: test_rotation,
+            INERTIAL_MASS_IN_MASS_UNITS_LABEL: test_intrinsics.inertial_mass.0,
+            INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL: test_intrinsics.inverse_squared_charge.0,
+            INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL: test_intrinsics.inverse_fourth_charge.0,
+            RED_PIXEL_STRENGTH_LABEL: test_intrinsics.color_brightness.get_red().0,
+            GREEN_PIXEL_STRENGTH_LABEL: test_intrinsics.color_brightness.get_green().0,
+            BLUE_PIXEL_STRENGTH_LABEL: test_intrinsics.color_brightness.get_blue().0,
         })
     }
 
@@ -276,15 +290,15 @@ mod tests {
     #[test]
     fn check_reject_when_missing_attribute() -> Result<(), String> {
         let required_attributes = vec![
-            DISPLACEMENT_LABEL,
-            VELOCITY_LABEL,
-            ANGULAR_VELOCITY_LABEL,
-            MASS_LABEL,
-            GRAV_LABEL,
-            BUMP_LABEL,
-            RED_LABEL,
-            GREEN_LABEL,
-            BLUE_LABEL,
+            COMMON_DISPLACEMENT_IN_PIXELS_LABEL,
+            LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL,
+            ANGULAR_VELOCITY_IN_PIXEL_RADIANS_PER_SECOND_LABEL,
+            INERTIAL_MASS_IN_MASS_UNITS_LABEL,
+            INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+            INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+            RED_PIXEL_STRENGTH_LABEL,
+            GREEN_PIXEL_STRENGTH_LABEL,
+            BLUE_PIXEL_STRENGTH_LABEL,
         ];
 
         let mut failed_cases: std::vec::Vec<String> = vec![];
@@ -317,17 +331,17 @@ mod tests {
     #[test]
     fn check_reject_when_malformed_attribute() -> Result<(), String> {
         let required_attributes = vec![
-            DISPLACEMENT_LABEL,
-            VELOCITY_LABEL,
-            RADIUS_LABEL,
-            POPULATION_LABEL,
-            ANGULAR_VELOCITY_LABEL,
-            MASS_LABEL,
-            GRAV_LABEL,
-            BUMP_LABEL,
-            RED_LABEL,
-            GREEN_LABEL,
-            BLUE_LABEL,
+            COMMON_DISPLACEMENT_IN_PIXELS_LABEL,
+            LINEAR_VELOCITY_IN_PIXELS_PER_SECOND_LABEL,
+            RADIUS_IN_PIXELS_LABEL,
+            TOTAL_PARTICLES_ON_CIRCLE_LABEL,
+            ANGULAR_VELOCITY_IN_PIXEL_RADIANS_PER_SECOND_LABEL,
+            INERTIAL_MASS_IN_MASS_UNITS_LABEL,
+            INVERSE_SQUARED_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+            INVERSE_FOURTH_CHARGE_IN_DIMENSIONLESS_UNITS_LABEL,
+            RED_PIXEL_STRENGTH_LABEL,
+            GREEN_PIXEL_STRENGTH_LABEL,
+            BLUE_PIXEL_STRENGTH_LABEL,
         ];
 
         let mut failed_cases: std::vec::Vec<String> = vec![];
@@ -387,7 +401,8 @@ mod tests {
             serde_json::json!(9005.0),
             serde_json::json!(9006.0),
         );
-        configuration_with_array_population[POPULATION_LABEL] = serde_json::json!([9001.0, 9002.0]);
+        configuration_with_array_population[TOTAL_PARTICLES_ON_CIRCLE_LABEL] =
+            serde_json::json!([9001.0, 9002.0]);
         let parsing_result = from_json(&configuration_with_array_population);
         if parsing_result.is_err() {
             Ok(())
@@ -406,7 +421,7 @@ mod tests {
             serde_json::json!(9005.0),
             serde_json::json!(9006.0),
         );
-        test_configuration[POPULATION_LABEL] = serde_json::json!(0);
+        test_configuration[TOTAL_PARTICLES_ON_CIRCLE_LABEL] = serde_json::json!(0);
         let parsing_result = from_json(&test_configuration);
         if parsing_result.is_err() {
             Ok(())
@@ -425,7 +440,7 @@ mod tests {
             serde_json::json!(9005.0),
             serde_json::json!(9006.0),
         );
-        test_configuration[POPULATION_LABEL] = serde_json::json!(1);
+        test_configuration[TOTAL_PARTICLES_ON_CIRCLE_LABEL] = serde_json::json!(1);
         let parsing_result = from_json(&test_configuration);
         if parsing_result.is_err() {
             Ok(())
@@ -449,7 +464,7 @@ mod tests {
             serde_json::json!(test_radius),
             serde_json::json!(test_angular_speed),
         );
-        test_configuration[POPULATION_LABEL] = serde_json::json!(2);
+        test_configuration[TOTAL_PARTICLES_ON_CIRCLE_LABEL] = serde_json::json!(2);
         let generated_particles =
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
@@ -489,7 +504,7 @@ mod tests {
             serde_json::json!(test_radius),
             serde_json::json!(0.0),
         );
-        test_configuration[POPULATION_LABEL] = serde_json::json!(3);
+        test_configuration[TOTAL_PARTICLES_ON_CIRCLE_LABEL] = serde_json::json!(3);
         let generated_particles =
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let left_vertical_magnitude = 0.866;
@@ -539,7 +554,7 @@ mod tests {
             serde_json::json!(test_radius),
             serde_json::json!(test_angular_speed),
         );
-        test_configuration[POPULATION_LABEL] = serde_json::json!(4);
+        test_configuration[TOTAL_PARTICLES_ON_CIRCLE_LABEL] = serde_json::json!(4);
         let generated_particles =
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![

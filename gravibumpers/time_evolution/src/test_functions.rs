@@ -6,8 +6,8 @@ fn create_test_tolerances() -> data_structure::IndividualParticle {
     data_structure::IndividualParticle {
         intrinsic_values: data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(absolute_tolerance),
-            attractive_charge: data_structure::AttractiveChargeUnit(absolute_tolerance),
-            repulsive_charge: data_structure::RepulsiveChargeUnit(absolute_tolerance),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(absolute_tolerance),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(absolute_tolerance),
             color_brightness: data_structure::new_color_triplet(
                 data_structure::RedColorUnit(absolute_tolerance),
                 data_structure::GreenColorUnit(absolute_tolerance),
@@ -70,8 +70,8 @@ where
     let expected_particle = data_structure::IndividualParticle {
         intrinsic_values: data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(1.0),
-            attractive_charge: data_structure::AttractiveChargeUnit(2.0),
-            repulsive_charge: data_structure::RepulsiveChargeUnit(3.0),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(2.0),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(3.0),
             color_brightness: data_structure::new_color_triplet(
                 data_structure::RedColorUnit(4.0),
                 data_structure::GreenColorUnit(5.0),
@@ -122,8 +122,8 @@ where
 {
     let particle_intrinsics = data_structure::ParticleIntrinsics {
         inertial_mass: data_structure::InertialMassUnit(1.0),
-        attractive_charge: data_structure::AttractiveChargeUnit(2.0),
-        repulsive_charge: data_structure::RepulsiveChargeUnit(3.0),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(2.0),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(3.0),
         color_brightness: data_structure::new_color_triplet(
             data_structure::RedColorUnit(4.0),
             data_structure::GreenColorUnit(5.0),
@@ -242,8 +242,8 @@ where
 {
     let particle_intrinsics = data_structure::ParticleIntrinsics {
         inertial_mass: data_structure::InertialMassUnit(1.0),
-        attractive_charge: data_structure::AttractiveChargeUnit(0.0),
-        repulsive_charge: data_structure::RepulsiveChargeUnit(0.0),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.0),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
         color_brightness: data_structure::new_color_triplet(
             data_structure::RedColorUnit(4.0),
             data_structure::GreenColorUnit(5.0),

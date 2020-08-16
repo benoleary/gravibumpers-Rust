@@ -38,12 +38,17 @@ impl std::fmt::Display for DimensionError {
     }
 }
 
-/// First we have some structs for dimensional parameters.
+/// This is the unit for the charges on the particles for the inverse-displacement-squared force
+/// but the factor for getting an acceleration in pixels per squared second per inertial mass unit
+/// is a dimensionful configuration parameter.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub struct AttractiveChargeUnit(pub f64);
+pub struct InverseSquaredChargeUnit(pub f64);
 
+/// This is the unit for the charges on the particles for the inverse-displacement-to-the-fourth
+/// force but the factor for getting an acceleration in pixels per squared second per inertial mass
+/// unit is a dimensionful configuration parameter.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub struct RepulsiveChargeUnit(pub f64);
+pub struct InverseFourthChargeUnit(pub f64);
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct RedColorUnit(pub f64);
@@ -405,8 +410,8 @@ impl PositionVector {
 #[derive(Clone, Copy, Debug)]
 pub struct ParticleIntrinsics {
     pub inertial_mass: InertialMassUnit,
-    pub attractive_charge: AttractiveChargeUnit,
-    pub repulsive_charge: RepulsiveChargeUnit,
+    pub inverse_squared_charge: InverseSquaredChargeUnit,
+    pub inverse_fourth_charge: InverseFourthChargeUnit,
     pub color_brightness: ColorTriplet,
 }
 

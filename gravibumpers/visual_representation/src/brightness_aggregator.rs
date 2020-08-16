@@ -356,8 +356,8 @@ mod tests {
     ) -> data_structure::ParticleIntrinsics {
         data_structure::ParticleIntrinsics {
             inertial_mass: data_structure::InertialMassUnit(1.2),
-            attractive_charge: data_structure::AttractiveChargeUnit(-3.4),
-            repulsive_charge: data_structure::RepulsiveChargeUnit(5.6),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(-3.4),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(5.6),
             color_brightness: *color_fraction * &new_reference_brightness(),
         }
     }
