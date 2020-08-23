@@ -1,6 +1,21 @@
 /// This module exists to provide helper functions to some tests, so has no #[cfg(test)] of its
 /// own.
 
+/// This returns true if the given values are equal within a relative tolerance of their average,
+/// unless the expected value is zero, in which case the tolerance is taken as an absolute.
+pub fn within_relative_tolerance(
+    expected_value: f64,
+    actual_value: f64,
+    relative_tolerance: f64,
+) -> bool {
+    if expected_value == 0.0 {
+        return actual_value < relative_tolerance;
+    }
+    let absolute_difference = (expected_value - actual_value).abs();
+    let absolute_tolerance = 0.5 * relative_tolerance * (expected_value.abs() + actual_value.abs());
+    absolute_difference < absolute_tolerance
+}
+
 /// This checks each element in expected_set for any match in actual_set, where match is defined
 /// as each of the data members having a difference less than the value of the data member in
 /// tolerances_as_particle (absolute value). If any expected element is not matched, or there are
@@ -171,35 +186,31 @@ fn intrinsics_within_tolerance(
     actual_intrinsics: &super::ParticleIntrinsics,
     tolerances_as_intrinsics: &super::ParticleIntrinsics,
 ) -> bool {
-    (expected_intrinsics.inertial_mass.0 - actual_intrinsics.inertial_mass.0).abs()
-        < tolerances_as_intrinsics.inertial_mass.0.abs()
-        && (expected_intrinsics.inverse_squared_charge.0
-            - actual_intrinsics.inverse_squared_charge.0)
-            .abs()
-            <= tolerances_as_intrinsics.inverse_squared_charge.0.abs()
-        && (expected_intrinsics.inverse_squared_charge.0
-            - actual_intrinsics.inverse_squared_charge.0)
-            .abs()
-            <= tolerances_as_intrinsics.inverse_squared_charge.0.abs()
-        && (expected_intrinsics.inverse_fourth_charge.0 - actual_intrinsics.inverse_fourth_charge.0)
-            .abs()
-            <= tolerances_as_intrinsics.inverse_fourth_charge.0.abs()
-        && (expected_intrinsics.color_brightness.get_red().0
-            - actual_intrinsics.color_brightness.get_red().0)
-            .abs()
-            <= tolerances_as_intrinsics.color_brightness.get_red().0.abs()
-        && (expected_intrinsics.color_brightness.get_green().0
-            - actual_intrinsics.color_brightness.get_green().0)
-            .abs()
-            <= tolerances_as_intrinsics
-                .color_brightness
-                .get_green()
-                .0
-                .abs()
-        && (expected_intrinsics.color_brightness.get_blue().0
-            - actual_intrinsics.color_brightness.get_blue().0)
-            .abs()
-            <= tolerances_as_intrinsics.color_brightness.get_blue().0.abs()
+    within_relative_tolerance(
+        expected_intrinsics.inertial_mass.0,
+        actual_intrinsics.inertial_mass.0,
+        tolerances_as_intrinsics.inertial_mass.0,
+    ) && within_relative_tolerance(
+        expected_intrinsics.inverse_squared_charge.0,
+        actual_intrinsics.inverse_squared_charge.0,
+        tolerances_as_intrinsics.inverse_squared_charge.0,
+    ) && within_relative_tolerance(
+        expected_intrinsics.inverse_fourth_charge.0,
+        actual_intrinsics.inverse_fourth_charge.0,
+        tolerances_as_intrinsics.inverse_fourth_charge.0,
+    ) && within_relative_tolerance(
+        expected_intrinsics.color_brightness.get_red().0,
+        actual_intrinsics.color_brightness.get_red().0,
+        tolerances_as_intrinsics.color_brightness.get_red().0,
+    ) && within_relative_tolerance(
+        expected_intrinsics.color_brightness.get_green().0,
+        actual_intrinsics.color_brightness.get_green().0,
+        tolerances_as_intrinsics.color_brightness.get_green().0,
+    ) && within_relative_tolerance(
+        expected_intrinsics.color_brightness.get_blue().0,
+        actual_intrinsics.color_brightness.get_blue().0,
+        tolerances_as_intrinsics.color_brightness.get_blue().0,
+    )
 }
 
 fn variables_within_tolerance(
@@ -223,10 +234,15 @@ fn positions_within_tolerance(
     actual_vector: &super::PositionVector,
     tolerances_as_vector: &super::PositionVector,
 ) -> bool {
-    (expected_vector.horizontal_component.0 - actual_vector.horizontal_component.0).abs()
-        < tolerances_as_vector.horizontal_component.0.abs()
-        && (expected_vector.vertical_component.0 - actual_vector.vertical_component.0).abs()
-            <= tolerances_as_vector.vertical_component.0.abs()
+    within_relative_tolerance(
+        expected_vector.horizontal_component.0,
+        actual_vector.horizontal_component.0,
+        tolerances_as_vector.horizontal_component.0,
+    ) && within_relative_tolerance(
+        expected_vector.vertical_component.0,
+        actual_vector.vertical_component.0,
+        tolerances_as_vector.vertical_component.0,
+    )
 }
 
 fn velocities_within_tolerance(
@@ -234,8 +250,13 @@ fn velocities_within_tolerance(
     actual_vector: &super::VelocityVector,
     tolerances_as_vector: &super::VelocityVector,
 ) -> bool {
-    (expected_vector.horizontal_component.0 - actual_vector.horizontal_component.0).abs()
-        < tolerances_as_vector.horizontal_component.0.abs()
-        && (expected_vector.vertical_component.0 - actual_vector.vertical_component.0).abs()
-            <= tolerances_as_vector.vertical_component.0.abs()
+    within_relative_tolerance(
+        expected_vector.horizontal_component.0,
+        actual_vector.horizontal_component.0,
+        tolerances_as_vector.horizontal_component.0,
+    ) && within_relative_tolerance(
+        expected_vector.vertical_component.0,
+        actual_vector.vertical_component.0,
+        tolerances_as_vector.vertical_component.0,
+    )
 }
