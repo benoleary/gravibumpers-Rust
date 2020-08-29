@@ -465,7 +465,12 @@ pub fn create_individual_from_representation(
     }
 }
 
+/// This represents the Euclidean distance between two co-ordinates in pixels.
+#[derive(Clone, Copy, Debug)]
+pub struct SeparationUnit(pub f64);
+
 /// This holds the inverse of a distance, so 1/r.
+#[derive(Clone, Copy, Debug)]
 pub struct InverseSeparationUnit(f64);
 
 impl InverseSeparationUnit {
@@ -474,22 +479,23 @@ impl InverseSeparationUnit {
     }
 }
 
+/// This returns 1 divided by either the separation of the two given points or by the given minimum,
+/// whichever is greater (so giving an upper bound on the returned inverse separation). It does not
+/// guard against division by zero!
 pub fn get_inverse_separation(
     first_position: &PositionVector,
     second_position: &PositionVector,
-) -> Result<InverseSeparationUnit, Box<dyn std::error::Error>> {
+    minimum_separation: &SeparationUnit,
+) -> InverseSeparationUnit {
     let horizontal_separation =
         first_position.horizontal_component - second_position.horizontal_component;
     let vertical_separation =
         first_position.vertical_component - second_position.vertical_component;
     let squared_separation = (horizontal_separation.0 * horizontal_separation.0)
         + (vertical_separation.0 * vertical_separation.0);
-    if squared_separation == 0.0 {
-        Err(Box::new(DimensionError::new(&format!(
-            "Cannot invert zero separation between {:?} and (presumably equal) {:?}",
-            first_position, second_position
-        ))))
+    if squared_separation < (minimum_separation.0 * minimum_separation.0) {
+        InverseSeparationUnit(1.0 / minimum_separation.0)
     } else {
-        Ok(InverseSeparationUnit(1.0 / squared_separation.sqrt()))
+        InverseSeparationUnit(1.0 / squared_separation.sqrt())
     }
 }

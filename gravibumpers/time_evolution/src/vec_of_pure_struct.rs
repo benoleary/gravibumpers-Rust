@@ -203,7 +203,8 @@ mod tests {
     use super::super::test_functions as evolver_tests;
     use super::*;
 
-    const TEST_DEAD_ZONE_RADIUS: f64 = 1.0;
+    const TEST_DEAD_ZONE_RADIUS: data_structure::SeparationUnit =
+        data_structure::SeparationUnit(1.0);
 
     fn new_maximally_contiguous_euler_for_test() -> Result<MaximallyContiguousEuler, String> {
         new_maximally_contiguous_euler(100).or_else(|construction_error| {
@@ -246,6 +247,7 @@ mod tests {
         let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
         evolver_tests::test_equal_masses_repelling_inverse_fourth_accelerate_away_equally(
             &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
         )
     }
 }

@@ -156,16 +156,48 @@ where
     }
 }
 
+trait PotentialEnergyCalculator {
+    fn calculate_energy(
+        &self,
+        first_particle: &impl data_structure::ParticleRepresentation,
+        second_particle: &impl data_structure::ParticleRepresentation,
+    ) -> Result<f64, String>;
+}
+
+#[derive(Clone, Copy, Debug)]
+struct InverseFourthPotential {
+    coupling_constant: f64,
+    dead_zone_radius: data_structure::SeparationUnit,
+}
+
+impl PotentialEnergyCalculator for InverseFourthPotential {
+    fn calculate_energy(
+        &self,
+        first_particle: &impl data_structure::ParticleRepresentation,
+        second_particle: &impl data_structure::ParticleRepresentation,
+    ) -> Result<f64, String> {
+        let inverse_separation = data_structure::get_inverse_separation(
+            &first_particle.read_variables().position_vector,
+            &second_particle.read_variables().position_vector,
+            &self.dead_zone_radius,
+        );
+
+        Ok((self.coupling_constant
+            * first_particle.read_intrinsics().inverse_fourth_charge.0
+            * second_particle.read_intrinsics().inverse_fourth_charge.0
+            * inverse_separation.get_value()
+            * inverse_separation.get_value()
+            * inverse_separation.get_value())
+            / 3.0)
+    }
+}
+
 fn check_energy_given_potential(
     expected_number_of_particles: usize,
     expected_energy_in_implicit_units: f64,
     relative_tolerance: f64,
     particle_list: &std::vec::Vec<impl data_structure::ParticleRepresentation>,
-    potential_energy_of_pair: impl Fn(
-        &data_structure::InverseSeparationUnit,
-        &data_structure::ParticleIntrinsics,
-        &data_structure::ParticleIntrinsics,
-    ) -> Result<f64, String>,
+    potential_energy_of_pair: impl PotentialEnergyCalculator,
 ) -> Result<(), String> {
     if particle_list.len() != expected_number_of_particles {
         return Err(String::from(format!(
@@ -187,17 +219,8 @@ fn check_energy_given_potential(
         total_energy += current_kinetic;
         for other_index in (particle_index + 1)..expected_number_of_particles {
             let other_particle = &particle_list[other_index];
-            let other_variables = other_particle.read_variables();
-            let inverse_separation_in_pixels = data_structure::get_inverse_separation(
-                &current_variables.position_vector,
-                &other_variables.position_vector,
-            )
-            .map_err(|original_error| String::from(format!("{:?}", original_error)))?;
-            total_energy += potential_energy_of_pair(
-                &inverse_separation_in_pixels,
-                current_particle.read_intrinsics(),
-                other_particle.read_intrinsics(),
-            )?;
+            total_energy +=
+                potential_energy_of_pair.calculate_energy(current_particle, other_particle)?;
         }
     }
 
@@ -565,7 +588,7 @@ where
 
 pub fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest<T, U>(
     tested_implementation: &mut T,
-    dead_zone_radius: &f64,
+    dead_zone_radius: &data_structure::SeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -589,7 +612,7 @@ where
         variable_values: data_structure::ParticleVariables {
             position_vector: data_structure::PositionVector {
                 horizontal_component: data_structure::HorizontalPositionUnit(
-                    0.2 * dead_zone_radius,
+                    0.2 * dead_zone_radius.0,
                 ),
                 vertical_component: data_structure::VerticalPositionUnit(0.0),
             },
@@ -604,7 +627,7 @@ where
         variable_values: data_structure::ParticleVariables {
             position_vector: data_structure::PositionVector {
                 horizontal_component: data_structure::HorizontalPositionUnit(
-                    0.7 * dead_zone_radius,
+                    0.7 * dead_zone_radius.0,
                 ),
                 vertical_component: data_structure::VerticalPositionUnit(0.0),
             },
@@ -641,6 +664,7 @@ where
 
 pub fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally<T, U>(
     tested_implementation: &mut T,
+    dead_zone_radius: &data_structure::SeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -793,33 +817,23 @@ where
         .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
 
     // The potential energy is (1/3)*(coupling=100)*(product of charges)*(separation)^(-3).
-    let inverse_fourth_potential_of_pair =
-        |inverse_separation: &data_structure::InverseSeparationUnit,
-         first_intrinsics: &data_structure::ParticleIntrinsics,
-         second_intrinsics: &data_structure::ParticleIntrinsics| {
-            Ok((100.0
-                * first_intrinsics.inverse_fourth_charge.0
-                * second_intrinsics.inverse_fourth_charge.0
-                * inverse_separation.get_value()
-                * inverse_separation.get_value()
-                * inverse_separation.get_value())
-                / 3.0)
-        };
+    let inverse_fourth_potential_of_pair = InverseFourthPotential {
+        coupling_constant: 100.0,
+        dead_zone_radius: *dead_zone_radius,
+    };
+
+    let initial_energy =
+        inverse_fourth_potential_of_pair.calculate_energy(&left_particle, &right_particle)?;
 
     // The initial potential should be 200/81 in whatever units it works out as, and there is zero
     // initial kinetic energy.
     let expected_initial_energy = 200.0 / 81.0;
-    let initial_inverse_separation = data_structure::get_inverse_separation(
-        &left_particle.read_variables().position_vector,
-        &right_particle.read_variables().position_vector,
-    )
-    .map_err(|original_error| String::from(format!("{:?}", original_error)))?;
-    let initial_energy = inverse_fourth_potential_of_pair(
-        &initial_inverse_separation,
-        &left_intrinsics,
-        &right_intrinsics,
-    )?;
-    if initial_energy != expected_initial_energy {
+
+    if !data_structure::comparison::within_relative_tolerance(
+        expected_initial_energy,
+        initial_energy,
+        TEST_DEFAULT_TOLERANCE,
+    ) {
         return Err(String::from(format!(
             "Expected inital energy = {}, actual inital energy = {}",
             expected_initial_energy, initial_energy
