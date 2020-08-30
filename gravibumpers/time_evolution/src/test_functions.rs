@@ -157,7 +157,7 @@ where
 }
 
 trait PotentialEnergyCalculator {
-    fn calculate_energy(
+    fn total_for_both(
         &self,
         first_particle: &impl data_structure::ParticleRepresentation,
         second_particle: &impl data_structure::ParticleRepresentation,
@@ -171,7 +171,7 @@ struct InverseFourthPotential {
 }
 
 impl PotentialEnergyCalculator for InverseFourthPotential {
-    fn calculate_energy(
+    fn total_for_both(
         &self,
         first_particle: &impl data_structure::ParticleRepresentation,
         second_particle: &impl data_structure::ParticleRepresentation,
@@ -182,7 +182,8 @@ impl PotentialEnergyCalculator for InverseFourthPotential {
             &self.dead_zone_radius,
         );
 
-        Ok((self.coupling_constant
+        Ok((2.0
+            * self.coupling_constant
             * first_particle.read_intrinsics().inverse_fourth_charge.0
             * second_particle.read_intrinsics().inverse_fourth_charge.0
             * inverse_separation.get_value()
@@ -220,7 +221,7 @@ fn check_energy_given_potential(
         for other_index in (particle_index + 1)..expected_number_of_particles {
             let other_particle = &particle_list[other_index];
             total_energy +=
-                potential_energy_of_pair.calculate_energy(current_particle, other_particle)?;
+                potential_energy_of_pair.total_for_both(current_particle, other_particle)?;
         }
     }
 
@@ -816,18 +817,19 @@ where
     let evolution_result = tested_implementation
         .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
 
-    // The potential energy is (1/3)*(coupling=100)*(product of charges)*(separation)^(-3).
+    // The potential energy is (1/3)*(coupling=100)*(product of charges)*(separation)^(-3)
+    // per particle = 200/81 per particle, so initially 2 * 200/81 = 400/81.
     let inverse_fourth_potential_of_pair = InverseFourthPotential {
         coupling_constant: 100.0,
         dead_zone_radius: *dead_zone_radius,
     };
 
     let initial_energy =
-        inverse_fourth_potential_of_pair.calculate_energy(&left_particle, &right_particle)?;
+        inverse_fourth_potential_of_pair.total_for_both(&left_particle, &right_particle)?;
 
-    // The initial potential should be 200/81 in whatever units it works out as, and there is zero
-    // initial kinetic energy.
-    let expected_initial_energy = 200.0 / 81.0;
+    // The initial potential should be 400/81 in whatever units it works out as (as explained
+    // above), and there is zero initial kinetic energy.
+    let expected_initial_energy = 400.0 / 81.0;
 
     if !data_structure::comparison::within_relative_tolerance(
         expected_initial_energy,
