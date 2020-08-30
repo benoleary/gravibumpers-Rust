@@ -176,7 +176,7 @@ impl PotentialEnergyCalculator for InverseFourthPotential {
         first_particle: &impl data_structure::ParticleRepresentation,
         second_particle: &impl data_structure::ParticleRepresentation,
     ) -> Result<f64, String> {
-        let inverse_separation = data_structure::get_inverse_separation(
+        let inverse_separation = data_structure::get_capped_inverse_separation(
             &first_particle.read_variables().position_vector,
             &second_particle.read_variables().position_vector,
             &self.dead_zone_radius,

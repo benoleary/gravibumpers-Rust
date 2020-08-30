@@ -85,11 +85,40 @@ pub trait ParticlesInTimeEvolver<T: std::iter::ExactSizeIterator<Item = Self::Em
 }
 
 fn force_on_first_particle_from_second_particle(
-    first_particle: impl data_structure::ParticleRepresentation,
-    second_particle: impl data_structure::ParticleRepresentation,
+    evolution_configuration: &configuration_parsing::EvolutionConfiguration,
+    first_particle: &impl data_structure::ParticleRepresentation,
+    second_particle: &impl data_structure::ParticleRepresentation,
 ) -> data_structure::ForceVector {
+    let separation_vector = first_particle.read_variables().position_vector
+        - second_particle.read_variables().position_vector;
+    if data_structure::SeparationUnit(evolution_configuration.dead_zone_radius)
+        .is_greater_than_square(&separation_vector)
+    {
+        return data_structure::ForceVector {
+            horizontal_component: data_structure::HorizontalForceUnit(0.0),
+            vertical_component: data_structure::VerticalForceUnit(0.0),
+        };
+    }
+
+    let inverse_separation =
+        data_structure::square_separation_vector(&separation_vector).to_inverse_square_root();
+
+    // For the moment, we just work out the inverse-fourth part, with an additional 1/r so that we
+    // can multiply the separation vector directly.
+    let force_magnitude_over_separation = evolution_configuration.inverse_fourth_coupling
+        * first_particle.read_intrinsics().inverse_fourth_charge.0
+        * second_particle.read_intrinsics().inverse_fourth_charge.0
+        * inverse_separation.get_value()
+        * inverse_separation.get_value()
+        * inverse_separation.get_value()
+        * inverse_separation.get_value()
+        * inverse_separation.get_value();
     data_structure::ForceVector {
-        horizontal_component: data_structure::HorizontalForceUnit(0.0),
-        vertical_component: data_structure::VerticalForceUnit(0.0),
+        horizontal_component: data_structure::HorizontalForceUnit(
+            separation_vector.horizontal_component.0 * force_magnitude_over_separation,
+        ),
+        vertical_component: data_structure::VerticalForceUnit(
+            separation_vector.horizontal_component.0 * force_magnitude_over_separation,
+        ),
     }
 }

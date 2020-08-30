@@ -58,7 +58,10 @@ fn create_time_slice_copy_without_force<'a>(
         .into_iter()
 }
 
-fn update_forces(particles_and_forces: &mut std::vec::Vec<ParticleInForceField>) {
+fn update_forces(
+    evolution_configuration: &configuration_parsing::EvolutionConfiguration,
+    particles_and_forces: &mut std::vec::Vec<ParticleInForceField>,
+) {
     // First all the forces must be set to zero so that we can aggregate the pairwise forces.
     for mut particle_and_force in particles_and_forces.iter_mut() {
         particle_and_force.experienced_force.horizontal_component =
@@ -73,8 +76,9 @@ fn update_forces(particles_and_forces: &mut std::vec::Vec<ParticleInForceField>)
         // force and increment force on p2 by equal opposite.
         for second_particle_index in (first_particle_index + 1)..number_of_particles {
             let pairwise_force = super::force_on_first_particle_from_second_particle(
-                particles_and_forces[first_particle_index].particle_description,
-                particles_and_forces[second_particle_index].particle_description,
+                evolution_configuration,
+                &particles_and_forces[first_particle_index].particle_description,
+                &particles_and_forces[second_particle_index].particle_description,
             );
             particles_and_forces[first_particle_index].experienced_force += pairwise_force;
             particles_and_forces[second_particle_index].experienced_force -= pairwise_force;
@@ -165,7 +169,7 @@ impl
         ));
         for _ in 1..evolution_configuration.number_of_time_slices {
             for _ in 0..self.number_of_internal_slices_per_time_slice {
-                update_forces(&mut evolving_particles);
+                update_forces(evolution_configuration, &mut evolving_particles);
                 self.update_velocities_and_positions(
                     &time_interval_per_internal_slice,
                     &mut evolving_particles,
