@@ -1,7 +1,7 @@
 {
   "memoryLayout": "VecOfPureStruct",
   "numberOfStepsPerFrame": 10,
-  "deadZoneRadius": 1.0,
+  "deadZoneRadius": 0.1,
   "inverseSquaredCoupling": -1.0,
   "inverseFourthCoupling": 1.0,
   "millisecondsPerFrame": 100,
