@@ -3,7 +3,7 @@
   "numberOfStepsPerFrame": 10,
   "inverseSquaredCoupling": -1.0,
   "inverseFourthCoupling": 1.0,
-  "deadZoneRadius": 1.0,
+  "deadZoneRadius": 0.1,
   "millisecondsPerFrame": 100,
   "numberOfFrames": 40,
   "rightBorderCoordinate": 10,
