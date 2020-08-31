@@ -182,7 +182,7 @@ impl PotentialEnergyCalculator for InverseFourthPotential {
             &self.dead_zone_radius,
         );
 
-        Ok((2.0
+        Ok((1.0
             * self.coupling_constant
             * first_particle.read_intrinsics().inverse_fourth_charge.0
             * second_particle.read_intrinsics().inverse_fourth_charge.0
@@ -835,7 +835,7 @@ where
 
     // The initial potential should be 400/81 in whatever units it works out as (as explained
     // above), and there is zero initial kinetic energy.
-    let expected_initial_energy = 400.0 / 81.0;
+    let expected_initial_energy = 200.0 / 81.0;
 
     if !data_structure::comparison::within_relative_tolerance(
         expected_initial_energy,
