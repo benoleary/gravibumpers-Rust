@@ -118,7 +118,7 @@ fn force_on_first_particle_from_second_particle(
             separation_vector.horizontal_component.0 * force_magnitude_over_separation,
         ),
         vertical_component: data_structure::VerticalForceUnit(
-            separation_vector.horizontal_component.0 * force_magnitude_over_separation,
+            separation_vector.vertical_component.0 * force_magnitude_over_separation,
         ),
     }
 }
