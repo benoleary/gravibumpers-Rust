@@ -23,8 +23,10 @@ impl MaximallyContiguousEuler {
         time_difference_per_internal_slice: &data_structure::TimeDifferenceUnit,
         particles_and_forces: &mut std::vec::Vec<ParticleInForceField>,
     ) {
+        println!("\nupdate_velocities_and_positions");
         for particle_and_force in particles_and_forces.iter_mut() {
             let particle_variables = &mut particle_and_force.particle_description.variable_values;
+            println!("variables before update: {:?}", particle_variables);
             let velocity_difference = data_structure::velocity_change_from_force(
                 &particle_and_force.experienced_force,
                 &particle_and_force.timestep_over_inertial_mass,
@@ -41,6 +43,7 @@ impl MaximallyContiguousEuler {
                     &average_velocity,
                     &time_difference_per_internal_slice,
                 );
+            println!("variables after update: {:?}", particle_variables);
         }
     }
 }
@@ -62,6 +65,7 @@ fn update_forces(
     evolution_configuration: &configuration_parsing::EvolutionConfiguration,
     particles_and_forces: &mut std::vec::Vec<ParticleInForceField>,
 ) {
+    println!("\nupdate_forces");
     // First all the forces must be set to zero so that we can aggregate the pairwise forces.
     for mut particle_and_force in particles_and_forces.iter_mut() {
         particle_and_force.experienced_force.horizontal_component =
@@ -71,10 +75,12 @@ fn update_forces(
     }
     let number_of_particles = particles_and_forces.len();
     for first_particle_index in 0..(number_of_particles - 1) {
+        println!("first_particle_index {}", first_particle_index);
         // work out force on p1 = particles_and_forces[first_particle_index] from all
         // p2 = particles_and_forces[second_particle_index], increment force on p1 by each
         // force and increment force on p2 by equal opposite.
         for second_particle_index in (first_particle_index + 1)..number_of_particles {
+            println!("second_particle_index {}", first_particle_index);
             let pairwise_force = super::force_on_first_particle_from_second_particle(
                 evolution_configuration,
                 &particles_and_forces[first_particle_index].particle_description,
@@ -83,6 +89,10 @@ fn update_forces(
             particles_and_forces[first_particle_index].experienced_force += pairwise_force;
             particles_and_forces[second_particle_index].experienced_force -= pairwise_force;
         }
+        println!(
+            "total force on particle[{}]: {:?}",
+            first_particle_index, particles_and_forces[first_particle_index].experienced_force
+        );
     }
 }
 
@@ -167,8 +177,10 @@ impl
         evaluations_at_time_slices.push(create_time_slice_copy_without_force(
             evolving_particles.iter(),
         ));
-        for _ in 1..evolution_configuration.number_of_time_slices {
-            for _ in 0..self.number_of_internal_slices_per_time_slice {
+        for slice_index in 1..evolution_configuration.number_of_time_slices {
+            println!("\nTime slice {}", slice_index);
+            for internal_index in 0..self.number_of_internal_slices_per_time_slice {
+                println!("Internal slice {}", internal_index);
                 update_forces(evolution_configuration, &mut evolving_particles);
                 self.update_velocities_and_positions(
                     &time_interval_per_internal_slice,
