@@ -80,7 +80,7 @@ fn update_forces(
         // p2 = particles_and_forces[second_particle_index], increment force on p1 by each
         // force and increment force on p2 by equal opposite.
         for second_particle_index in (first_particle_index + 1)..number_of_particles {
-            println!("second_particle_index {}", first_particle_index);
+            println!("second_particle_index {}", second_particle_index);
             let pairwise_force = super::force_on_first_particle_from_second_particle(
                 evolution_configuration,
                 &particles_and_forces[first_particle_index].particle_description,
