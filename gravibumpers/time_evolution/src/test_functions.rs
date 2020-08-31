@@ -225,10 +225,11 @@ fn check_energy_given_potential(
         }
     }
 
-    let energy_difference = (expected_energy_in_implicit_units - total_energy).abs();
-    let absolute_tolerance =
-        relative_tolerance * (expected_energy_in_implicit_units.abs().abs() + total_energy.abs());
-    if energy_difference >= absolute_tolerance {
+    if !data_structure::comparison::within_relative_tolerance(
+        expected_energy_in_implicit_units,
+        total_energy,
+        relative_tolerance,
+    ) {
         Err(String::from(format!(
             "Expected energy = {}, actual energy = {}",
             expected_energy_in_implicit_units, total_energy
