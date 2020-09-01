@@ -1,7 +1,7 @@
 /// This module provides a set of functions which each test a case for an implementation of
 /// ParticlesInTimeEvolver, so that each implementation can simply wrap the call in an actual test,
 /// passing in an instance of the implementation.
-const TEST_DEFAULT_TOLERANCE: f64 = 0.000001;
+const TEST_DEFAULT_TOLERANCE: f64 = 0.01;
 
 const NO_ADDITIONAL_CHECK: Option<
     fn(&std::vec::Vec<data_structure::IndividualParticle>) -> Result<(), String>,
@@ -691,7 +691,7 @@ where
     // The solution is the separation r is t^(2/5). The relative velocity is then (2/5) t^(-3/5)
     // and the relative acceleration is (-6/25) t^(-8/5), so the force is (-6/25) m^(-1) r^(-4).
     // The test starts at t = 1, and it doesn't actually matter what m is as long as it is not 0.
-    // Hence r= 1.0, so the particles are at +0.5 and at -0.5, and the velocity is 0.4 so +0.2
+    // Hence r = 1.0, so the particles are at +0.5 and at -0.5, and the velocity is 0.4 so +0.2
     // and -0.2 respectively.
     let left_particle = data_structure::IndividualParticle {
         intrinsic_values: test_intrinsics,
@@ -808,10 +808,14 @@ where
     ];
 
     let number_of_time_slices = expected_sequence.len();
+
+    // As calculated above, the force is (-6/25) m^(-1) r^(-4) in the sense of mass times
+    // acceleration, but the acceleration is divided between the particles, therefore the force
+    // exerted by each on the other is half of that, thus the coupling is -3/25 (since m is 1).
     let evolution_configuration = super::configuration_parsing::EvolutionConfiguration {
         dead_zone_radius: dead_zone_radius.0,
         inverse_squared_coupling: 0.0,
-        inverse_fourth_coupling: -0.24,
+        inverse_fourth_coupling: -0.12,
         milliseconds_per_time_slice: 1000,
         number_of_time_slices: number_of_time_slices,
     };
