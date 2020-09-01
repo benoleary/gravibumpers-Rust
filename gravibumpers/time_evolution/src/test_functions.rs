@@ -994,7 +994,7 @@ where
     let evolution_configuration = super::configuration_parsing::EvolutionConfiguration {
         dead_zone_radius: dead_zone_radius.0,
         inverse_squared_coupling: 0.0,
-        inverse_fourth_coupling: -0.24,
+        inverse_fourth_coupling: 100.0,
         milliseconds_per_time_slice: 1000,
         number_of_time_slices: number_of_time_slices,
     };
