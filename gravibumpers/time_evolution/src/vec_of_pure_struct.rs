@@ -247,6 +247,15 @@ mod tests {
     }
 
     #[test]
+    fn test_equal_masses_attracting_inverse_fourth_critical_escape() -> Result<(), String> {
+        let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
+        evolver_tests::test_equal_masses_attracting_inverse_fourth_critical_escape(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
     fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally() -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
         evolver_tests::test_equal_masses_repelling_inverse_fourth_accelerate_away_equally(
