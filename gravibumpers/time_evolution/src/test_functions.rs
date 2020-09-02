@@ -182,7 +182,7 @@ impl PotentialEnergyCalculator for InverseFourthPotential {
             &self.dead_zone_radius,
         );
 
-        Ok((1.0
+        Ok((2.0
             * self.coupling_constant
             * first_particle.read_intrinsics().inverse_fourth_charge.0
             * second_particle.read_intrinsics().inverse_fourth_charge.0
@@ -208,7 +208,10 @@ fn check_energy_given_potential(
         )));
     }
     let mut total_energy = 0.0;
+    let mut total_kinetic = 0.0;
+    let mut total_potential = 0.0;
     for particle_index in 0..expected_number_of_particles {
+        println!("particle_index = {}", particle_index);
         let current_particle = &particle_list[particle_index];
         let current_variables = current_particle.read_variables();
         let current_kinetic = 0.5
@@ -218,12 +221,23 @@ fn check_energy_given_potential(
                 + (current_variables.velocity_vector.vertical_component.0
                     * current_variables.velocity_vector.vertical_component.0));
         total_energy += current_kinetic;
+        total_kinetic += current_kinetic;
+        println!("current_kinetic = {}", current_kinetic);
+        println!("total_kinetic = {}", total_kinetic);
         for other_index in (particle_index + 1)..expected_number_of_particles {
+            println!("other_index = {}", other_index);
             let other_particle = &particle_list[other_index];
-            total_energy +=
+            let potential_of_pair =
                 potential_energy_of_pair.total_for_both(current_particle, other_particle)?;
+            total_potential += potential_of_pair;
+            total_energy += potential_of_pair;
+            println!("potential_of_pair = {}", potential_of_pair);
+            println!("total_potential = {}", total_potential);
         }
     }
+
+    println!("total_kinetic = {}", total_kinetic);
+    println!("total_potential = {}", total_potential);
 
     println!(
         "Expected energy = {}, actual energy = {}",
@@ -843,10 +857,11 @@ where
                 check_energy_given_potential(
                     2,
                     0.0,
-                    TEST_DEFAULT_TOLERANCE,
+                    -TEST_DEFAULT_TOLERANCE,
                     particle_list,
                     inverse_fourth_potential_of_pair,
-                )
+                )?;
+                Err(String::from("WTF"))
             },
         ),
     )
@@ -1018,12 +1033,12 @@ where
 
     // The initial potential should be 400/81 in whatever units it works out as (as explained
     // above), and there is zero initial kinetic energy.
-    let expected_initial_energy = 200.0 / 81.0;
+    let expected_initial_energy = 400.0 / 81.0;
 
     if !data_structure::comparison::within_relative_tolerance(
         expected_initial_energy,
         initial_energy,
-        0.1,
+        0.001,
     ) {
         return Err(String::from(format!(
             "Expected inital energy = {}, actual inital energy = {}",
