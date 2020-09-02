@@ -9,7 +9,7 @@ pub fn within_relative_tolerance(
     relative_tolerance: f64,
 ) -> bool {
     if expected_value == 0.0 {
-        return actual_value < relative_tolerance;
+        return actual_value.abs() < relative_tolerance;
     }
     let absolute_difference = (expected_value - actual_value).abs();
     let absolute_tolerance = 0.5 * relative_tolerance * (expected_value.abs() + actual_value.abs());
