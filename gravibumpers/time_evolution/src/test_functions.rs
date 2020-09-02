@@ -214,6 +214,14 @@ fn check_energy_given_potential(
         println!("particle_index = {}", particle_index);
         let current_particle = &particle_list[particle_index];
         let current_variables = current_particle.read_variables();
+        println!(
+            "current_particle.read_variables() = {:?}",
+            current_variables
+        );
+        println!(
+            "current_particle.read_intrinsics() = {:?}",
+            current_particle.read_intrinsics()
+        );
         let current_kinetic = 0.5
             * current_particle.read_intrinsics().inertial_mass.0
             * ((current_variables.velocity_vector.horizontal_component.0
@@ -860,8 +868,7 @@ where
                     -TEST_DEFAULT_TOLERANCE,
                     particle_list,
                     inverse_fourth_potential_of_pair,
-                )?;
-                Err(String::from("WTF"))
+                )
             },
         ),
     )
