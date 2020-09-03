@@ -396,6 +396,28 @@ impl SubAssign for PositionVector {
     }
 }
 
+impl Add for PositionVector {
+    type Output = Self;
+
+    fn add(self, other_amount: Self) -> Self {
+        Self {
+            horizontal_component: self.horizontal_component + other_amount.horizontal_component,
+            vertical_component: self.vertical_component + other_amount.vertical_component,
+        }
+    }
+}
+
+impl Sub for PositionVector {
+    type Output = Self;
+
+    fn sub(self, other_amount: Self) -> Self {
+        Self {
+            horizontal_component: self.horizontal_component - other_amount.horizontal_component,
+            vertical_component: self.vertical_component - other_amount.vertical_component,
+        }
+    }
+}
+
 impl PositionVector {
     pub fn increment_by_velocity_for_time_difference(
         &mut self,
@@ -465,10 +487,6 @@ pub fn create_individual_from_representation(
     }
 }
 
-/// This represents the Euclidean distance between two co-ordinates in pixels.
-#[derive(Clone, Copy, Debug)]
-pub struct SeparationUnit(pub f64);
-
 /// This holds the inverse of a distance, so 1/r.
 #[derive(Clone, Copy, Debug)]
 pub struct InverseSeparationUnit(f64);
@@ -479,23 +497,69 @@ impl InverseSeparationUnit {
     }
 }
 
+/// This represents the square of the Euclidean distance between two co-ordinates in pixels.
+#[derive(Clone, Copy, Debug)]
+pub struct SquaredSeparationUnit(pub f64);
+
+pub fn square_separation_vector(separation_vector: &PositionVector) -> SquaredSeparationUnit {
+    let horizontal_squared =
+        separation_vector.horizontal_component.0 * separation_vector.horizontal_component.0;
+    let vertical_squared =
+        separation_vector.vertical_component.0 * separation_vector.vertical_component.0;
+    SquaredSeparationUnit(horizontal_squared + vertical_squared)
+}
+
+impl SquaredSeparationUnit {
+    pub fn to_inverse_square_root(&self) -> InverseSeparationUnit {
+        InverseSeparationUnit(1.0 / self.0.sqrt())
+    }
+
+    pub fn is_greater_than_square(&self, separation_vector: &PositionVector) -> bool {
+        self.0 > square_separation_vector(separation_vector).0
+    }
+}
+
+/// This represents the Euclidean distance between two co-ordinates in pixels.
+#[derive(Clone, Copy, Debug)]
+pub struct SeparationUnit(pub f64);
+
+impl SeparationUnit {
+    fn to_square(&self) -> SquaredSeparationUnit {
+        SquaredSeparationUnit(self.0 * self.0)
+    }
+
+    pub fn is_greater_than_square(&self, separation_vector: &PositionVector) -> bool {
+        self.to_square().is_greater_than_square(separation_vector)
+    }
+
+    pub fn is_greater_than_difference(
+        &self,
+        first_position: &PositionVector,
+        second_position: &PositionVector,
+    ) -> (bool, SquaredSeparationUnit) {
+        let difference_vector = *first_position - *second_position;
+        let squared_separation = square_separation_vector(&difference_vector);
+        (
+            self.is_greater_than_square(&difference_vector),
+            squared_separation,
+        )
+    }
+}
+
 /// This returns 1 divided by either the separation of the two given points or by the given minimum,
 /// whichever is greater (so giving an upper bound on the returned inverse separation). It does not
 /// guard against division by zero!
-pub fn get_inverse_separation(
+pub fn get_capped_inverse_separation(
     first_position: &PositionVector,
     second_position: &PositionVector,
     minimum_separation: &SeparationUnit,
 ) -> InverseSeparationUnit {
-    let horizontal_separation =
-        first_position.horizontal_component - second_position.horizontal_component;
-    let vertical_separation =
-        first_position.vertical_component - second_position.vertical_component;
-    let squared_separation = (horizontal_separation.0 * horizontal_separation.0)
-        + (vertical_separation.0 * vertical_separation.0);
-    if squared_separation < (minimum_separation.0 * minimum_separation.0) {
+    let (is_capped, squared_separation) =
+        minimum_separation.is_greater_than_difference(first_position, second_position);
+
+    if is_capped {
         InverseSeparationUnit(1.0 / minimum_separation.0)
     } else {
-        InverseSeparationUnit(1.0 / squared_separation.sqrt())
+        squared_separation.to_inverse_square_root()
     }
 }
