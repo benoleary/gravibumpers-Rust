@@ -278,4 +278,22 @@ mod tests {
             &TEST_DEAD_ZONE_RADIUS,
         )
     }
+
+    #[test]
+    fn test_triangle_at_cancelling_forces_is_stable() -> Result<(), String> {
+        let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
+        evolver_tests::test_triangle_at_cancelling_forces_is_stable(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
+    fn test_approximate_harmonic_oscillator() -> Result<(), String> {
+        let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
+        evolver_tests::test_approximate_harmonic_oscillator(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
 }

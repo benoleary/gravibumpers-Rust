@@ -2,6 +2,7 @@
 /// ParticlesInTimeEvolver, so that each implementation can simply wrap the call in an actual test,
 /// passing in an instance of the implementation.
 const TEST_DEFAULT_TOLERANCE: f64 = 0.01;
+const TEST_DEFAULT_DEAD_ZONE_RADIUS: f64 = 0.01;
 
 const NO_ADDITIONAL_CHECK: Option<
     fn(&std::vec::Vec<data_structure::IndividualParticle>) -> Result<(), String>,
@@ -59,9 +60,10 @@ fn create_test_tolerances() -> data_structure::IndividualParticle {
 /// It is easiest to work out expected values for whole 1-second time slices, so 1000 milliseconds.
 fn create_test_evolution_configuration(
     number_of_time_slices: usize,
+    dead_zone_radius: f64,
 ) -> super::configuration_parsing::EvolutionConfiguration {
     super::configuration_parsing::EvolutionConfiguration {
-        dead_zone_radius: 1.0,
+        dead_zone_radius: dead_zone_radius,
         inverse_squared_coupling: -1.0,
         inverse_fourth_coupling: 1.0,
         milliseconds_per_time_slice: 1000,
@@ -285,7 +287,8 @@ where
     let initial_conditions = vec![expected_particle];
 
     let number_of_time_slices: usize = 8;
-    let evolution_configuration = create_test_evolution_configuration(number_of_time_slices);
+    let evolution_configuration =
+        create_test_evolution_configuration(number_of_time_slices, TEST_DEFAULT_DEAD_ZONE_RADIUS);
     let mut expected_sequence: std::vec::Vec<
         std::vec::IntoIter<data_structure::IndividualParticle>,
     > = vec![];
@@ -415,7 +418,8 @@ where
         vec![initial_particle];
 
     let number_of_time_slices = expected_sequence.len();
-    let evolution_configuration = create_test_evolution_configuration(number_of_time_slices);
+    let evolution_configuration =
+        create_test_evolution_configuration(number_of_time_slices, TEST_DEFAULT_DEAD_ZONE_RADIUS);
     let evolution_result = tested_implementation
         .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
     let test_tolerances = create_test_tolerances();
@@ -587,7 +591,8 @@ where
     ];
 
     let number_of_time_slices = expected_sequence.len();
-    let evolution_configuration = create_test_evolution_configuration(number_of_time_slices);
+    let evolution_configuration =
+        create_test_evolution_configuration(number_of_time_slices, TEST_DEFAULT_DEAD_ZONE_RADIUS);
     let evolution_result = tested_implementation
         .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
     let test_tolerances = create_test_tolerances();
@@ -663,7 +668,8 @@ where
     ];
 
     let number_of_time_slices = expected_sequence.len();
-    let evolution_configuration = create_test_evolution_configuration(number_of_time_slices);
+    let evolution_configuration =
+        create_test_evolution_configuration(number_of_time_slices, dead_zone_radius.0);
     let evolution_result = tested_implementation
         .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
     let test_tolerances = create_test_tolerances();
@@ -1395,4 +1401,30 @@ where
             },
         ),
     )
+}
+
+pub fn test_triangle_at_cancelling_forces_is_stable<T, U>(
+    tested_implementation: &mut T,
+    dead_zone_radius: &data_structure::SeparationUnit,
+) -> Result<(), String>
+where
+    T: super::ParticlesInTimeEvolver<U>,
+    U: std::iter::ExactSizeIterator<
+        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
+    >,
+{
+    Err(String::from("not yet implemented"))
+}
+
+pub fn test_approximate_harmonic_oscillator<T, U>(
+    tested_implementation: &mut T,
+    dead_zone_radius: &data_structure::SeparationUnit,
+) -> Result<(), String>
+where
+    T: super::ParticlesInTimeEvolver<U>,
+    U: std::iter::ExactSizeIterator<
+        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
+    >,
+{
+    Err(String::from("not yet implemented"))
 }
