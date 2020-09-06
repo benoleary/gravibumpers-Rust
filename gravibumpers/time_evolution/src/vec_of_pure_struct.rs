@@ -260,4 +260,22 @@ mod tests {
             &TEST_DEAD_ZONE_RADIUS,
         )
     }
+
+    #[test]
+    fn test_equal_masses_attracting_inverse_square_critical_escape() -> Result<(), String> {
+        let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
+        evolver_tests::test_equal_masses_attracting_inverse_square_critical_escape(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
+    fn test_equal_masses_attracting_inverse_square_circular_orbit() -> Result<(), String> {
+        let mut evolver_implementation = new_maximally_contiguous_euler_for_test()?;
+        evolver_tests::test_equal_masses_attracting_inverse_square_circular_orbit(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
 }

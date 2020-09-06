@@ -165,12 +165,13 @@ trait PotentialEnergyCalculator {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct InverseFourthPotential {
-    coupling_constant: f64,
+struct InverseSquaredAndFourthPotential {
+    inverse_squared_coupling_constant: f64,
+    inverse_fourth_coupling_constant: f64,
     dead_zone_radius: data_structure::SeparationUnit,
 }
 
-impl PotentialEnergyCalculator for InverseFourthPotential {
+impl PotentialEnergyCalculator for InverseSquaredAndFourthPotential {
     fn total_for_both(
         &self,
         first_particle: &impl data_structure::ParticleRepresentation,
@@ -182,17 +183,24 @@ impl PotentialEnergyCalculator for InverseFourthPotential {
             &self.dead_zone_radius,
         );
 
-        // The potential enegy for the pair is the integral over total separation of the force
-        // felt by one of the particles, hence 3 factors of the inverse separation and a division
-        // by 3. Equivalently, it is the sum of the integrals of both forces over the parts of the
-        // separations divided between the particles according to mass.
-        Ok((self.coupling_constant
+        // The potential energy for the pair is the integral over total separation of the force
+        // felt by one of the particles. Hence for the inverse-fourth part, the 3 factors of the
+        // inverse separation and a division by 3, while the inverse-square part just has a single
+        // inverse power of the separation and no extra factor (because it is 1).
+        // (Equivalently, the potential energy is the sum of the integrals of both forces over the
+        // parts of the separations divided between the particles according to mass.)
+        let inverse_fourth_part = (self.inverse_fourth_coupling_constant
             * first_particle.read_intrinsics().inverse_fourth_charge.0
             * second_particle.read_intrinsics().inverse_fourth_charge.0
             * inverse_separation.get_value()
             * inverse_separation.get_value()
             * inverse_separation.get_value())
-            / 3.0)
+            / 3.0;
+        let inverse_square_part = self.inverse_squared_coupling_constant
+            * first_particle.read_intrinsics().inverse_squared_charge.0
+            * second_particle.read_intrinsics().inverse_squared_charge.0
+            * inverse_separation.get_value();
+        Ok(inverse_fourth_part + inverse_square_part)
     }
 }
 
@@ -827,8 +835,9 @@ where
     let evolution_result = tested_implementation
         .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
 
-    let inverse_fourth_potential_of_pair = InverseFourthPotential {
-        coupling_constant: evolution_configuration.inverse_fourth_coupling,
+    let inverse_fourth_potential_of_pair = InverseSquaredAndFourthPotential {
+        inverse_squared_coupling_constant: 0.0,
+        inverse_fourth_coupling_constant: evolution_configuration.inverse_fourth_coupling,
         dead_zone_radius: *dead_zone_radius,
     };
 
@@ -1007,8 +1016,9 @@ where
         .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
 
     // The potential energy is (r/3)*(force per particle) = 200/81 in total.
-    let inverse_fourth_potential_of_pair = InverseFourthPotential {
-        coupling_constant: evolution_configuration.inverse_fourth_coupling,
+    let inverse_fourth_potential_of_pair = InverseSquaredAndFourthPotential {
+        inverse_squared_coupling_constant: 0.0,
+        inverse_fourth_coupling_constant: evolution_configuration.inverse_fourth_coupling,
         dead_zone_radius: *dead_zone_radius,
     };
 
@@ -1041,6 +1051,346 @@ where
                     TEST_DEFAULT_TOLERANCE,
                     particle_list,
                     inverse_fourth_potential_of_pair,
+                )
+            },
+        ),
+    )
+}
+
+/// This test checks against a special case where there is an analytical solution for the motion of
+/// two equal masses under an attractive inverse-square force which have just enough kinetic energy
+/// to come to rest infinitely far apart from each other. (So it is the same as
+/// test_equal_masses_attracting_inverse_fourth_critical_escape above but for an inverse-square
+/// force instead of inverse-fourth.)
+pub fn test_equal_masses_attracting_inverse_square_critical_escape<T, U>(
+    tested_implementation: &mut T,
+    dead_zone_radius: &data_structure::SeparationUnit,
+) -> Result<(), String>
+where
+    T: super::ParticlesInTimeEvolver<U>,
+    U: std::iter::ExactSizeIterator<
+        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
+    >,
+{
+    let test_intrinsics = data_structure::ParticleIntrinsics {
+        inertial_mass: data_structure::InertialMassUnit(1.0),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
+        color_brightness: data_structure::new_color_triplet(
+            data_structure::RedColorUnit(4.0),
+            data_structure::GreenColorUnit(5.0),
+            data_structure::BlueColorUnit(6.0),
+        ),
+    };
+
+    // The details of the calculation are as above in
+    // test_equal_masses_attracting_inverse_fourth_critical_escape
+    // The solution in this case though is x = t^(2/3).
+    // Then v = dx/dt = (2/3) t^(-1/3) and a = dv/dt = (-2/9) t^(-4/3) = (-2/9) x^(-2).
+    // In terms of the separation r = 2x and mass m, the force is ma = (-8m/9) r^(-2).
+    // The test starts at t = 1, and it doesn't actually matter what m is as long as it is not 0.
+    // Hence x = 1.0, so the particles are at +1.0 and at -1.0, and the velocities are +2/3 and
+    // -12/3 respectively.
+    let left_particle = data_structure::IndividualParticle {
+        intrinsic_values: test_intrinsics,
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(-1.0),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(-2.0 / 3.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+    let right_particle = data_structure::IndividualParticle {
+        intrinsic_values: test_intrinsics,
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(2.0 / 3.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+    let initial_conditions = vec![left_particle.clone(), right_particle.clone()];
+
+    let second_right_position = 2.0_f64.powf(2.0 / 3.0);
+    let second_right_speed = (2.0 / 3.0) * 2.0_f64.powf(-1.0 / 3.0);
+    let third_right_position = (3.0_f64).powf(2.0 / 3.0);
+    let third_right_speed = (2.0 / 3.0) * (3.0_f64).powf(-1.0 / 3.0);
+    let expected_sequence = vec![
+        initial_conditions
+            .iter()
+            .cloned()
+            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .into_iter(),
+        vec![
+            data_structure::IndividualParticle {
+                intrinsic_values: test_intrinsics,
+                variable_values: data_structure::ParticleVariables {
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(
+                            -second_right_position,
+                        ),
+                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(
+                            -second_right_speed,
+                        ),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: test_intrinsics,
+                variable_values: data_structure::ParticleVariables {
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(
+                            second_right_position,
+                        ),
+                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(
+                            second_right_speed,
+                        ),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
+                },
+            },
+        ]
+        .into_iter(),
+        vec![
+            data_structure::IndividualParticle {
+                intrinsic_values: test_intrinsics,
+                variable_values: data_structure::ParticleVariables {
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(
+                            -third_right_position,
+                        ),
+                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(
+                            -third_right_speed,
+                        ),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
+                },
+            },
+            data_structure::IndividualParticle {
+                intrinsic_values: test_intrinsics,
+                variable_values: data_structure::ParticleVariables {
+                    position_vector: data_structure::PositionVector {
+                        horizontal_component: data_structure::HorizontalPositionUnit(
+                            third_right_position,
+                        ),
+                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                    },
+                    velocity_vector: data_structure::VelocityVector {
+                        horizontal_component: data_structure::HorizontalVelocityUnit(
+                            third_right_speed,
+                        ),
+                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    },
+                },
+            },
+        ]
+        .into_iter(),
+    ];
+
+    let number_of_time_slices = expected_sequence.len();
+
+    // As calculated above, the force each particle experiences is (-8m/9) r^(-2) and each has
+    // mass 1.0 in this test.
+    let evolution_configuration = super::configuration_parsing::EvolutionConfiguration {
+        dead_zone_radius: dead_zone_radius.0,
+        inverse_squared_coupling: -8.0 / 9.0,
+        inverse_fourth_coupling: 0.0,
+        milliseconds_per_time_slice: 1000,
+        number_of_time_slices: number_of_time_slices,
+    };
+    let evolution_result = tested_implementation
+        .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
+
+    let inverse_squared_potential_of_pair = InverseSquaredAndFourthPotential {
+        inverse_squared_coupling_constant: evolution_configuration.inverse_squared_coupling,
+        inverse_fourth_coupling_constant: 0.0,
+        dead_zone_radius: *dead_zone_radius,
+    };
+
+    let test_tolerances = create_test_tolerances();
+    // The total energy should be 0.0 constantly.
+    compare_time_slices_to_expected(
+        evolution_result,
+        expected_sequence.into_iter(),
+        &test_tolerances,
+        Some(
+            |particle_list: &std::vec::Vec<data_structure::IndividualParticle>| {
+                check_energy_given_potential(
+                    2,
+                    0.0,
+                    TEST_DEFAULT_TOLERANCE,
+                    particle_list,
+                    inverse_squared_potential_of_pair,
+                )
+            },
+        ),
+    )
+}
+
+pub fn test_equal_masses_attracting_inverse_square_circular_orbit<T, U>(
+    tested_implementation: &mut T,
+    dead_zone_radius: &data_structure::SeparationUnit,
+) -> Result<(), String>
+where
+    T: super::ParticlesInTimeEvolver<U>,
+    U: std::iter::ExactSizeIterator<
+        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
+    >,
+{
+    let test_intrinsics = data_structure::ParticleIntrinsics {
+        inertial_mass: data_structure::InertialMassUnit(1.0),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
+        color_brightness: data_structure::new_color_triplet(
+            data_structure::RedColorUnit(4.0),
+            data_structure::GreenColorUnit(5.0),
+            data_structure::BlueColorUnit(6.0),
+        ),
+    };
+
+    // The force needs to be m r w^2 where w is the angular speed.
+    // Since m = r = 1, we pick F = w = 1, so both should have charge 1 and the overall coupling
+    // should be 4 to account for the separation being 2, so inverse squared giving 1/4.
+    let left_particle = data_structure::IndividualParticle {
+        intrinsic_values: test_intrinsics,
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(-1.0),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(-1.0),
+            },
+        },
+    };
+    let right_particle = data_structure::IndividualParticle {
+        intrinsic_values: test_intrinsics,
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(1.0),
+            },
+        },
+    };
+    let initial_conditions = vec![left_particle.clone(), right_particle.clone()];
+
+    // We will choose 200ms per time slice below, so the time sequence has increments of 0.2s.
+    // (The fact that we go up to only 1.2 is cheating a little as the inaccuracy adds up over time slices,
+    // and by 1.6 the actuals deviate by over 1%.)
+    let following_expecteds = [0.2_f64, 0.4_f64, 0.6_f64, 0.8_f64, 1.0_f64, 1.2_f64]
+        .iter()
+        .map(|time_value| {
+            let cosine_value = time_value.cos();
+            let sine_value = time_value.sin();
+            vec![
+                data_structure::IndividualParticle {
+                    intrinsic_values: test_intrinsics,
+                    variable_values: data_structure::ParticleVariables {
+                        position_vector: data_structure::PositionVector {
+                            horizontal_component: data_structure::HorizontalPositionUnit(
+                                -cosine_value,
+                            ),
+                            vertical_component: data_structure::VerticalPositionUnit(-sine_value),
+                        },
+                        velocity_vector: data_structure::VelocityVector {
+                            horizontal_component: data_structure::HorizontalVelocityUnit(
+                                sine_value,
+                            ),
+                            vertical_component: data_structure::VerticalVelocityUnit(-cosine_value),
+                        },
+                    },
+                },
+                data_structure::IndividualParticle {
+                    intrinsic_values: test_intrinsics,
+                    variable_values: data_structure::ParticleVariables {
+                        position_vector: data_structure::PositionVector {
+                            horizontal_component: data_structure::HorizontalPositionUnit(
+                                cosine_value,
+                            ),
+                            vertical_component: data_structure::VerticalPositionUnit(sine_value),
+                        },
+                        velocity_vector: data_structure::VelocityVector {
+                            horizontal_component: data_structure::HorizontalVelocityUnit(
+                                -sine_value,
+                            ),
+                            vertical_component: data_structure::VerticalVelocityUnit(cosine_value),
+                        },
+                    },
+                },
+            ]
+        })
+        .flatten()
+        .collect::<std::vec::Vec<data_structure::IndividualParticle>>();
+
+    let expected_sequence = vec![
+        initial_conditions
+            .iter()
+            .cloned()
+            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .into_iter(),
+        following_expecteds.into_iter(),
+    ];
+
+    let number_of_time_slices = expected_sequence.len();
+
+    // As mentioned above, for an inverse-squared force of magnitude 1 with a separation of 2,
+    // the coupling must be 4.
+    let evolution_configuration = super::configuration_parsing::EvolutionConfiguration {
+        dead_zone_radius: dead_zone_radius.0,
+        inverse_squared_coupling: -4.0,
+        inverse_fourth_coupling: 0.0,
+        milliseconds_per_time_slice: 200,
+        number_of_time_slices: number_of_time_slices,
+    };
+    let evolution_result = tested_implementation
+        .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
+
+    let inverse_squared_potential_of_pair = InverseSquaredAndFourthPotential {
+        inverse_squared_coupling_constant: evolution_configuration.inverse_squared_coupling,
+        inverse_fourth_coupling_constant: 0.0,
+        dead_zone_radius: *dead_zone_radius,
+    };
+
+    let test_tolerances = create_test_tolerances();
+    // The total energy is potential plus kinetic.
+    // The potential is -coupling/r => -4/2 = -2.
+    // The kinetic is 2 * (0.5 m v^2) => 1.
+    // Hence the total is -1.0 in whatever units it works out as.
+    compare_time_slices_to_expected(
+        evolution_result,
+        expected_sequence.into_iter(),
+        &test_tolerances,
+        Some(
+            |particle_list: &std::vec::Vec<data_structure::IndividualParticle>| {
+                check_energy_given_potential(
+                    2,
+                    -1.0,
+                    TEST_DEFAULT_TOLERANCE,
+                    particle_list,
+                    inverse_squared_potential_of_pair,
                 )
             },
         ),
