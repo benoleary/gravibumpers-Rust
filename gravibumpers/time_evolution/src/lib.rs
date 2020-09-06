@@ -103,16 +103,22 @@ fn force_on_first_particle_from_second_particle(
     let inverse_separation =
         data_structure::square_separation_vector(&separation_vector).to_inverse_square_root();
 
-    // For the moment, we just work out the inverse-fourth part, with an additional 1/r so that we
-    // can multiply the separation vector directly.
-    let force_magnitude_over_separation = evolution_configuration.inverse_fourth_coupling
+    let inverse_squared_separation =
+        inverse_separation.get_value() * inverse_separation.get_value();
+    let inverse_squared_force = evolution_configuration.inverse_squared_coupling
+        * first_particle.read_intrinsics().inverse_squared_charge.0
+        * second_particle.read_intrinsics().inverse_squared_charge.0
+        * inverse_squared_separation;
+    let inverse_fourth_force = evolution_configuration.inverse_fourth_coupling
         * first_particle.read_intrinsics().inverse_fourth_charge.0
         * second_particle.read_intrinsics().inverse_fourth_charge.0
-        * inverse_separation.get_value()
-        * inverse_separation.get_value()
-        * inverse_separation.get_value()
-        * inverse_separation.get_value()
-        * inverse_separation.get_value();
+        * inverse_squared_separation
+        * inverse_squared_separation;
+
+    // We combine the sum of the two kinds of force with an additional 1/r so that we can multiply
+    // the separation vector directly.
+    let force_magnitude_over_separation =
+        (inverse_squared_force + inverse_fourth_force) * inverse_separation.get_value();
     data_structure::ForceVector {
         horizontal_component: data_structure::HorizontalForceUnit(
             separation_vector.horizontal_component.0 * force_magnitude_over_separation,
