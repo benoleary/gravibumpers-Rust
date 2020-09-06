@@ -71,9 +71,6 @@ fn update_forces(
     }
     let number_of_particles = particles_and_forces.len();
     for first_particle_index in 0..(number_of_particles - 1) {
-        // work out force on p1 = particles_and_forces[first_particle_index] from all
-        // p2 = particles_and_forces[second_particle_index], increment force on p1 by each
-        // force and increment force on p2 by equal opposite.
         for second_particle_index in (first_particle_index + 1)..number_of_particles {
             let pairwise_force = super::force_on_first_particle_from_second_particle(
                 evolution_configuration,
