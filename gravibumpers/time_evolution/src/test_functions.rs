@@ -1341,18 +1341,18 @@ where
                     },
                 },
             ]
+            .into_iter()
         })
-        .flatten()
-        .collect::<std::vec::Vec<data_structure::IndividualParticle>>();
+        .collect::<std::vec::Vec<std::vec::IntoIter<data_structure::IndividualParticle>>>();
 
-    let expected_sequence = vec![
-        initial_conditions
-            .iter()
-            .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
-            .into_iter(),
-        following_expecteds.into_iter(),
-    ];
+    let expected_sequence = vec![initial_conditions
+        .iter()
+        .cloned()
+        .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+        .into_iter()]
+    .into_iter()
+    .chain(following_expecteds)
+    .collect::<std::vec::Vec<std::vec::IntoIter<data_structure::IndividualParticle>>>();
 
     let number_of_time_slices = expected_sequence.len();
 
