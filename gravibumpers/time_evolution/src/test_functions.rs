@@ -1413,7 +1413,124 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    Err(String::from("not yet implemented"))
+    let origin_particle = data_structure::IndividualParticle {
+        intrinsic_values: data_structure::ParticleIntrinsics {
+            inertial_mass: data_structure::InertialMassUnit(1.0),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
+            color_brightness: data_structure::new_color_triplet(
+                data_structure::RedColorUnit(1.0),
+                data_structure::GreenColorUnit(0.0),
+                data_structure::BlueColorUnit(0.0),
+            ),
+        },
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(0.0),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+    let right_particle = data_structure::IndividualParticle {
+        intrinsic_values: data_structure::ParticleIntrinsics {
+            inertial_mass: data_structure::InertialMassUnit(1.0),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(2.0),
+            color_brightness: data_structure::new_color_triplet(
+                data_structure::RedColorUnit(0.0),
+                data_structure::GreenColorUnit(0.0),
+                data_structure::BlueColorUnit(1.0),
+            ),
+        },
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+    let upper_particle = data_structure::IndividualParticle {
+        intrinsic_values: data_structure::ParticleIntrinsics {
+            inertial_mass: data_structure::InertialMassUnit(1.0),
+            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
+            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(2.0),
+            color_brightness: data_structure::new_color_triplet(
+                data_structure::RedColorUnit(0.0),
+                data_structure::GreenColorUnit(1.0),
+                data_structure::BlueColorUnit(0.0),
+            ),
+        },
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(0.0),
+                vertical_component: data_structure::VerticalPositionUnit(1.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+    let initial_conditions = vec![
+        origin_particle.clone(),
+        right_particle.clone(),
+        upper_particle.clone(),
+    ];
+    let expected_sequence = vec![
+        initial_conditions
+            .iter()
+            .cloned()
+            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .into_iter(),
+        initial_conditions
+            .iter()
+            .cloned()
+            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .into_iter(),
+        initial_conditions
+            .iter()
+            .cloned()
+            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .into_iter(),
+    ];
+    let number_of_time_slices = expected_sequence.len();
+
+    // The particle on the right needs to have balanced forces with the particle at the origin, with
+    // inverse-squared giving
+    // charges: 1 * 1, r^-2: 1, coupling -1 => giving -1,
+    // so inverse-fourth has
+    // charges: 1 * 2, r^-4: 1, coupling 0.5 => giving +1.
+    // Likewise for the upper particle.
+    // Then it conveniently works out for the upper and right particles:
+    // inverse-squared giving
+    // charges: 1 * 1, r^-2: 0.5, coupling -1 => giving -0.5,
+    // and inverse-fourth has
+    // charges: 2 * 2, r^-4: 0.25, coupling 0.5 => giving +0.5.
+    let evolution_configuration = super::configuration_parsing::EvolutionConfiguration {
+        dead_zone_radius: dead_zone_radius.0,
+        inverse_squared_coupling: -1.0,
+        inverse_fourth_coupling: 0.5,
+        milliseconds_per_time_slice: 1000,
+        number_of_time_slices: number_of_time_slices,
+    };
+
+    let evolution_result = tested_implementation
+        .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
+    let test_tolerances = create_test_tolerances();
+    return compare_time_slices_to_expected(
+        evolution_result,
+        expected_sequence.into_iter(),
+        &test_tolerances,
+        NO_ADDITIONAL_CHECK,
+    );
 }
 
 pub fn test_approximate_harmonic_oscillator<T, U>(
