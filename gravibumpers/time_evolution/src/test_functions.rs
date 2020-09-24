@@ -1261,14 +1261,24 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let test_intrinsics = data_structure::ParticleIntrinsics {
+    let red_intrinsics = data_structure::ParticleIntrinsics {
         inertial_mass: data_structure::InertialMassUnit(1.0),
         inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
         inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
         color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(4.0),
-            data_structure::GreenColorUnit(5.0),
-            data_structure::BlueColorUnit(6.0),
+            data_structure::RedColorUnit(1.0),
+            data_structure::GreenColorUnit(0.0),
+            data_structure::BlueColorUnit(0.0),
+        ),
+    };
+    let blue_intrinsics = data_structure::ParticleIntrinsics {
+        inertial_mass: data_structure::InertialMassUnit(1.0),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
+        color_brightness: data_structure::new_color_triplet(
+            data_structure::RedColorUnit(0.0),
+            data_structure::GreenColorUnit(0.0),
+            data_structure::BlueColorUnit(1.0),
         ),
     };
 
@@ -1276,7 +1286,7 @@ where
     // Since m = r = 1, we pick F = w = 1, so both should have charge 1 and the overall coupling
     // should be 4 to account for the separation being 2, so inverse squared giving 1/4.
     let left_particle = data_structure::IndividualParticle {
-        intrinsic_values: test_intrinsics,
+        intrinsic_values: red_intrinsics,
         variable_values: data_structure::ParticleVariables {
             position_vector: data_structure::PositionVector {
                 horizontal_component: data_structure::HorizontalPositionUnit(-1.0),
@@ -1289,7 +1299,7 @@ where
         },
     };
     let right_particle = data_structure::IndividualParticle {
-        intrinsic_values: test_intrinsics,
+        intrinsic_values: blue_intrinsics,
         variable_values: data_structure::ParticleVariables {
             position_vector: data_structure::PositionVector {
                 horizontal_component: data_structure::HorizontalPositionUnit(1.0),
@@ -1313,7 +1323,7 @@ where
             let sine_value = time_value.sin();
             vec![
                 data_structure::IndividualParticle {
-                    intrinsic_values: test_intrinsics,
+                    intrinsic_values: red_intrinsics,
                     variable_values: data_structure::ParticleVariables {
                         position_vector: data_structure::PositionVector {
                             horizontal_component: data_structure::HorizontalPositionUnit(
@@ -1330,7 +1340,7 @@ where
                     },
                 },
                 data_structure::IndividualParticle {
-                    intrinsic_values: test_intrinsics,
+                    intrinsic_values: blue_intrinsics,
                     variable_values: data_structure::ParticleVariables {
                         position_vector: data_structure::PositionVector {
                             horizontal_component: data_structure::HorizontalPositionUnit(
