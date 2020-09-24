@@ -1314,8 +1314,8 @@ where
     let initial_conditions = vec![left_particle.clone(), right_particle.clone()];
 
     // We will choose 200ms per time slice below, so the time sequence has increments of 0.2s.
-    // (The fact that we go up to only 1.2 is cheating a little as the inaccuracy adds up over time slices,
-    // and by 1.6 the actuals deviate by over 1%.)
+    // (The fact that we go up to only 1.2 is cheating a little as the inaccuracy adds up over time
+    // slices, and by 1.6 the actuals deviate by over 1%.)
     let following_expecteds = [0.2_f64, 0.4_f64, 0.6_f64, 0.8_f64, 1.0_f64, 1.2_f64]
         .iter()
         .map(|time_value| {
@@ -1553,5 +1553,180 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    Err(String::from("not yet implemented"))
+    let red_intrinsics = data_structure::ParticleIntrinsics {
+        inertial_mass: data_structure::InertialMassUnit(1.0),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
+        color_brightness: data_structure::new_color_triplet(
+            data_structure::RedColorUnit(1.0),
+            data_structure::GreenColorUnit(0.0),
+            data_structure::BlueColorUnit(0.0),
+        ),
+    };
+    let blue_intrinsics = data_structure::ParticleIntrinsics {
+        inertial_mass: data_structure::InertialMassUnit(1.0),
+        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
+        color_brightness: data_structure::new_color_triplet(
+            data_structure::RedColorUnit(0.0),
+            data_structure::GreenColorUnit(0.0),
+            data_structure::BlueColorUnit(1.0),
+        ),
+    };
+
+    let displacement_from_equilibrium = 0.001;
+    let equilibrium_distance_from_origin = 0.5;
+    let initial_distance_from_origin =
+        equilibrium_distance_from_origin + displacement_from_equilibrium;
+    let left_particle = data_structure::IndividualParticle {
+        intrinsic_values: red_intrinsics,
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(
+                    -initial_distance_from_origin,
+                ),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+    let right_particle = data_structure::IndividualParticle {
+        intrinsic_values: blue_intrinsics,
+        variable_values: data_structure::ParticleVariables {
+            position_vector: data_structure::PositionVector {
+                horizontal_component: data_structure::HorizontalPositionUnit(
+                    initial_distance_from_origin,
+                ),
+                vertical_component: data_structure::VerticalPositionUnit(0.0),
+            },
+            velocity_vector: data_structure::VelocityVector {
+                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
+                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            },
+        },
+    };
+    let initial_conditions = vec![left_particle.clone(), right_particle.clone()];
+
+    // The couplings etc. will be chosen so that the system approximates a simple harmonic
+    // oscillator with angular frequency of exactly 1.
+    // We will choose 200ms per time slice below, so the time sequence has increments of 0.2s.
+    // (The fact that we go up to only 1.2 is cheating a little as the inaccuracy adds up over time
+    // slices, and by 1.8 the actuals deviate by over 1%.)
+    let following_expecteds = [0.2_f64, 0.4_f64, 0.6_f64, 0.8_f64, 1.0_f64, 1.2_f64]
+        .iter()
+        .map(|time_value| {
+            let cosine_value = time_value.cos();
+            let sine_value = time_value.sin();
+
+            let current_distance_from_origin =
+                equilibrium_distance_from_origin + (cosine_value * displacement_from_equilibrium);
+            let current_speed = sine_value * displacement_from_equilibrium;
+            vec![
+                data_structure::IndividualParticle {
+                    intrinsic_values: red_intrinsics,
+                    variable_values: data_structure::ParticleVariables {
+                        position_vector: data_structure::PositionVector {
+                            horizontal_component: data_structure::HorizontalPositionUnit(
+                                -current_distance_from_origin,
+                            ),
+                            vertical_component: data_structure::VerticalPositionUnit(0.0),
+                        },
+                        velocity_vector: data_structure::VelocityVector {
+                            horizontal_component: data_structure::HorizontalVelocityUnit(
+                                current_speed,
+                            ),
+                            vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                        },
+                    },
+                },
+                data_structure::IndividualParticle {
+                    intrinsic_values: blue_intrinsics,
+                    variable_values: data_structure::ParticleVariables {
+                        position_vector: data_structure::PositionVector {
+                            horizontal_component: data_structure::HorizontalPositionUnit(
+                                current_distance_from_origin,
+                            ),
+                            vertical_component: data_structure::VerticalPositionUnit(0.0),
+                        },
+                        velocity_vector: data_structure::VelocityVector {
+                            horizontal_component: data_structure::HorizontalVelocityUnit(
+                                -current_speed,
+                            ),
+                            vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                        },
+                    },
+                },
+            ]
+            .into_iter()
+        })
+        .collect::<std::vec::Vec<std::vec::IntoIter<data_structure::IndividualParticle>>>();
+
+    let expected_sequence = vec![initial_conditions
+        .iter()
+        .cloned()
+        .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+        .into_iter()]
+    .into_iter()
+    .chain(following_expecteds)
+    .collect::<std::vec::Vec<std::vec::IntoIter<data_structure::IndividualParticle>>>();
+
+    let number_of_time_slices = expected_sequence.len();
+
+    // As mentioned above, we need to engineer angular frequency of 1 exactly.
+    // The charges and masses are 1 to make things simpler.
+    // Also we can simplify things by denoting the inverse-fourth coupling to g and setting the
+    // inverse-squared coupling to -g.
+    // The force experienced by the red particle on the left is
+    // g r^(-4) - g r^(-2)
+    // which is 0 for r = 1 and a Taylor expansion of r = 1 + x around r = 1 gives
+    // -4 g x + 2 g x = -2 g x
+    // but this is also the force felt by the blue particle on the right (with opposite direction)
+    // so |d^2 x / dt^2| is _twice_ |2 g x|.
+    // Hence if g is 0.25, then we get d^2 x / dt^2 = x as desired.
+    // By symmetry the displacement of each particle from the equilibrium, d, is going to be x/2
+    // and will undergo simple harmonic motion with the same angular frequency of 1, but each with
+    // half the amplitude.
+    let evolution_configuration = super::configuration_parsing::EvolutionConfiguration {
+        dead_zone_radius: dead_zone_radius.0,
+        inverse_squared_coupling: -0.25,
+        inverse_fourth_coupling: 0.25,
+        milliseconds_per_time_slice: 200,
+        number_of_time_slices: number_of_time_slices,
+    };
+    let evolution_result = tested_implementation
+        .create_time_sequence(&evolution_configuration, initial_conditions.into_iter());
+
+    let potential_of_pair = InverseSquaredAndFourthPotential {
+        inverse_squared_coupling_constant: evolution_configuration.inverse_squared_coupling,
+        inverse_fourth_coupling_constant: evolution_configuration.inverse_fourth_coupling,
+        dead_zone_radius: *dead_zone_radius,
+    };
+
+    let test_tolerances = create_test_tolerances();
+    // There is no initial kinetic energy, so the total is that from the inverse-squared force
+    // plus that from the inverse-fourth force, so
+    // -g/r + g r^(-3) / 3 = 0.25 * r^(-1) * (((1/3) * r^(-3)) - 1)
+    let inverse_initial_separation = 0.5 / initial_distance_from_origin;
+    let initial_energy = 0.25
+        * inverse_initial_separation
+        * (((1.0 / 3.0) * inverse_initial_separation * inverse_initial_separation) - 1.0);
+    compare_time_slices_to_expected(
+        evolution_result,
+        expected_sequence.into_iter(),
+        &test_tolerances,
+        Some(
+            |particle_list: &std::vec::Vec<data_structure::IndividualParticle>| {
+                check_energy_given_potential(
+                    2,
+                    initial_energy,
+                    TEST_DEFAULT_TOLERANCE,
+                    particle_list,
+                    potential_of_pair,
+                )
+            },
+        ),
+    )
 }
