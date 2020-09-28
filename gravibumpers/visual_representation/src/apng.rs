@@ -79,10 +79,8 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
             .aggregate_particle_colors_to_pixels(particle_map_sequence)?;
 
         for pixel_matrix in matrix_sequence.colored_pixel_matrices {
-            let flattened_color_bytes = &flattened_color_bytes_from(
-                pixel_matrix,
-                &matrix_sequence.maximum_brightness_per_color,
-            )?;
+            let flattened_color_bytes =
+                &flattened_color_bytes_from(pixel_matrix, &matrix_sequence.maximum_brightness)?;
             output_encoder
                 .write_frame(
                     flattened_color_bytes,
@@ -106,7 +104,7 @@ fn ceiling_as_byte(color_intensity: f64) -> u8 {
 // floating-point numbers representing red-green-blue quantities.
 fn flattened_color_bytes_from(
     pixel_matrix: impl ColoredPixelMatrix,
-    maximum_color_intensity: &data_structure::ColorTriplet,
+    maximum_color_intensity: &data_structure::AbsoluteColorUnit,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let width_in_pixels = pixel_matrix.width_in_pixels().0;
     let height_in_pixels = pixel_matrix.height_in_pixels().0;
@@ -146,9 +144,6 @@ mod tests {
     use super::super::color::FractionTriplet as ColorFraction;
     use super::super::OutOfBoundsError;
     use super::*;
-    use data_structure::BlueColorUnit;
-    use data_structure::GreenColorUnit;
-    use data_structure::RedColorUnit;
 
     const MAX_BYTE: u8 = 0xFF;
     const HALF_BYTE: u8 = 0x80;
@@ -158,7 +153,7 @@ mod tests {
     impl ColoredPixelMatrix for MockColoredPixelMatrix {
         fn color_fractions_at(
             &self,
-            _reference_intensity: &data_structure::ColorTriplet,
+            _reference_intensity: &data_structure::AbsoluteColorUnit,
             horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
             vertical_pixels_from_bottom_left: &VerticalPixelAmount,
         ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
@@ -208,11 +203,7 @@ mod tests {
     fn test_flattened_color_bytes_from() {
         let mock_matrix = MockColoredPixelMatrix {};
 
-        let full_intensity = data_structure::new_color_triplet(
-            RedColorUnit(1.0),
-            GreenColorUnit(1.0),
-            BlueColorUnit(1.0),
-        );
+        let full_intensity = data_structure::AbsoluteColorUnit(1.0);
 
         #[rustfmt::skip]
         let expected_bytes: Vec<u8> = vec![

@@ -132,7 +132,7 @@ impl std::ops::Sub<VerticalPixelAmount> for VerticalPixelAmount {
 pub trait ColoredPixelMatrix {
     fn color_fractions_at(
         &self,
-        reference_brightness: &data_structure::ColorTriplet,
+        reference_brightness: &data_structure::AbsoluteColorUnit,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<color::FractionTriplet, Box<dyn std::error::Error>>;

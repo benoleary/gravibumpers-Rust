@@ -83,6 +83,15 @@ impl Add for BlueColorUnit {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+pub struct AbsoluteColorUnit(pub f64);
+
+impl AbsoluteColorUnit {
+    pub fn update_to_other_if_brighter(&mut self, other_amount: &Self) {
+        self.0 = self.0.max(other_amount.0)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ColorTriplet {
     red_brightness: RedColorUnit,
@@ -111,16 +120,8 @@ impl ColorTriplet {
         self.blue_brightness
     }
 
-    pub fn overwrite_each_color_if_brighter(&mut self, possible_brighter_values: &ColorTriplet) {
-        if possible_brighter_values.red_brightness > self.red_brightness {
-            self.red_brightness = possible_brighter_values.red_brightness;
-        }
-        if possible_brighter_values.green_brightness > self.green_brightness {
-            self.green_brightness = possible_brighter_values.green_brightness;
-        }
-        if possible_brighter_values.blue_brightness > self.blue_brightness {
-            self.blue_brightness = possible_brighter_values.blue_brightness;
-        }
+    pub fn get_total(&self) -> AbsoluteColorUnit {
+        AbsoluteColorUnit(self.red_brightness.0 + self.green_brightness.0 + self.blue_brightness.0)
     }
 }
 
@@ -139,14 +140,21 @@ pub fn new_color_triplet(
 pub fn color_triplets_match(
     expected_triplet: &ColorTriplet,
     actual_triplet: &ColorTriplet,
-    absolute_tolerance: f64,
+    relative_tolerance: f64,
 ) -> bool {
-    ((expected_triplet.red_brightness.0 - actual_triplet.red_brightness.0).abs()
-        <= absolute_tolerance)
-        && ((expected_triplet.green_brightness.0 - actual_triplet.green_brightness.0).abs()
-            <= absolute_tolerance)
-        && ((expected_triplet.blue_brightness.0 - actual_triplet.blue_brightness.0).abs()
-            <= absolute_tolerance)
+    comparison::within_relative_tolerance(
+        expected_triplet.red_brightness.0,
+        actual_triplet.red_brightness.0,
+        relative_tolerance,
+    ) && comparison::within_relative_tolerance(
+        expected_triplet.green_brightness.0,
+        actual_triplet.green_brightness.0,
+        relative_tolerance,
+    ) && comparison::within_relative_tolerance(
+        expected_triplet.blue_brightness.0,
+        actual_triplet.blue_brightness.0,
+        relative_tolerance,
+    )
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]

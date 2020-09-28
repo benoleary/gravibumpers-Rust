@@ -33,7 +33,7 @@ impl AggregatedBrightnessMatrix {
 impl super::ColoredPixelMatrix for AggregatedBrightnessMatrix {
     fn color_fractions_at(
         &self,
-        reference_brightness: &data_structure::ColorTriplet,
+        reference_brightness: &data_structure::AbsoluteColorUnit,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
@@ -98,7 +98,10 @@ impl PixelBrightnessAggregator {
         particles_to_draw: impl std::iter::ExactSizeIterator<
             Item = impl data_structure::ParticleRepresentation,
         >,
-    ) -> (AggregatedBrightnessMatrix, data_structure::ColorTriplet) {
+    ) -> (
+        AggregatedBrightnessMatrix,
+        data_structure::AbsoluteColorUnit,
+    ) {
         let mut aggregated_brightnesses = AggregatedBrightnessMatrix {
             brightness_matrix: vec![
                 vec![
@@ -115,7 +118,7 @@ impl PixelBrightnessAggregator {
             height_in_pixels_including_border: self.pixel_window.height_in_pixels_including_border,
         };
 
-        let mut maximum_brightnesses = super::color::zero_brightness();
+        let mut maximum_total_brightness = data_structure::AbsoluteColorUnit(0.0);
         let add_brightness_from = &*self.add_brightness_from_particle_returning_current_triplet;
         for particle_to_draw in particles_to_draw {
             let update_result = add_brightness_from(
@@ -125,10 +128,10 @@ impl PixelBrightnessAggregator {
                 particle_to_draw.read_variables(),
             );
             if let Some(updated_pixel) = update_result {
-                maximum_brightnesses.overwrite_each_color_if_brighter(&updated_pixel);
+                maximum_total_brightness.update_to_other_if_brighter(&updated_pixel.get_total());
             }
         }
-        (aggregated_brightnesses, maximum_brightnesses)
+        (aggregated_brightnesses, maximum_total_brightness)
     }
 }
 
@@ -143,7 +146,7 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
         let mut aggregated_brightnesses: PixelMatrixSequence<AggregatedBrightnessMatrix> =
             PixelMatrixSequence {
                 colored_pixel_matrices: vec![],
-                maximum_brightness_per_color: super::color::zero_brightness(),
+                maximum_brightness: data_structure::AbsoluteColorUnit(0.0),
             };
 
         for particle_map in particle_map_sequence {
@@ -153,8 +156,8 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
                 .colored_pixel_matrices
                 .push(aggregated_brightnesses_in_map);
             aggregated_brightnesses
-                .maximum_brightness_per_color
-                .overwrite_each_color_if_brighter(&maximum_brightness_in_map);
+                .maximum_brightness
+                .update_to_other_if_brighter(&maximum_brightness_in_map);
         }
 
         Ok(aggregated_brightnesses)
@@ -288,13 +291,13 @@ mod tests {
     fn new_test_fraction(
         color_brightness: &data_structure::ColorTriplet,
     ) -> Result<ColorFraction, String> {
-        let reference_color = new_reference_brightness();
-        match super::super::color::fraction_from_triplets(color_brightness, &reference_color) {
+        let reference_brightness = new_reference_brightness();
+        match super::super::color::fraction_from_triplets(color_brightness, &reference_brightness) {
             Ok(color_fraction) => Ok(color_fraction),
             Err(unexpected_error) => Err(String::from(format!(
                 "Could not produce valid fraction ({:?}/{:?}) for test: {:?}",
                 color_brightness,
-                reference_color,
+                reference_brightness,
                 unexpected_error.to_string()
             ))),
         }
@@ -343,12 +346,8 @@ mod tests {
         }
     }
 
-    fn new_reference_brightness() -> data_structure::ColorTriplet {
-        data_structure::new_color_triplet(
-            data_structure::RedColorUnit(1.0),
-            data_structure::GreenColorUnit(1.0),
-            data_structure::BlueColorUnit(1.0),
-        )
+    fn new_reference_brightness() -> data_structure::AbsoluteColorUnit {
+        data_structure::AbsoluteColorUnit(1.0)
     }
 
     fn new_test_particle_intrinsics(
@@ -527,24 +526,24 @@ mod tests {
 
     fn assert_pixels_as_expected_with_implicit_black_background(
         resulting_matrix: &AggregatedBrightnessMatrix,
-        resulting_maximum_brightnesses: &data_structure::ColorTriplet,
+        resulting_maximum_brightness: &data_structure::AbsoluteColorUnit,
         expected_pixels: &std::vec::Vec<(
             HorizontalPixelAmount,
             VerticalPixelAmount,
             ColorFraction,
         )>,
-        expected_maximum_brightnesses: &data_structure::ColorTriplet,
+        expected_maximum_brightness: &data_structure::AbsoluteColorUnit,
     ) -> Result<(), String> {
         let reference_brightness = new_reference_brightness();
         let mut failure_messages: std::vec::Vec<String> = vec![];
-        if !data_structure::color_triplets_match(
-            expected_maximum_brightnesses,
-            resulting_maximum_brightnesses,
+        if !data_structure::comparison::within_relative_tolerance(
+            expected_maximum_brightness.0,
+            resulting_maximum_brightness.0,
             COLOR_FRACTION_TOLERANCE,
         ) {
             failure_messages.push(String::from(format!(
-                "Incorrect maximum brightnesses: expected {:?}, actual {:?}",
-                expected_maximum_brightnesses, resulting_maximum_brightnesses,
+                "Incorrect maximum brightness: expected {:?}, actual {:?}",
+                expected_maximum_brightness, resulting_maximum_brightness,
             )));
         }
         loop_over_all_pixels(
@@ -616,6 +615,8 @@ mod tests {
                 super::super::color::fraction_from_values(0.05, 0.9, 0.05),
             ),
         ];
+        let expected_maximum_brightness =
+            (expected_colored_pixels[1].2 * &new_reference_brightness()).get_total();
         let test_particles = vec![
             data_structure::IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
@@ -657,17 +658,13 @@ mod tests {
                 },
             },
         ];
-        let (resulting_matrix, resulting_maximum_brightnesses) = pixel_brightness_aggregator
+        let (resulting_matrix, resulting_maximum_brightness) = pixel_brightness_aggregator
             .aggregate_over_particle_iterator(test_particles.into_iter());
         assert_pixels_as_expected_with_implicit_black_background(
             &resulting_matrix,
-            &resulting_maximum_brightnesses,
+            &resulting_maximum_brightness,
             &expected_colored_pixels,
-            &data_structure::new_color_triplet(
-                data_structure::RedColorUnit(0.75),
-                data_structure::GreenColorUnit(0.9),
-                data_structure::BlueColorUnit(2.0),
-            ),
+            &expected_maximum_brightness,
         )
     }
 
@@ -702,6 +699,8 @@ mod tests {
                 super::super::color::fraction_from_values(0.0, 0.0, 1.0),
             ),
         ];
+        let expected_maximum_brightness =
+            (expected_colored_pixels[1].2 * &new_reference_brightness()).get_total();
         let test_particles = vec![
             // First of 3 in pixel (3, 3).
             data_structure::IndividualParticle {
@@ -804,11 +803,7 @@ mod tests {
             &resulting_matrix,
             &resulting_maximum_brightnesses,
             &expected_colored_pixels,
-            &data_structure::new_color_triplet(
-                data_structure::RedColorUnit(0.3),
-                data_structure::GreenColorUnit(2.0),
-                data_structure::BlueColorUnit(2.0),
-            ),
+            &expected_maximum_brightness,
         )
     }
 
@@ -948,11 +943,7 @@ mod tests {
             &resulting_matrix,
             &resulting_maximum_brightnesses,
             &expected_colored_pixels,
-            &data_structure::new_color_triplet(
-                data_structure::RedColorUnit(0.0),
-                data_structure::GreenColorUnit(0.0),
-                data_structure::BlueColorUnit(0.0),
-            ),
+            &data_structure::AbsoluteColorUnit(0.0),
         )
     }
 
@@ -1049,17 +1040,15 @@ mod tests {
                 super::super::color::fraction_from_values(0.0, 3.0, 5.0),
             ),
         ];
+        let expected_maximum_brightness =
+            (expected_colored_pixels[7].2 * &new_reference_brightness()).get_total();
         let (resulting_matrix, resulting_maximum_brightnesses) = pixel_brightness_aggregator
             .aggregate_over_particle_iterator(test_particles.into_iter());
         assert_pixels_as_expected_with_implicit_black_background(
             &resulting_matrix,
             &resulting_maximum_brightnesses,
             &expected_colored_pixels,
-            &data_structure::new_color_triplet(
-                data_structure::RedColorUnit(2.0),
-                data_structure::GreenColorUnit(3.0),
-                data_structure::BlueColorUnit(5.0),
-            ),
+            &expected_maximum_brightness,
         )
     }
 }

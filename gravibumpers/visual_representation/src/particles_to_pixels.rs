@@ -6,7 +6,7 @@ use super::VerticalPixelAmount;
 
 pub struct ColoredPixelMatrixSequence<T: ColoredPixelMatrix> {
     pub colored_pixel_matrices: Vec<T>,
-    pub maximum_brightness_per_color: data_structure::ColorTriplet,
+    pub maximum_brightness: data_structure::AbsoluteColorUnit,
 }
 
 pub trait ParticleToPixelMapper {

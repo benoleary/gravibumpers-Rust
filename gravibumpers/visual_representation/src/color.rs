@@ -20,20 +20,20 @@ fn divide_or_zero_if_numerator_is_zero(
 
 pub fn fraction_from_triplets(
     numerator_triplet: &data_structure::ColorTriplet,
-    denominator_triplet: &data_structure::ColorTriplet,
+    denominator_value: &data_structure::AbsoluteColorUnit,
 ) -> Result<FractionTriplet, Box<dyn std::error::Error>> {
     Ok(FractionTriplet {
         red_fraction: divide_or_zero_if_numerator_is_zero(
             numerator_triplet.get_red().0,
-            denominator_triplet.get_red().0,
+            denominator_value.0,
         )?,
         green_fraction: divide_or_zero_if_numerator_is_zero(
             numerator_triplet.get_green().0,
-            denominator_triplet.get_green().0,
+            denominator_value.0,
         )?,
         blue_fraction: divide_or_zero_if_numerator_is_zero(
             numerator_triplet.get_blue().0,
-            denominator_triplet.get_blue().0,
+            denominator_value.0,
         )?,
     })
 }
@@ -53,17 +53,17 @@ pub struct FractionTriplet {
     blue_fraction: f64,
 }
 
-impl std::ops::Mul<&data_structure::ColorTriplet> for FractionTriplet {
+impl std::ops::Mul<&data_structure::AbsoluteColorUnit> for FractionTriplet {
     type Output = data_structure::ColorTriplet;
 
     fn mul(
         self,
-        brightness_triplet: &data_structure::ColorTriplet,
+        reference_brightness: &data_structure::AbsoluteColorUnit,
     ) -> data_structure::ColorTriplet {
         data_structure::new_color_triplet(
-            data_structure::RedColorUnit(self.red_fraction * brightness_triplet.get_red().0),
-            data_structure::GreenColorUnit(self.green_fraction * brightness_triplet.get_green().0),
-            data_structure::BlueColorUnit(self.blue_fraction * brightness_triplet.get_blue().0),
+            data_structure::RedColorUnit(self.red_fraction * reference_brightness.0),
+            data_structure::GreenColorUnit(self.green_fraction * reference_brightness.0),
+            data_structure::BlueColorUnit(self.blue_fraction * reference_brightness.0),
         )
     }
 }

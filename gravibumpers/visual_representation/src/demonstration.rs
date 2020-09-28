@@ -115,7 +115,7 @@ impl DemonstrationPixelMatrix {
 impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
     fn color_fractions_at(
         &self,
-        _reference_brightness: &data_structure::ColorTriplet,
+        _reference_brightness: &data_structure::AbsoluteColorUnit,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
@@ -247,11 +247,7 @@ impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
         Ok(
             super::particles_to_pixels::ColoredPixelMatrixSequence::<DemonstrationPixelMatrix> {
                 colored_pixel_matrices: matrix_sequence,
-                maximum_brightness_per_color: data_structure::new_color_triplet(
-                    data_structure::RedColorUnit(1.0),
-                    data_structure::GreenColorUnit(1.0),
-                    data_structure::BlueColorUnit(1.0),
-                ),
+                maximum_brightness: data_structure::AbsoluteColorUnit(1.0),
             },
         )
     }
