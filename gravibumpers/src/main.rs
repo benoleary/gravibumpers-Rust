@@ -5,20 +5,6 @@ extern crate visual_representation;
 use time_evolution::ParticlesInTimeEvolver;
 use visual_representation::SequenceAnimator;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let command_line_arguments: Vec<String> = std::env::args().collect();
-
-    if command_line_arguments.len() < 2 {
-        return print_help();
-    }
-
-    return match command_line_arguments[1].as_str() {
-        "rgb_demo" => create_rgb_demonstration(&command_line_arguments),
-        "read_file" => run_from_configuration_file(&command_line_arguments),
-        _ => print_help(),
-    };
-}
-
 fn print_help() -> Result<(), Box<dyn std::error::Error>> {
     println!("GraviBumpers!");
     println!("The first argument should be the mode. Currently implemented: rgb_demo, read_file");
@@ -99,9 +85,11 @@ fn run_from_configuration_file(
     }
 
     println!(
-        "reading configuration from {}, will write to {}",
+        "Reading configuration from {}, will write to {}",
         input_filename, output_filename
     );
+
+    let instant_before_configuration = std::time::Instant::now();
 
     let mut initial_particle_map: std::vec::Vec<data_structure::IndividualParticle> = vec![];
     let configuration_content = std::fs::read_to_string(input_filename)?;
@@ -129,6 +117,11 @@ fn run_from_configuration_file(
         initial_particle_map.extend(initial_particles_from_configuration.iter());
     }
 
+    println!(
+        "Reading configuration took {}ms",
+        instant_before_configuration.elapsed().as_millis()
+    );
+
     // The memory layout configuration parameter will eventually control something here.
     let mut particles_in_time_evolver =
         time_evolution::vec_of_pure_struct::new_maximally_contiguous_euler(
@@ -136,10 +129,17 @@ fn run_from_configuration_file(
                 .evolver_configuration
                 .number_of_steps_per_time_slice,
         )?;
+
+    let instant_before_evolution = std::time::Instant::now();
     let particle_set_evolution = particles_in_time_evolver.create_time_sequence(
         &parsed_configuration.evolution_configuration,
         initial_particle_map.iter(),
     )?;
+
+    println!(
+        "Calculation of time evolution took {}ms",
+        instant_before_evolution.elapsed().as_millis()
+    );
 
     let picture_configuration = parsed_configuration.picture_configuration;
     let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(
@@ -150,9 +150,32 @@ fn run_from_configuration_file(
         should_draw_offscreen_on_border,
     )?;
     let particle_animator = visual_representation::apng::new(pixel_brightness_aggregator, 1);
+
+    let instant_before_animtion = std::time::Instant::now();
     particle_animator.animate_sequence(
         particle_set_evolution.particle_configurations,
         particle_set_evolution.milliseconds_between_configurations,
         output_filename,
-    )
+    )?;
+
+    println!(
+        "Animation took {}ms",
+        instant_before_animtion.elapsed().as_millis()
+    );
+
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let command_line_arguments: Vec<String> = std::env::args().collect();
+
+    if command_line_arguments.len() < 2 {
+        return print_help();
+    }
+
+    return match command_line_arguments[1].as_str() {
+        "rgb_demo" => create_rgb_demonstration(&command_line_arguments),
+        "read_file" => run_from_configuration_file(&command_line_arguments),
+        _ => print_help(),
+    };
 }
