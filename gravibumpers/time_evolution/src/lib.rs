@@ -2,8 +2,8 @@
 /// sequences of collections of particles.
 extern crate configuration_parsing;
 extern crate data_structure;
+pub mod second_order_euler;
 pub mod test_functions;
-pub mod vec_of_pure_struct;
 use std::error::Error;
 
 #[derive(Debug)]

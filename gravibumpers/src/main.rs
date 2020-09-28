@@ -123,12 +123,11 @@ fn run_from_configuration_file(
     );
 
     // The memory layout configuration parameter will eventually control something here.
-    let mut particles_in_time_evolver =
-        time_evolution::vec_of_pure_struct::new_maximally_contiguous_euler(
-            parsed_configuration
-                .evolver_configuration
-                .number_of_steps_per_time_slice,
-        )?;
+    let mut particles_in_time_evolver = time_evolution::second_order_euler::new_second_order_euler(
+        parsed_configuration
+            .evolver_configuration
+            .number_of_steps_per_time_slice,
+    )?;
 
     let instant_before_evolution = std::time::Instant::now();
     let particle_set_evolution = particles_in_time_evolver.create_time_sequence(
