@@ -2,39 +2,35 @@
 /// definitions and some trivial functions, and thus has no #[cfg(test)].
 use super::OutOfBoundsError;
 
-fn divide_or_zero_if_numerator_is_zero(
-    numerator_value: f64,
-    denominator_value: f64,
-) -> Result<f64, Box<dyn std::error::Error>> {
-    if numerator_value == 0.0 {
-        Ok(0.0)
-    } else if denominator_value == 0.0 {
-        Err(Box::new(OutOfBoundsError::new(&format!(
-            "trying to divide {:?} by {:?}",
-            numerator_value, denominator_value
-        ))))
-    } else {
-        Ok(numerator_value / denominator_value)
-    }
-}
-
 pub fn fraction_from_triplets(
     numerator_triplet: &data_structure::ColorTriplet,
     denominator_value: &data_structure::AbsoluteColorUnit,
 ) -> Result<FractionTriplet, Box<dyn std::error::Error>> {
+    // If the triplet is zero-brightness, then we take a zero fraction no matter what the reference
+    // brightness is.
+    if (numerator_triplet.get_red().0 == 0.0)
+        && (numerator_triplet.get_green().0 == 0.0)
+        && (numerator_triplet.get_blue().0 == 0.0)
+    {
+        return Ok(FractionTriplet {
+            red_fraction: 0.0,
+            green_fraction: 0.0,
+            blue_fraction: 0.0,
+        });
+    }
+
+    if denominator_value.0 == 0.0 {
+        return Err(Box::new(OutOfBoundsError::new(&format!(
+            "trying to divide {:?} by {:?}",
+            numerator_triplet, denominator_value
+        ))));
+    }
+
+    let fraction_factor = 1.0 / denominator_value.0;
     Ok(FractionTriplet {
-        red_fraction: divide_or_zero_if_numerator_is_zero(
-            numerator_triplet.get_red().0,
-            denominator_value.0,
-        )?,
-        green_fraction: divide_or_zero_if_numerator_is_zero(
-            numerator_triplet.get_green().0,
-            denominator_value.0,
-        )?,
-        blue_fraction: divide_or_zero_if_numerator_is_zero(
-            numerator_triplet.get_blue().0,
-            denominator_value.0,
-        )?,
+        red_fraction: numerator_triplet.get_red().0 * fraction_factor,
+        green_fraction: numerator_triplet.get_green().0 * fraction_factor,
+        blue_fraction: numerator_triplet.get_blue().0 * fraction_factor,
     })
 }
 
