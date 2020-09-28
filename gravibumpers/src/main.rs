@@ -24,7 +24,7 @@ fn print_help() -> Result<(), Box<dyn std::error::Error>> {
     println!("The first argument should be the mode. Currently implemented: rgb_demo, read_file");
     println!("rgb_demo expects 1 further argument: the filename for the output APNG.");
     println!(
-        "read_file expects 3 further argument: the filename of the configuration, then the \
+        "read_file expects 3 further arguments: the filename of the configuration, then the \
         filename for the output, then a single word to determine if off-screen particles should \
         be drawn on the border (case-insensitive 'yes' or 'true' to draw them, 'no' or 'false' \
         leave them undrawn)."
@@ -80,7 +80,7 @@ fn create_rgb_demonstration(
 fn run_from_configuration_file(
     command_line_arguments: &[String],
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("This will become GraviBumpers!");
+    println!("GraviBumpers!");
     if command_line_arguments.len() != 5 {
         return print_help();
     }
