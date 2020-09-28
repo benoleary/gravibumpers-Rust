@@ -5,7 +5,7 @@
     "inverseSquaredCoupling": -1.0,
     "inverseFourthCoupling": 1.0,
     "millisecondsPerFrame": 200,
-    "numberOfFrames": 200,
+    "numberOfFrames": 400,
     "rightBorderCoordinate": 200,
     "upperBorderCoordinate": 200,
     "leftBorderCoordinate": -200,
@@ -29,7 +29,7 @@
           "inertialMassInMassUnits": 10000.0,
           "inverseSquaredChargeInDimensionlessUnits": 10000.0,
           "inverseFourthChargeInDimensionlessUnits": 1.0,
-          "redPixelStrength": 0,
+          "redPixelStrength": 100,
           "greenPixelStrength": 100,
           "bluePixelStrength": 0
         }
@@ -77,8 +77,8 @@
           "inverseSquaredChargeInDimensionlessUnits": 1,
           "inverseFourthChargeInDimensionlessUnits": 0.0001,
           "redPixelStrength": 0,
-          "greenPixelStrength": 0,
-          "bluePixelStrength": 100
+          "greenPixelStrength": 100,
+          "bluePixelStrength": 0
         }
       },
       {
@@ -102,8 +102,8 @@
           "inverseSquaredChargeInDimensionlessUnits": 1,
           "inverseFourthChargeInDimensionlessUnits": 0.001,
           "redPixelStrength": 0,
-          "greenPixelStrength": 0,
-          "bluePixelStrength": 100
+          "greenPixelStrength": 50,
+          "bluePixelStrength": 50
         }
       },
       {
