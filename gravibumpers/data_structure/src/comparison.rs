@@ -1,5 +1,6 @@
 /// This module exists to provide helper functions to some tests, so has no #[cfg(test)] of its
 /// own.
+use super::particle::IndividualRepresentation as ParticleRepresentation;
 
 /// This returns true if the given values are equal within a relative tolerance of their average,
 /// unless the expected value is zero, in which case the tolerance is taken as an absolute.
@@ -23,9 +24,9 @@ pub fn within_relative_tolerance(
 /// of matching within a tolerance, if the tolerances are too large, some matches might happen
 /// between wrong pairings, and the result might be a false negative.
 pub fn unordered_particles_match_within_tolerance(
-    expected_set: &mut impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
-    actual_set: impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
-    tolerances_as_particle: &impl super::ParticleRepresentation,
+    expected_set: &mut impl std::iter::ExactSizeIterator<Item = impl ParticleRepresentation>,
+    actual_set: impl std::iter::ExactSizeIterator<Item = impl ParticleRepresentation>,
+    tolerances_as_particle: &impl ParticleRepresentation,
 ) -> Result<(), String> {
     let expected_length = expected_set.len();
     if actual_set.len() != expected_length {
@@ -40,7 +41,7 @@ pub fn unordered_particles_match_within_tolerance(
         return Ok(());
     }
 
-    let mut unmatched_expecteds: std::vec::Vec<super::IndividualParticle> =
+    let mut unmatched_expecteds: std::vec::Vec<super::particle::BasicIndividual> =
         std::vec::Vec::with_capacity(expected_length);
 
     let first_expected = expected_set
@@ -54,7 +55,7 @@ pub fn unordered_particles_match_within_tolerance(
 
     // If there was a match, we expect 1 less actual to come back from the above function.
     if unmatched_actuals.len() == previous_unmatched_length {
-        unmatched_expecteds.push(super::create_individual_from_representation(
+        unmatched_expecteds.push(super::particle::create_individual_from_representation(
             &first_expected,
         ));
     } else {
@@ -72,7 +73,7 @@ pub fn unordered_particles_match_within_tolerance(
 
         // If there was a match, we expect 1 less actual to come back from the above function.
         if unmatched_actuals.len() == previous_unmatched_length {
-            unmatched_expecteds.push(super::create_individual_from_representation(
+            unmatched_expecteds.push(super::particle::create_individual_from_representation(
                 &expected_particle,
             ));
         } else {
@@ -92,12 +93,12 @@ pub fn unordered_particles_match_within_tolerance(
 
 pub fn ordered_sequences_match_unordered_particles(
     expected_sequence: impl std::iter::ExactSizeIterator<
-        Item = impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
+        Item = impl std::iter::ExactSizeIterator<Item = impl ParticleRepresentation>,
     >,
     actual_sequence: impl std::iter::ExactSizeIterator<
-        Item = impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
+        Item = impl std::iter::ExactSizeIterator<Item = impl ParticleRepresentation>,
     >,
-    tolerances_as_particle: &impl super::ParticleRepresentation,
+    tolerances_as_particle: &impl ParticleRepresentation,
 ) -> Result<(), String> {
     let number_of_time_slices = actual_sequence.len();
     if expected_sequence.len() != number_of_time_slices {
@@ -139,12 +140,12 @@ pub fn ordered_sequences_match_unordered_particles(
 }
 
 fn list_unmatched_particles(
-    expected_particle: &impl super::ParticleRepresentation,
-    unmatched_actuals: impl std::iter::ExactSizeIterator<Item = impl super::ParticleRepresentation>,
-    tolerances_as_particle: &impl super::ParticleRepresentation,
-) -> std::vec::Vec<super::IndividualParticle> {
+    expected_particle: &impl ParticleRepresentation,
+    unmatched_actuals: impl std::iter::ExactSizeIterator<Item = impl ParticleRepresentation>,
+    tolerances_as_particle: &impl ParticleRepresentation,
+) -> std::vec::Vec<super::particle::BasicIndividual> {
     let mut found_match = false;
-    let mut returned_unmatcheds: std::vec::Vec<super::IndividualParticle> =
+    let mut returned_unmatcheds: std::vec::Vec<super::particle::BasicIndividual> =
         std::vec::Vec::with_capacity(unmatched_actuals.len());
     for unmatched_actual in unmatched_actuals {
         if !found_match
@@ -156,7 +157,7 @@ fn list_unmatched_particles(
         {
             found_match = true;
         } else {
-            returned_unmatcheds.push(super::create_individual_from_representation(
+            returned_unmatcheds.push(super::particle::create_individual_from_representation(
                 &unmatched_actual,
             ));
         }
@@ -166,9 +167,9 @@ fn list_unmatched_particles(
 }
 
 fn particle_within_tolerance(
-    expected_particle: &impl super::ParticleRepresentation,
-    actual_particle: &impl super::ParticleRepresentation,
-    tolerances_as_particle: &impl super::ParticleRepresentation,
+    expected_particle: &impl ParticleRepresentation,
+    actual_particle: &impl ParticleRepresentation,
+    tolerances_as_particle: &impl ParticleRepresentation,
 ) -> bool {
     intrinsics_within_tolerance(
         expected_particle.read_intrinsics(),
@@ -182,9 +183,9 @@ fn particle_within_tolerance(
 }
 
 fn intrinsics_within_tolerance(
-    expected_intrinsics: &super::ParticleIntrinsics,
-    actual_intrinsics: &super::ParticleIntrinsics,
-    tolerances_as_intrinsics: &super::ParticleIntrinsics,
+    expected_intrinsics: &super::particle::IntrinsicPart,
+    actual_intrinsics: &super::particle::IntrinsicPart,
+    tolerances_as_intrinsics: &super::particle::IntrinsicPart,
 ) -> bool {
     within_relative_tolerance(
         expected_intrinsics.inertial_mass.0,
@@ -214,9 +215,9 @@ fn intrinsics_within_tolerance(
 }
 
 fn variables_within_tolerance(
-    expected_variables: &super::ParticleVariables,
-    actual_variables: &super::ParticleVariables,
-    tolerances_as_variables: &super::ParticleVariables,
+    expected_variables: &super::particle::VariablePart,
+    actual_variables: &super::particle::VariablePart,
+    tolerances_as_variables: &super::particle::VariablePart,
 ) -> bool {
     positions_within_tolerance(
         &expected_variables.position_vector,
@@ -230,9 +231,9 @@ fn variables_within_tolerance(
 }
 
 fn positions_within_tolerance(
-    expected_vector: &super::PositionVector,
-    actual_vector: &super::PositionVector,
-    tolerances_as_vector: &super::PositionVector,
+    expected_vector: &super::position::DimensionfulVector,
+    actual_vector: &super::position::DimensionfulVector,
+    tolerances_as_vector: &super::position::DimensionfulVector,
 ) -> bool {
     within_relative_tolerance(
         expected_vector.horizontal_component.0,
@@ -246,9 +247,9 @@ fn positions_within_tolerance(
 }
 
 fn velocities_within_tolerance(
-    expected_vector: &super::VelocityVector,
-    actual_vector: &super::VelocityVector,
-    tolerances_as_vector: &super::VelocityVector,
+    expected_vector: &super::velocity::DimensionfulVector,
+    actual_vector: &super::velocity::DimensionfulVector,
+    tolerances_as_vector: &super::velocity::DimensionfulVector,
 ) -> bool {
     within_relative_tolerance(
         expected_vector.horizontal_component.0,
@@ -258,5 +259,25 @@ fn velocities_within_tolerance(
         expected_vector.vertical_component.0,
         actual_vector.vertical_component.0,
         tolerances_as_vector.vertical_component.0,
+    )
+}
+
+pub fn color_triplets_match(
+    expected_triplet: &super::color::RedGreenBlueTriplet,
+    actual_triplet: &super::color::RedGreenBlueTriplet,
+    relative_tolerance: f64,
+) -> bool {
+    within_relative_tolerance(
+        expected_triplet.get_red().0,
+        actual_triplet.get_red().0,
+        relative_tolerance,
+    ) && within_relative_tolerance(
+        expected_triplet.get_green().0,
+        actual_triplet.get_green().0,
+        relative_tolerance,
+    ) && within_relative_tolerance(
+        expected_triplet.get_blue().0,
+        actual_triplet.get_blue().0,
+        relative_tolerance,
     )
 }

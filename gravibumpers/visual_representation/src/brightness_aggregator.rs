@@ -8,8 +8,15 @@ use super::HorizontalPixelAmount;
 use super::OutOfBoundsError;
 use super::VerticalPixelAmount;
 
+use data_structure::color::AbsoluteUnit as AbsoluteColorUnit;
+use data_structure::color::RedGreenBlueTriplet as ColorTriplet;
+
+use data_structure::particle::IndividualRepresentation as ParticleRepresentation;
+use data_structure::particle::IntrinsicPart as ParticleIntrinsics;
+use data_structure::particle::VariablePart as ParticleVariables;
+
 pub struct AggregatedBrightnessMatrix {
-    brightness_matrix: std::vec::Vec<std::vec::Vec<data_structure::ColorTriplet>>,
+    brightness_matrix: std::vec::Vec<std::vec::Vec<ColorTriplet>>,
     width_in_pixels_including_border: HorizontalPixelAmount,
     height_in_pixels_including_border: VerticalPixelAmount,
 }
@@ -19,8 +26,8 @@ impl AggregatedBrightnessMatrix {
         &mut self,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
-        brightness_to_add: &data_structure::ColorTriplet,
-    ) -> &data_structure::ColorTriplet {
+        brightness_to_add: &ColorTriplet,
+    ) -> &ColorTriplet {
         let height_index = vertical_pixels_from_bottom_left.0;
         let width_index = horizontal_pixels_from_bottom_left.0;
         let pixel_to_update =
@@ -33,7 +40,7 @@ impl AggregatedBrightnessMatrix {
 impl super::ColoredPixelMatrix for AggregatedBrightnessMatrix {
     fn color_fractions_at(
         &self,
-        reference_brightness: &data_structure::AbsoluteColorUnit,
+        reference_brightness: &AbsoluteColorUnit,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
@@ -86,22 +93,17 @@ pub struct PixelBrightnessAggregator {
         dyn Fn(
             &PixelWindow,
             &mut AggregatedBrightnessMatrix,
-            &data_structure::ParticleIntrinsics,
-            &data_structure::ParticleVariables,
-        ) -> Option<data_structure::ColorTriplet>,
+            &ParticleIntrinsics,
+            &data_structure::particle::VariablePart,
+        ) -> Option<ColorTriplet>,
     >,
 }
 
 impl PixelBrightnessAggregator {
     fn aggregate_over_particle_iterator(
         &self,
-        particles_to_draw: impl std::iter::ExactSizeIterator<
-            Item = impl data_structure::ParticleRepresentation,
-        >,
-    ) -> (
-        AggregatedBrightnessMatrix,
-        data_structure::AbsoluteColorUnit,
-    ) {
+        particles_to_draw: impl std::iter::ExactSizeIterator<Item = impl ParticleRepresentation>,
+    ) -> (AggregatedBrightnessMatrix, AbsoluteColorUnit) {
         let mut aggregated_brightnesses = AggregatedBrightnessMatrix {
             brightness_matrix: vec![
                 vec![
@@ -118,7 +120,7 @@ impl PixelBrightnessAggregator {
             height_in_pixels_including_border: self.pixel_window.height_in_pixels_including_border,
         };
 
-        let mut maximum_total_brightness = data_structure::AbsoluteColorUnit(0.0);
+        let mut maximum_total_brightness = AbsoluteColorUnit(0.0);
         let add_brightness_from = &*self.add_brightness_from_particle_returning_current_triplet;
         for particle_to_draw in particles_to_draw {
             let update_result = add_brightness_from(
@@ -140,13 +142,13 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
     fn aggregate_particle_colors_to_pixels(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
+            Item = impl std::iter::ExactSizeIterator<Item = impl ParticleRepresentation>,
         >,
     ) -> Result<PixelMatrixSequence<Self::Output>, Box<dyn std::error::Error>> {
         let mut aggregated_brightnesses: PixelMatrixSequence<AggregatedBrightnessMatrix> =
             PixelMatrixSequence {
                 colored_pixel_matrices: vec![],
-                maximum_brightness: data_structure::AbsoluteColorUnit(0.0),
+                maximum_brightness: AbsoluteColorUnit(0.0),
             };
 
         for particle_map in particle_map_sequence {
@@ -174,9 +176,9 @@ impl super::particles_to_pixels::ParticleToPixelMapper for PixelBrightnessAggreg
 fn draw_only_onscreen_particles(
     pixel_window: &PixelWindow,
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
-    particle_intrinsics: &data_structure::ParticleIntrinsics,
-    particle_variables: &data_structure::ParticleVariables,
-) -> Option<data_structure::ColorTriplet> {
+    particle_intrinsics: &ParticleIntrinsics,
+    particle_variables: &ParticleVariables,
+) -> Option<ColorTriplet> {
     let particle_horizontal_coordinate = particle_variables.position_vector.horizontal_component;
     let particle_vertical_coordinate = particle_variables.position_vector.vertical_component;
     if (particle_horizontal_coordinate >= pixel_window.left_border.as_position_unit())
@@ -206,9 +208,9 @@ fn draw_only_onscreen_particles(
 fn draw_offscreen_particles_on_border(
     pixel_window: &PixelWindow,
     aggregation_matrix: &mut AggregatedBrightnessMatrix,
-    particle_intrinsics: &data_structure::ParticleIntrinsics,
-    particle_variables: &data_structure::ParticleVariables,
-) -> Option<data_structure::ColorTriplet> {
+    particle_intrinsics: &ParticleIntrinsics,
+    particle_variables: &ParticleVariables,
+) -> Option<ColorTriplet> {
     let particle_horizontal_coordinate = particle_variables.position_vector.horizontal_component;
     let particle_vertical_coordinate = particle_variables.position_vector.vertical_component;
     let horizontal_pixel = if particle_horizontal_coordinate
@@ -256,9 +258,9 @@ pub fn new(
         dyn Fn(
             &PixelWindow,
             &mut AggregatedBrightnessMatrix,
-            &data_structure::ParticleIntrinsics,
-            &data_structure::ParticleVariables,
-        ) -> Option<data_structure::ColorTriplet>,
+            &ParticleIntrinsics,
+            &ParticleVariables,
+        ) -> Option<ColorTriplet>,
     > = if draw_offscreen_on_border {
         Box::new(draw_offscreen_particles_on_border)
     } else {
@@ -285,11 +287,23 @@ pub fn new(
 mod tests {
     use super::super::ColoredPixelMatrix;
     use super::*;
+    use data_structure::color::BlueUnit as BlueColorUnit;
+    use data_structure::color::GreenUnit as GreenColorUnit;
+    use data_structure::color::RedGreenBlueTriplet as ColorTriplet;
+    use data_structure::color::RedUnit as RedColorUnit;
+    use data_structure::particle::BasicIndividual as IndividualParticle;
+    use data_structure::particle::VariablePart as ParticleVariables;
+    use data_structure::position::DimensionfulVector as PositionVector;
+    use data_structure::position::HorizontalUnit as HorizontalPositionUnit;
+    use data_structure::position::VerticalUnit as VerticalPositionUnit;
+    use data_structure::velocity::DimensionfulVector as VelocityVector;
+    use data_structure::velocity::HorizontalUnit as HorizontalVelocityUnit;
+    use data_structure::velocity::VerticalUnit as VerticalVelocityUnit;
 
     const COLOR_FRACTION_TOLERANCE: f64 = 0.000001;
 
     fn new_test_fraction(
-        color_brightness: &data_structure::ColorTriplet,
+        color_brightness: &data_structure::color::RedGreenBlueTriplet,
     ) -> Result<ColorFraction, String> {
         let reference_brightness = new_reference_brightness();
         match super::super::color::fraction_from_triplets(color_brightness, &reference_brightness) {
@@ -303,35 +317,35 @@ mod tests {
         }
     }
 
-    fn new_lower_left_color() -> data_structure::ColorTriplet {
-        data_structure::new_color_triplet(
-            data_structure::RedColorUnit(1.0),
-            data_structure::GreenColorUnit(0.0),
-            data_structure::BlueColorUnit(0.0),
+    fn new_lower_left_color() -> ColorTriplet {
+        data_structure::color::new_triplet(
+            RedColorUnit(1.0),
+            GreenColorUnit(0.0),
+            BlueColorUnit(0.0),
         )
     }
 
-    fn new_lower_right_color() -> data_structure::ColorTriplet {
-        data_structure::new_color_triplet(
-            data_structure::RedColorUnit(0.0),
-            data_structure::GreenColorUnit(1.0),
-            data_structure::BlueColorUnit(0.0),
+    fn new_lower_right_color() -> ColorTriplet {
+        data_structure::color::new_triplet(
+            RedColorUnit(0.0),
+            GreenColorUnit(1.0),
+            BlueColorUnit(0.0),
         )
     }
 
-    fn new_upper_left_color() -> data_structure::ColorTriplet {
-        data_structure::new_color_triplet(
-            data_structure::RedColorUnit(0.0),
-            data_structure::GreenColorUnit(0.0),
-            data_structure::BlueColorUnit(1.0),
+    fn new_upper_left_color() -> ColorTriplet {
+        data_structure::color::new_triplet(
+            RedColorUnit(0.0),
+            GreenColorUnit(0.0),
+            BlueColorUnit(1.0),
         )
     }
 
-    fn new_upper_right_color() -> data_structure::ColorTriplet {
-        data_structure::new_color_triplet(
-            data_structure::RedColorUnit(0.5),
-            data_structure::GreenColorUnit(0.5),
-            data_structure::BlueColorUnit(0.5),
+    fn new_upper_right_color() -> ColorTriplet {
+        data_structure::color::new_triplet(
+            RedColorUnit(0.5),
+            GreenColorUnit(0.5),
+            BlueColorUnit(0.5),
         )
     }
 
@@ -346,17 +360,15 @@ mod tests {
         }
     }
 
-    fn new_reference_brightness() -> data_structure::AbsoluteColorUnit {
-        data_structure::AbsoluteColorUnit(1.0)
+    fn new_reference_brightness() -> AbsoluteColorUnit {
+        AbsoluteColorUnit(1.0)
     }
 
-    fn new_test_particle_intrinsics(
-        color_fraction: &ColorFraction,
-    ) -> data_structure::ParticleIntrinsics {
-        data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(1.2),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(-3.4),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(5.6),
+    fn new_test_particle_intrinsics(color_fraction: &ColorFraction) -> ParticleIntrinsics {
+        ParticleIntrinsics {
+            inertial_mass: data_structure::charge::InertialMassUnit(1.2),
+            inverse_squared_charge: data_structure::charge::InverseSquaredChargeUnit(-3.4),
+            inverse_fourth_charge: data_structure::charge::InverseFourthChargeUnit(5.6),
             color_brightness: *color_fraction * &new_reference_brightness(),
         }
     }
@@ -526,13 +538,13 @@ mod tests {
 
     fn assert_pixels_as_expected_with_implicit_black_background(
         resulting_matrix: &AggregatedBrightnessMatrix,
-        resulting_maximum_brightness: &data_structure::AbsoluteColorUnit,
+        resulting_maximum_brightness: &AbsoluteColorUnit,
         expected_pixels: &std::vec::Vec<(
             HorizontalPixelAmount,
             VerticalPixelAmount,
             ColorFraction,
         )>,
-        expected_maximum_brightness: &data_structure::AbsoluteColorUnit,
+        expected_maximum_brightness: &AbsoluteColorUnit,
     ) -> Result<(), String> {
         let reference_brightness = new_reference_brightness();
         let mut failure_messages: std::vec::Vec<String> = vec![];
@@ -618,42 +630,42 @@ mod tests {
         let expected_maximum_brightness =
             (expected_colored_pixels[1].2 * &new_reference_brightness()).get_total();
         let test_particles = vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[0].2),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(10.0),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(10.0),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(-10.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(9.9),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(-10.0),
+                        vertical_component: VerticalVelocityUnit(9.9),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[1].2),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(11.1),
-                        vertical_component: data_structure::VerticalPositionUnit(1.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(11.1),
+                        vertical_component: VerticalPositionUnit(1.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.001),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.99),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.001),
+                        vertical_component: VerticalVelocityUnit(0.99),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[2].2),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(19.999),
-                        vertical_component: data_structure::VerticalPositionUnit(-0.001),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(19.999),
+                        vertical_component: VerticalPositionUnit(-0.001),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
@@ -703,96 +715,96 @@ mod tests {
             (expected_colored_pixels[1].2 * &new_reference_brightness()).get_total();
         let test_particles = vec![
             // First of 3 in pixel (3, 3).
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.1, 0.0, 0.1),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(3.0),
-                        vertical_component: data_structure::VerticalPositionUnit(3.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(3.0),
+                        vertical_component: VerticalPositionUnit(3.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(10.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(10.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(10.0),
+                        vertical_component: VerticalVelocityUnit(10.0),
                     },
                 },
             },
             // Second of 3 in pixel (3, 3).
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.1, 0.1, 0.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(3.0),
-                        vertical_component: data_structure::VerticalPositionUnit(3.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(3.0),
+                        vertical_component: VerticalPositionUnit(3.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(-1.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(1.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(-1.0),
+                        vertical_component: VerticalVelocityUnit(1.0),
                     },
                 },
             },
             // Third of 3 in pixel (3, 3).
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.1, 0.1, 0.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(3.5),
-                        vertical_component: data_structure::VerticalPositionUnit(3.8),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(3.5),
+                        vertical_component: VerticalPositionUnit(3.8),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
             // First of 2 in pixel (5, 9).
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.0, 2.0, 0.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(5.9),
-                        vertical_component: data_structure::VerticalPositionUnit(9.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(5.9),
+                        vertical_component: VerticalPositionUnit(9.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
             // Second of 2 in pixel (5, 9).
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.0, 0.0, 2.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(5.0),
-                        vertical_component: data_structure::VerticalPositionUnit(9.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(5.0),
+                        vertical_component: VerticalPositionUnit(9.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
             // Only particle in pixel (8, 0).
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(&expected_colored_pixels[2].2),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(8.999),
-                        vertical_component: data_structure::VerticalPositionUnit(0.001),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(8.999),
+                        vertical_component: VerticalPositionUnit(0.001),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
@@ -807,125 +819,125 @@ mod tests {
         )
     }
 
-    fn new_test_particles_outside_frame() -> std::vec::Vec<data_structure::IndividualParticle> {
+    fn new_test_particles_outside_frame() -> std::vec::Vec<IndividualParticle> {
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.0, 0.0, 1.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(11.0),
-                        vertical_component: data_structure::VerticalPositionUnit(3.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(11.0),
+                        vertical_component: VerticalPositionUnit(3.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(-10.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(-10.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.0, 1.0, 0.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(30.0),
-                        vertical_component: data_structure::VerticalPositionUnit(30.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(30.0),
+                        vertical_component: VerticalPositionUnit(30.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(-1.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(1.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(-1.0),
+                        vertical_component: VerticalVelocityUnit(1.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.0, 1.0, 1.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(3.5),
-                        vertical_component: data_structure::VerticalPositionUnit(13.8),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(3.5),
+                        vertical_component: VerticalPositionUnit(13.8),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(1.0, 0.0, 0.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(-0.001),
-                        vertical_component: data_structure::VerticalPositionUnit(10.001),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(-0.001),
+                        vertical_component: VerticalPositionUnit(10.001),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(1.0, 0.0, 1.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(-500.0),
-                        vertical_component: data_structure::VerticalPositionUnit(1.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(-500.0),
+                        vertical_component: VerticalPositionUnit(1.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(1.0, 1.0, 0.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(-1.0),
-                        vertical_component: data_structure::VerticalPositionUnit(-1.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(-1.0),
+                        vertical_component: VerticalPositionUnit(-1.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(1.0, 1.0, 1.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(8.999),
-                        vertical_component: data_structure::VerticalPositionUnit(-0.001),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(8.999),
+                        vertical_component: VerticalPositionUnit(-0.001),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: new_test_particle_intrinsics(
                     &super::super::color::fraction_from_values(0.0, 0.0, 2.0),
                 ),
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(88.999),
-                        vertical_component: data_structure::VerticalPositionUnit(-100.001),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(88.999),
+                        vertical_component: VerticalPositionUnit(-100.001),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.0),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
@@ -943,12 +955,12 @@ mod tests {
             &resulting_matrix,
             &resulting_maximum_brightnesses,
             &expected_colored_pixels,
-            &data_structure::AbsoluteColorUnit(0.0),
+            &AbsoluteColorUnit(0.0),
         )
     }
 
     fn color_fraction_from_particle_intrinsics(
-        particle_intrinsics: data_structure::ParticleIntrinsics,
+        particle_intrinsics: ParticleIntrinsics,
     ) -> ColorFraction {
         super::super::color::fraction_from_triplets(
             &particle_intrinsics.color_brightness,
@@ -963,33 +975,33 @@ mod tests {
         let mut test_particles = new_test_particles_outside_frame();
         // We add 2 more particles to check for aggregation of brightnesses on the lower edge and
         // lower-right corner.
-        test_particles.push(data_structure::IndividualParticle {
+        test_particles.push(IndividualParticle {
             intrinsic_values: new_test_particle_intrinsics(
                 &super::super::color::fraction_from_values(1.0, 1.0, 3.0),
             ),
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(8.1),
-                    vertical_component: data_structure::VerticalPositionUnit(-2.2),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(8.1),
+                    vertical_component: VerticalPositionUnit(-2.2),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(0.0),
+                    vertical_component: VerticalVelocityUnit(0.0),
                 },
             },
         });
-        test_particles.push(data_structure::IndividualParticle {
+        test_particles.push(IndividualParticle {
             intrinsic_values: new_test_particle_intrinsics(
                 &super::super::color::fraction_from_values(0.0, 3.0, 3.0),
             ),
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(14.0),
-                    vertical_component: data_structure::VerticalPositionUnit(-100.001),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(14.0),
+                    vertical_component: VerticalPositionUnit(-100.001),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                    vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(0.0),
+                    vertical_component: VerticalVelocityUnit(0.0),
                 },
             },
         });

@@ -115,7 +115,7 @@ impl DemonstrationPixelMatrix {
 impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
     fn color_fractions_at(
         &self,
-        _reference_brightness: &data_structure::AbsoluteColorUnit,
+        _reference_brightness: &data_structure::color::AbsoluteUnit,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
@@ -153,29 +153,33 @@ impl super::ColoredPixelMatrix for DemonstrationPixelMatrix {
 }
 
 pub struct SingleParticleCopyIterator {
-    single_particle: data_structure::IndividualParticle,
+    single_particle: data_structure::particle::BasicIndividual,
     is_finished: bool,
 }
 
 pub fn new_copy_iterator(
-    single_particle: &impl data_structure::ParticleRepresentation,
+    single_particle: &impl data_structure::particle::IndividualRepresentation,
 ) -> SingleParticleCopyIterator {
     SingleParticleCopyIterator {
-        single_particle: data_structure::create_individual_from_representation(single_particle),
+        single_particle: data_structure::particle::create_individual_from_representation(
+            single_particle,
+        ),
         is_finished: false,
     }
 }
 
 impl std::iter::Iterator for SingleParticleCopyIterator {
-    type Item = data_structure::IndividualParticle;
+    type Item = data_structure::particle::BasicIndividual;
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_finished {
             None
         } else {
             self.is_finished = true;
-            Some(data_structure::create_individual_from_representation(
-                &self.single_particle,
-            ))
+            Some(
+                data_structure::particle::create_individual_from_representation(
+                    &self.single_particle,
+                ),
+            )
         }
     }
 }
@@ -191,12 +195,12 @@ impl std::iter::ExactSizeIterator for SingleParticleCopyIterator {
 }
 
 pub struct SingleParticleBorrowIterator<'a> {
-    pub single_particle: &'a data_structure::IndividualParticle,
+    pub single_particle: &'a data_structure::particle::BasicIndividual,
     is_finished: bool,
 }
 
 pub fn new_borrow_iterator<'a>(
-    single_particle: &'a data_structure::IndividualParticle,
+    single_particle: &'a data_structure::particle::BasicIndividual,
 ) -> SingleParticleBorrowIterator {
     SingleParticleBorrowIterator {
         single_particle: single_particle,
@@ -205,7 +209,7 @@ pub fn new_borrow_iterator<'a>(
 }
 
 impl<'a> std::iter::Iterator for SingleParticleBorrowIterator<'a> {
-    type Item = &'a data_structure::IndividualParticle;
+    type Item = &'a data_structure::particle::BasicIndividual;
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_finished {
             None
@@ -233,7 +237,9 @@ impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
     fn aggregate_particle_colors_to_pixels(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
+            Item = impl std::iter::ExactSizeIterator<
+                Item = impl data_structure::particle::IndividualRepresentation,
+            >,
         >,
     ) -> Result<
         super::particles_to_pixels::ColoredPixelMatrixSequence<Self::Output>,
@@ -247,7 +253,7 @@ impl super::particles_to_pixels::ParticleToPixelMapper for DemonstrationMapper {
         Ok(
             super::particles_to_pixels::ColoredPixelMatrixSequence::<DemonstrationPixelMatrix> {
                 colored_pixel_matrices: matrix_sequence,
-                maximum_brightness: data_structure::AbsoluteColorUnit(1.0),
+                maximum_brightness: data_structure::color::AbsoluteUnit(1.0),
             },
         )
     }

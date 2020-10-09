@@ -20,7 +20,7 @@ const BLUE_PIXEL_STRENGTH_LABEL: &str = "bluePixelStrength";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
-) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
+) -> Result<std::vec::Vec<data_structure::particle::BasicIndividual>, Box<dyn std::error::Error>> {
     let circle_displacement =
         super::parse_position(&given_configuration[COMMON_DISPLACEMENT_IN_PIXELS_LABEL])?;
     let circle_velocity =
@@ -53,14 +53,18 @@ pub fn from_json(
         super::configuration_parsing::parse_f64(GREEN_PIXEL_STRENGTH_LABEL, given_configuration)?;
     let blue_brightness =
         super::configuration_parsing::parse_f64(BLUE_PIXEL_STRENGTH_LABEL, given_configuration)?;
-    let common_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(inertial_mass),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(inverse_squared_charge),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(inverse_fourth_charge),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(red_brightness),
-            data_structure::GreenColorUnit(green_brightness),
-            data_structure::BlueColorUnit(blue_brightness),
+    let common_intrinsics = data_structure::particle::IntrinsicPart {
+        inertial_mass: data_structure::charge::InertialMassUnit(inertial_mass),
+        inverse_squared_charge: data_structure::charge::InverseSquaredChargeUnit(
+            inverse_squared_charge,
+        ),
+        inverse_fourth_charge: data_structure::charge::InverseFourthChargeUnit(
+            inverse_fourth_charge,
+        ),
+        color_brightness: data_structure::color::new_triplet(
+            data_structure::color::RedUnit(red_brightness),
+            data_structure::color::GreenUnit(green_brightness),
+            data_structure::color::BlueUnit(blue_brightness),
         ),
     };
     particles_from_numbers(
@@ -74,13 +78,13 @@ pub fn from_json(
 }
 
 fn particles_from_numbers(
-    circle_displacement: data_structure::PositionVector,
-    circle_velocity: data_structure::VelocityVector,
+    circle_displacement: data_structure::position::DimensionfulVector,
+    circle_velocity: data_structure::velocity::DimensionfulVector,
     circle_radius: f64,
     circle_population: i64,
     angular_velocity: f64,
-    common_intrinsics: data_structure::ParticleIntrinsics,
-) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
+    common_intrinsics: data_structure::particle::IntrinsicPart,
+) -> Result<std::vec::Vec<data_structure::particle::BasicIndividual>, Box<dyn std::error::Error>> {
     if circle_population < 2 {
         return Err(Box::new(ConfigurationParseError::new(&format!(
             "Population {} is not large enough (must be 2 or larger)",
@@ -88,23 +92,23 @@ fn particles_from_numbers(
         ))));
     }
 
-    let mut circle_particles: std::vec::Vec<data_structure::IndividualParticle> =
+    let mut circle_particles: std::vec::Vec<data_structure::particle::BasicIndividual> =
         std::vec::Vec::with_capacity(circle_population.try_into()?);
 
     // We always start with a particle at 0 radians from the positive x axis.
-    circle_particles.push(data_structure::IndividualParticle {
+    circle_particles.push(data_structure::particle::BasicIndividual {
         intrinsic_values: common_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(circle_radius)
+        variable_values: data_structure::particle::VariablePart {
+            position_vector: data_structure::position::DimensionfulVector {
+                horizontal_component: data_structure::position::HorizontalUnit(circle_radius)
                     + circle_displacement.horizontal_component,
-                vertical_component: data_structure::VerticalPositionUnit(0.0)
+                vertical_component: data_structure::position::VerticalUnit(0.0)
                     + circle_displacement.vertical_component,
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0)
+            velocity_vector: data_structure::velocity::DimensionfulVector {
+                horizontal_component: data_structure::velocity::HorizontalUnit(0.0)
                     + circle_velocity.horizontal_component,
-                vertical_component: data_structure::VerticalVelocityUnit(
+                vertical_component: data_structure::velocity::VerticalUnit(
                     circle_radius * angular_velocity,
                 ) + circle_velocity.vertical_component,
             },
@@ -114,19 +118,19 @@ fn particles_from_numbers(
     if (circle_population % 2) == 0 {
         // If the number of particles is even, then there is a particle at pi radians from the
         // positive x axis.
-        circle_particles.push(data_structure::IndividualParticle {
+        circle_particles.push(data_structure::particle::BasicIndividual {
             intrinsic_values: common_intrinsics,
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(-circle_radius)
+            variable_values: data_structure::particle::VariablePart {
+                position_vector: data_structure::position::DimensionfulVector {
+                    horizontal_component: data_structure::position::HorizontalUnit(-circle_radius)
                         + circle_displacement.horizontal_component,
-                    vertical_component: data_structure::VerticalPositionUnit(0.0)
+                    vertical_component: data_structure::position::VerticalUnit(0.0)
                         + circle_displacement.vertical_component,
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.0)
+                velocity_vector: data_structure::velocity::DimensionfulVector {
+                    horizontal_component: data_structure::velocity::HorizontalUnit(0.0)
                         + circle_velocity.horizontal_component,
-                    vertical_component: data_structure::VerticalVelocityUnit(
+                    vertical_component: data_structure::velocity::VerticalUnit(
                         -circle_radius * angular_velocity,
                     ) + circle_velocity.vertical_component,
                 },
@@ -148,44 +152,44 @@ fn particles_from_numbers(
                 angle_from_horizontal_in_radians.cos() * circle_radius;
             let sine_of_angle_times_radius = angle_from_horizontal_in_radians.sin() * circle_radius;
 
-            circle_particles.push(data_structure::IndividualParticle {
+            circle_particles.push(data_structure::particle::BasicIndividual {
                 intrinsic_values: common_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
+                variable_values: data_structure::particle::VariablePart {
+                    position_vector: data_structure::position::DimensionfulVector {
+                        horizontal_component: data_structure::position::HorizontalUnit(
                             cosine_of_angle_times_radius,
                         ) + circle_displacement.horizontal_component,
-                        vertical_component: data_structure::VerticalPositionUnit(
+                        vertical_component: data_structure::position::VerticalUnit(
                             sine_of_angle_times_radius,
                         ) + circle_displacement.vertical_component,
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
+                    velocity_vector: data_structure::velocity::DimensionfulVector {
+                        horizontal_component: data_structure::velocity::HorizontalUnit(
                             -sine_of_angle_times_radius * angular_velocity,
                         ) + circle_velocity.horizontal_component,
-                        vertical_component: data_structure::VerticalVelocityUnit(
+                        vertical_component: data_structure::velocity::VerticalUnit(
                             cosine_of_angle_times_radius * angular_velocity,
                         ) + circle_velocity.vertical_component,
                     },
                 },
             });
 
-            circle_particles.push(data_structure::IndividualParticle {
+            circle_particles.push(data_structure::particle::BasicIndividual {
                 intrinsic_values: common_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
+                variable_values: data_structure::particle::VariablePart {
+                    position_vector: data_structure::position::DimensionfulVector {
+                        horizontal_component: data_structure::position::HorizontalUnit(
                             cosine_of_angle_times_radius,
                         ) + circle_displacement.horizontal_component,
-                        vertical_component: data_structure::VerticalPositionUnit(
+                        vertical_component: data_structure::position::VerticalUnit(
                             -sine_of_angle_times_radius,
                         ) + circle_displacement.vertical_component,
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
+                    velocity_vector: data_structure::velocity::DimensionfulVector {
+                        horizontal_component: data_structure::velocity::HorizontalUnit(
                             sine_of_angle_times_radius * angular_velocity,
                         ) + circle_velocity.horizontal_component,
-                        vertical_component: data_structure::VerticalVelocityUnit(
+                        vertical_component: data_structure::velocity::VerticalUnit(
                             cosine_of_angle_times_radius * angular_velocity,
                         ) + circle_velocity.vertical_component,
                     },
@@ -201,48 +205,48 @@ fn particles_from_numbers(
 mod tests {
     use super::*;
 
-    fn new_intrinsics_tolerance() -> data_structure::ParticleIntrinsics {
-        data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(0.01),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.01),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.01),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(0.01),
-                data_structure::GreenColorUnit(0.01),
-                data_structure::BlueColorUnit(0.01),
+    fn new_intrinsics_tolerance() -> data_structure::particle::IntrinsicPart {
+        data_structure::particle::IntrinsicPart {
+            inertial_mass: data_structure::charge::InertialMassUnit(0.01),
+            inverse_squared_charge: data_structure::charge::InverseSquaredChargeUnit(0.01),
+            inverse_fourth_charge: data_structure::charge::InverseFourthChargeUnit(0.01),
+            color_brightness: data_structure::color::new_triplet(
+                data_structure::color::RedUnit(0.01),
+                data_structure::color::GreenUnit(0.01),
+                data_structure::color::BlueUnit(0.01),
             ),
         }
     }
 
-    fn new_variables_tolerance() -> data_structure::ParticleVariables {
-        data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(0.01),
-                vertical_component: data_structure::VerticalPositionUnit(0.01),
+    fn new_variables_tolerance() -> data_structure::particle::VariablePart {
+        data_structure::particle::VariablePart {
+            position_vector: data_structure::position::DimensionfulVector {
+                horizontal_component: data_structure::position::HorizontalUnit(0.01),
+                vertical_component: data_structure::position::VerticalUnit(0.01),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.01),
-                vertical_component: data_structure::VerticalVelocityUnit(0.01),
+            velocity_vector: data_structure::velocity::DimensionfulVector {
+                horizontal_component: data_structure::velocity::HorizontalUnit(0.01),
+                vertical_component: data_structure::velocity::VerticalUnit(0.01),
             },
         }
     }
 
-    fn new_particle_tolerance() -> data_structure::IndividualParticle {
-        data_structure::IndividualParticle {
+    fn new_particle_tolerance() -> data_structure::particle::BasicIndividual {
+        data_structure::particle::BasicIndividual {
             intrinsic_values: new_intrinsics_tolerance(),
             variable_values: new_variables_tolerance(),
         }
     }
 
-    fn new_test_intrinsics() -> data_structure::ParticleIntrinsics {
-        data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(1.9),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(2.8),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(3.7),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(4.6),
-                data_structure::GreenColorUnit(5.5),
-                data_structure::BlueColorUnit(6.4),
+    fn new_test_intrinsics() -> data_structure::particle::IntrinsicPart {
+        data_structure::particle::IntrinsicPart {
+            inertial_mass: data_structure::charge::InertialMassUnit(1.9),
+            inverse_squared_charge: data_structure::charge::InverseSquaredChargeUnit(2.8),
+            inverse_fourth_charge: data_structure::charge::InverseFourthChargeUnit(3.7),
+            color_brightness: data_structure::color::new_triplet(
+                data_structure::color::RedUnit(4.6),
+                data_structure::color::GreenUnit(5.5),
+                data_structure::color::BlueUnit(6.4),
             ),
         }
     }
@@ -277,19 +281,19 @@ mod tests {
     }
 
     fn new_test_particle_at(
-        horizontal_position: data_structure::HorizontalPositionUnit,
-        vertical_position: data_structure::VerticalPositionUnit,
-        horizontal_velocity: data_structure::HorizontalVelocityUnit,
-        vertical_velocity: data_structure::VerticalVelocityUnit,
-    ) -> data_structure::IndividualParticle {
-        data_structure::IndividualParticle {
+        horizontal_position: data_structure::position::HorizontalUnit,
+        vertical_position: data_structure::position::VerticalUnit,
+        horizontal_velocity: data_structure::velocity::HorizontalUnit,
+        vertical_velocity: data_structure::velocity::VerticalUnit,
+    ) -> data_structure::particle::BasicIndividual {
+        data_structure::particle::BasicIndividual {
             intrinsic_values: new_test_intrinsics(),
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
+            variable_values: data_structure::particle::VariablePart {
+                position_vector: data_structure::position::DimensionfulVector {
                     horizontal_component: horizontal_position,
                     vertical_component: vertical_position,
                 },
-                velocity_vector: data_structure::VelocityVector {
+                velocity_vector: data_structure::velocity::DimensionfulVector {
                     horizontal_component: horizontal_velocity,
                     vertical_component: vertical_velocity,
                 },
@@ -479,16 +483,20 @@ mod tests {
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(test_horizontal_displacement + test_radius),
-                data_structure::VerticalPositionUnit(test_vertical_displacement),
-                data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(test_linear_speed),
+                data_structure::position::HorizontalUnit(
+                    test_horizontal_displacement + test_radius,
+                ),
+                data_structure::position::VerticalUnit(test_vertical_displacement),
+                data_structure::velocity::HorizontalUnit(0.0),
+                data_structure::velocity::VerticalUnit(test_linear_speed),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(test_horizontal_displacement - test_radius),
-                data_structure::VerticalPositionUnit(test_vertical_displacement),
-                data_structure::HorizontalVelocityUnit(0.0),
-                data_structure::VerticalVelocityUnit(-test_linear_speed),
+                data_structure::position::HorizontalUnit(
+                    test_horizontal_displacement - test_radius,
+                ),
+                data_structure::position::VerticalUnit(test_vertical_displacement),
+                data_structure::velocity::HorizontalUnit(0.0),
+                data_structure::velocity::VerticalUnit(-test_linear_speed),
             ),
         ];
 
@@ -518,25 +526,25 @@ mod tests {
         let generated_particles =
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let left_vertical_magnitude = 0.866;
-        let left_horizontal_coordinate = data_structure::HorizontalPositionUnit(-0.5);
+        let left_horizontal_coordinate = data_structure::position::HorizontalUnit(-0.5);
         let expected_particles = vec![
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(1.0),
-                data_structure::VerticalPositionUnit(0.0),
-                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
-                data_structure::VerticalVelocityUnit(test_vertical_velocity),
+                data_structure::position::HorizontalUnit(1.0),
+                data_structure::position::VerticalUnit(0.0),
+                data_structure::velocity::HorizontalUnit(test_horizontal_velocity),
+                data_structure::velocity::VerticalUnit(test_vertical_velocity),
             ),
             new_test_particle_at(
                 left_horizontal_coordinate,
-                data_structure::VerticalPositionUnit(left_vertical_magnitude),
-                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
-                data_structure::VerticalVelocityUnit(test_vertical_velocity),
+                data_structure::position::VerticalUnit(left_vertical_magnitude),
+                data_structure::velocity::HorizontalUnit(test_horizontal_velocity),
+                data_structure::velocity::VerticalUnit(test_vertical_velocity),
             ),
             new_test_particle_at(
                 left_horizontal_coordinate,
-                data_structure::VerticalPositionUnit(-left_vertical_magnitude),
-                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
-                data_structure::VerticalVelocityUnit(test_vertical_velocity),
+                data_structure::position::VerticalUnit(-left_vertical_magnitude),
+                data_structure::velocity::HorizontalUnit(test_horizontal_velocity),
+                data_structure::velocity::VerticalUnit(test_vertical_velocity),
             ),
         ];
 
@@ -569,32 +577,36 @@ mod tests {
             from_json(&test_configuration).expect("Valid configuration should be parsed.");
         let expected_particles = vec![
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(test_horizontal_displacement + test_radius),
-                data_structure::VerticalPositionUnit(test_vertical_displacement),
-                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
-                data_structure::VerticalVelocityUnit(test_vertical_velocity + test_linear_speed),
+                data_structure::position::HorizontalUnit(
+                    test_horizontal_displacement + test_radius,
+                ),
+                data_structure::position::VerticalUnit(test_vertical_displacement),
+                data_structure::velocity::HorizontalUnit(test_horizontal_velocity),
+                data_structure::velocity::VerticalUnit(test_vertical_velocity + test_linear_speed),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(test_horizontal_displacement),
-                data_structure::VerticalPositionUnit(test_vertical_displacement + test_radius),
-                data_structure::HorizontalVelocityUnit(
+                data_structure::position::HorizontalUnit(test_horizontal_displacement),
+                data_structure::position::VerticalUnit(test_vertical_displacement + test_radius),
+                data_structure::velocity::HorizontalUnit(
                     test_horizontal_velocity - test_linear_speed,
                 ),
-                data_structure::VerticalVelocityUnit(test_vertical_velocity),
+                data_structure::velocity::VerticalUnit(test_vertical_velocity),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(test_horizontal_displacement - test_radius),
-                data_structure::VerticalPositionUnit(test_vertical_displacement),
-                data_structure::HorizontalVelocityUnit(test_horizontal_velocity),
-                data_structure::VerticalVelocityUnit(test_vertical_velocity - test_linear_speed),
+                data_structure::position::HorizontalUnit(
+                    test_horizontal_displacement - test_radius,
+                ),
+                data_structure::position::VerticalUnit(test_vertical_displacement),
+                data_structure::velocity::HorizontalUnit(test_horizontal_velocity),
+                data_structure::velocity::VerticalUnit(test_vertical_velocity - test_linear_speed),
             ),
             new_test_particle_at(
-                data_structure::HorizontalPositionUnit(test_horizontal_displacement),
-                data_structure::VerticalPositionUnit(test_vertical_displacement - test_radius),
-                data_structure::HorizontalVelocityUnit(
+                data_structure::position::HorizontalUnit(test_horizontal_displacement),
+                data_structure::position::VerticalUnit(test_vertical_displacement - test_radius),
+                data_structure::velocity::HorizontalUnit(
                     test_horizontal_velocity + test_linear_speed,
                 ),
-                data_structure::VerticalVelocityUnit(test_vertical_velocity),
+                data_structure::velocity::VerticalUnit(test_vertical_velocity),
             ),
         ];
 

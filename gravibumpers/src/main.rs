@@ -30,25 +30,25 @@ fn create_rgb_demonstration(
         visual_representation::demonstration::DemonstrationMapper {},
         0,
     );
-    let ignored_particle = data_structure::IndividualParticle {
-        intrinsic_values: data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(1.9),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(2.8),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(3.7),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(4.6),
-                data_structure::GreenColorUnit(5.5),
-                data_structure::BlueColorUnit(6.4),
+    let ignored_particle = data_structure::particle::BasicIndividual {
+        intrinsic_values: data_structure::particle::IntrinsicPart {
+            inertial_mass: data_structure::charge::InertialMassUnit(1.9),
+            inverse_squared_charge: data_structure::charge::InverseSquaredChargeUnit(2.8),
+            inverse_fourth_charge: data_structure::charge::InverseFourthChargeUnit(3.7),
+            color_brightness: data_structure::color::new_triplet(
+                data_structure::color::RedUnit(4.6),
+                data_structure::color::GreenUnit(5.5),
+                data_structure::color::BlueUnit(6.4),
             ),
         },
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
-                vertical_component: data_structure::VerticalPositionUnit(-1.0),
+        variable_values: data_structure::particle::VariablePart {
+            position_vector: data_structure::position::DimensionfulVector {
+                horizontal_component: data_structure::position::HorizontalUnit(1.0),
+                vertical_component: data_structure::position::VerticalUnit(-1.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.1),
-                vertical_component: data_structure::VerticalVelocityUnit(-0.1),
+            velocity_vector: data_structure::velocity::DimensionfulVector {
+                horizontal_component: data_structure::velocity::HorizontalUnit(0.1),
+                vertical_component: data_structure::velocity::VerticalUnit(-0.1),
             },
         },
     };
@@ -91,7 +91,7 @@ fn run_from_configuration_file(
 
     let instant_before_configuration = std::time::Instant::now();
 
-    let mut initial_particle_map: std::vec::Vec<data_structure::IndividualParticle> = vec![];
+    let mut initial_particle_map: std::vec::Vec<data_structure::particle::BasicIndividual> = vec![];
     let configuration_content = std::fs::read_to_string(input_filename)?;
     let deserialized_configuration: serde_json::Value =
         serde_json::from_str(&configuration_content)?;

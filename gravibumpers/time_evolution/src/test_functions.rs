@@ -1,54 +1,64 @@
 /// This module provides a set of functions which each test a case for an implementation of
 /// ParticlesInTimeEvolver, so that each implementation can simply wrap the call in an actual test,
 /// passing in an instance of the implementation.
+use data_structure::charge::InertialMassUnit;
+use data_structure::charge::InverseFourthChargeUnit;
+use data_structure::charge::InverseSquaredChargeUnit;
+
+use data_structure::color::BlueUnit as BlueColorUnit;
+use data_structure::color::GreenUnit as GreenColorUnit;
+use data_structure::color::RedUnit as RedColorUnit;
+
+use data_structure::particle::BasicIndividual as IndividualParticle;
+use data_structure::particle::IntrinsicPart as ParticleIntrinsics;
+use data_structure::particle::VariablePart as ParticleVariables;
+
+use data_structure::position::DimensionfulVector as PositionVector;
+use data_structure::position::HorizontalUnit as HorizontalPositionUnit;
+use data_structure::position::SeparationUnit as SpatialSeparationUnit;
+use data_structure::position::VerticalUnit as VerticalPositionUnit;
+
+use data_structure::velocity::DimensionfulVector as VelocityVector;
+use data_structure::velocity::HorizontalUnit as HorizontalVelocityUnit;
+use data_structure::velocity::VerticalUnit as VerticalVelocityUnit;
+
 const TEST_DEFAULT_TOLERANCE: f64 = 0.01;
 const TEST_DEFAULT_DEAD_ZONE_RADIUS: f64 = 0.01;
 
-const NO_ADDITIONAL_CHECK: Option<
-    fn(&std::vec::Vec<data_structure::IndividualParticle>) -> Result<(), String>,
-> = None;
+const NO_ADDITIONAL_CHECK: Option<fn(&std::vec::Vec<IndividualParticle>) -> Result<(), String>> =
+    None;
 
 fn create_test_tolerance_with_separate_for_values(
     horizontal_position_tolerance: f64,
     vertical_position_tolerance: f64,
     horizontal_velocity_tolerance: f64,
     vertical_velocity_tolerance: f64,
-) -> data_structure::IndividualParticle {
-    data_structure::IndividualParticle {
-        intrinsic_values: data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(TEST_DEFAULT_TOLERANCE),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(
-                TEST_DEFAULT_TOLERANCE,
-            ),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(TEST_DEFAULT_TOLERANCE),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(TEST_DEFAULT_TOLERANCE),
-                data_structure::GreenColorUnit(TEST_DEFAULT_TOLERANCE),
-                data_structure::BlueColorUnit(TEST_DEFAULT_TOLERANCE),
+) -> IndividualParticle {
+    IndividualParticle {
+        intrinsic_values: ParticleIntrinsics {
+            inertial_mass: InertialMassUnit(TEST_DEFAULT_TOLERANCE),
+            inverse_squared_charge: InverseSquaredChargeUnit(TEST_DEFAULT_TOLERANCE),
+            inverse_fourth_charge: InverseFourthChargeUnit(TEST_DEFAULT_TOLERANCE),
+            color_brightness: data_structure::color::new_triplet(
+                RedColorUnit(TEST_DEFAULT_TOLERANCE),
+                GreenColorUnit(TEST_DEFAULT_TOLERANCE),
+                BlueColorUnit(TEST_DEFAULT_TOLERANCE),
             ),
         },
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(
-                    horizontal_position_tolerance,
-                ),
-                vertical_component: data_structure::VerticalPositionUnit(
-                    vertical_position_tolerance,
-                ),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(horizontal_position_tolerance),
+                vertical_component: VerticalPositionUnit(vertical_position_tolerance),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(
-                    horizontal_velocity_tolerance,
-                ),
-                vertical_component: data_structure::VerticalVelocityUnit(
-                    vertical_velocity_tolerance,
-                ),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(horizontal_velocity_tolerance),
+                vertical_component: VerticalVelocityUnit(vertical_velocity_tolerance),
             },
         },
     }
 }
 
-fn create_test_tolerances() -> data_structure::IndividualParticle {
+fn create_test_tolerances() -> IndividualParticle {
     create_test_tolerance_with_separate_for_values(
         TEST_DEFAULT_TOLERANCE,
         TEST_DEFAULT_TOLERANCE,
@@ -74,25 +84,24 @@ fn create_test_evolution_configuration(
 fn apply_check_then_compare_time_slices<T, U, V, W, X, Y, Z>(
     actual_sequence: V,
     expected_sequence: Y,
-    tolerances_as_particle: &impl data_structure::ParticleRepresentation,
+    tolerances_as_particle: &impl super::ParticleRepresentation,
     additional_check: Z,
 ) -> Result<(), String>
 where
-    T: data_structure::ParticleRepresentation,
+    T: super::ParticleRepresentation,
     U: std::iter::ExactSizeIterator<Item = T>,
     V: std::iter::ExactSizeIterator<Item = U>,
-    W: data_structure::ParticleRepresentation,
+    W: super::ParticleRepresentation,
     X: std::iter::ExactSizeIterator<Item = W>,
     Y: std::iter::ExactSizeIterator<Item = X>,
-    Z: Fn(&std::vec::Vec<data_structure::IndividualParticle>) -> Result<(), String>,
+    Z: Fn(&std::vec::Vec<IndividualParticle>) -> Result<(), String>,
 {
     let mut copied_sequence = vec![];
 
     for actual_time_slice in actual_sequence {
-        let copied_time_slice: std::vec::Vec<data_structure::IndividualParticle> =
-            actual_time_slice
-                .map(|x| data_structure::create_individual_from_representation(&x))
-                .collect();
+        let copied_time_slice: std::vec::Vec<IndividualParticle> = actual_time_slice
+            .map(|x| data_structure::particle::create_individual_from_representation(&x))
+            .collect();
 
         let additional_check_result = additional_check(&copied_time_slice);
 
@@ -115,17 +124,17 @@ where
 fn compare_time_slices_to_expected<T, U, V, W, X, Y, Z>(
     evolution_result: Result<super::ParticleSetEvolution<T, U, V>, Box<dyn std::error::Error>>,
     expected_sequence: Y,
-    tolerances_as_particle: &impl data_structure::ParticleRepresentation,
+    tolerances_as_particle: &impl super::ParticleRepresentation,
     optional_additional_check: Option<Z>,
 ) -> Result<(), String>
 where
-    T: data_structure::ParticleRepresentation,
+    T: super::ParticleRepresentation,
     U: std::iter::ExactSizeIterator<Item = T>,
     V: std::iter::ExactSizeIterator<Item = U>,
-    W: data_structure::ParticleRepresentation,
+    W: super::ParticleRepresentation,
     X: std::iter::ExactSizeIterator<Item = W>,
     Y: std::iter::ExactSizeIterator<Item = X>,
-    Z: Fn(&std::vec::Vec<data_structure::IndividualParticle>) -> Result<(), String>,
+    Z: Fn(&std::vec::Vec<IndividualParticle>) -> Result<(), String>,
 {
     match evolution_result {
         Ok(actual_evolution) => {
@@ -161,8 +170,8 @@ where
 trait PotentialEnergyCalculator {
     fn total_for_both(
         &self,
-        first_particle: &impl data_structure::ParticleRepresentation,
-        second_particle: &impl data_structure::ParticleRepresentation,
+        first_particle: &impl super::ParticleRepresentation,
+        second_particle: &impl super::ParticleRepresentation,
     ) -> Result<f64, String>;
 }
 
@@ -170,16 +179,16 @@ trait PotentialEnergyCalculator {
 struct InverseSquaredAndFourthPotential {
     inverse_squared_coupling_constant: f64,
     inverse_fourth_coupling_constant: f64,
-    dead_zone_radius: data_structure::SeparationUnit,
+    dead_zone_radius: SpatialSeparationUnit,
 }
 
 impl PotentialEnergyCalculator for InverseSquaredAndFourthPotential {
     fn total_for_both(
         &self,
-        first_particle: &impl data_structure::ParticleRepresentation,
-        second_particle: &impl data_structure::ParticleRepresentation,
+        first_particle: &impl super::ParticleRepresentation,
+        second_particle: &impl super::ParticleRepresentation,
     ) -> Result<f64, String> {
-        let inverse_separation = data_structure::get_capped_inverse_separation(
+        let inverse_separation = data_structure::position::get_capped_inverse_separation(
             &first_particle.read_variables().position_vector,
             &second_particle.read_variables().position_vector,
             &self.dead_zone_radius,
@@ -210,7 +219,7 @@ fn check_energy_given_potential(
     expected_number_of_particles: usize,
     expected_energy_in_implicit_units: f64,
     relative_tolerance: f64,
-    particle_list: &std::vec::Vec<impl data_structure::ParticleRepresentation>,
+    particle_list: &std::vec::Vec<impl super::ParticleRepresentation>,
     potential_energy_of_pair: impl PotentialEnergyCalculator,
 ) -> Result<(), String> {
     if particle_list.len() != expected_number_of_particles {
@@ -261,25 +270,25 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let expected_particle = data_structure::IndividualParticle {
-        intrinsic_values: data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(1.0),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(2.0),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(3.0),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(4.0),
-                data_structure::GreenColorUnit(5.0),
-                data_structure::BlueColorUnit(6.0),
+    let expected_particle = IndividualParticle {
+        intrinsic_values: ParticleIntrinsics {
+            inertial_mass: InertialMassUnit(1.0),
+            inverse_squared_charge: InverseSquaredChargeUnit(2.0),
+            inverse_fourth_charge: InverseFourthChargeUnit(3.0),
+            color_brightness: data_structure::color::new_triplet(
+                RedColorUnit(4.0),
+                GreenColorUnit(5.0),
+                BlueColorUnit(6.0),
             ),
         },
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(7.8),
-                vertical_component: data_structure::VerticalPositionUnit(9.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(7.8),
+                vertical_component: VerticalPositionUnit(9.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
@@ -289,12 +298,9 @@ where
     let number_of_time_slices: usize = 8;
     let evolution_configuration =
         create_test_evolution_configuration(number_of_time_slices, TEST_DEFAULT_DEAD_ZONE_RADIUS);
-    let mut expected_sequence: std::vec::Vec<
-        std::vec::IntoIter<data_structure::IndividualParticle>,
-    > = vec![];
+    let mut expected_sequence: std::vec::Vec<std::vec::IntoIter<IndividualParticle>> = vec![];
     for _ in 0..number_of_time_slices {
-        let unchanged_state: std::vec::Vec<data_structure::IndividualParticle> =
-            vec![expected_particle];
+        let unchanged_state: std::vec::Vec<IndividualParticle> = vec![expected_particle];
         expected_sequence.push(unchanged_state.into_iter());
     }
     let evolution_result = tested_implementation
@@ -317,105 +323,104 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let particle_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(2.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(3.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(4.0),
-            data_structure::GreenColorUnit(5.0),
-            data_structure::BlueColorUnit(6.0),
+    let particle_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(2.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(3.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(4.0),
+            GreenColorUnit(5.0),
+            BlueColorUnit(6.0),
         ),
     };
-    let initial_particle = data_structure::IndividualParticle {
+    let initial_particle = IndividualParticle {
         intrinsic_values: particle_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(7.8),
-                vertical_component: data_structure::VerticalPositionUnit(9.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(7.8),
+                vertical_component: VerticalPositionUnit(9.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.3),
+                vertical_component: VerticalVelocityUnit(-2.2),
             },
         },
     };
     let expected_sequence = vec![
         vec![initial_particle].into_iter(),
-        vec![data_structure::IndividualParticle {
+        vec![IndividualParticle {
             intrinsic_values: particle_intrinsics,
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(8.1),
-                    vertical_component: data_structure::VerticalPositionUnit(6.8),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(8.1),
+                    vertical_component: VerticalPositionUnit(6.8),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                    vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(0.3),
+                    vertical_component: VerticalVelocityUnit(-2.2),
                 },
             },
         }]
         .into_iter(),
-        vec![data_structure::IndividualParticle {
+        vec![IndividualParticle {
             intrinsic_values: particle_intrinsics,
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(8.4),
-                    vertical_component: data_structure::VerticalPositionUnit(4.6),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(8.4),
+                    vertical_component: VerticalPositionUnit(4.6),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                    vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(0.3),
+                    vertical_component: VerticalVelocityUnit(-2.2),
                 },
             },
         }]
         .into_iter(),
-        vec![data_structure::IndividualParticle {
+        vec![IndividualParticle {
             intrinsic_values: particle_intrinsics,
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(8.7),
-                    vertical_component: data_structure::VerticalPositionUnit(2.4),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(8.7),
+                    vertical_component: VerticalPositionUnit(2.4),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                    vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(0.3),
+                    vertical_component: VerticalVelocityUnit(-2.2),
                 },
             },
         }]
         .into_iter(),
-        vec![data_structure::IndividualParticle {
+        vec![IndividualParticle {
             intrinsic_values: particle_intrinsics,
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(9.0),
-                    vertical_component: data_structure::VerticalPositionUnit(0.2),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(9.0),
+                    vertical_component: VerticalPositionUnit(0.2),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                    vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(0.3),
+                    vertical_component: VerticalVelocityUnit(-2.2),
                 },
             },
         }]
         .into_iter(),
-        vec![data_structure::IndividualParticle {
+        vec![IndividualParticle {
             intrinsic_values: particle_intrinsics,
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(9.3),
-                    vertical_component: data_structure::VerticalPositionUnit(-2.0),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(9.3),
+                    vertical_component: VerticalPositionUnit(-2.0),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                    vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(0.3),
+                    vertical_component: VerticalVelocityUnit(-2.2),
                 },
             },
         }]
         .into_iter(),
     ];
 
-    let initial_conditions: std::vec::Vec<data_structure::IndividualParticle> =
-        vec![initial_particle];
+    let initial_conditions: std::vec::Vec<IndividualParticle> = vec![initial_particle];
 
     let number_of_time_slices = expected_sequence.len();
     let evolution_configuration =
@@ -440,54 +445,54 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let particle_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(4.0),
-            data_structure::GreenColorUnit(5.0),
-            data_structure::BlueColorUnit(6.0),
+    let particle_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(0.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(0.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(4.0),
+            GreenColorUnit(5.0),
+            BlueColorUnit(6.0),
         ),
     };
-    let immobile_particle = data_structure::IndividualParticle {
+    let immobile_particle = IndividualParticle {
         intrinsic_values: particle_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(2.6),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(2.6),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
     let initial_conditions = vec![
-        data_structure::IndividualParticle {
+        IndividualParticle {
             intrinsic_values: particle_intrinsics,
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(0.0),
-                    vertical_component: data_structure::VerticalPositionUnit(0.0),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(0.0),
+                    vertical_component: VerticalPositionUnit(0.0),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(1.3),
-                    vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(1.3),
+                    vertical_component: VerticalVelocityUnit(0.0),
                 },
             },
         },
         immobile_particle.clone(),
-        data_structure::IndividualParticle {
+        IndividualParticle {
             intrinsic_values: particle_intrinsics,
-            variable_values: data_structure::ParticleVariables {
-                position_vector: data_structure::PositionVector {
-                    horizontal_component: data_structure::HorizontalPositionUnit(7.8),
-                    vertical_component: data_structure::VerticalPositionUnit(9.0),
+            variable_values: ParticleVariables {
+                position_vector: PositionVector {
+                    horizontal_component: HorizontalPositionUnit(7.8),
+                    vertical_component: VerticalPositionUnit(9.0),
                 },
-                velocity_vector: data_structure::VelocityVector {
-                    horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                    vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                velocity_vector: VelocityVector {
+                    horizontal_component: HorizontalVelocityUnit(0.3),
+                    vertical_component: VerticalVelocityUnit(-2.2),
                 },
             },
         },
@@ -496,93 +501,93 @@ where
         initial_conditions
             .iter()
             .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .collect::<std::vec::Vec<IndividualParticle>>()
             .into_iter(),
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: particle_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(1.3),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(1.3),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(1.3),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(1.3),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
             immobile_particle.clone(),
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: particle_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(8.1),
-                        vertical_component: data_structure::VerticalPositionUnit(6.8),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(8.1),
+                        vertical_component: VerticalPositionUnit(6.8),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                        vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.3),
+                        vertical_component: VerticalVelocityUnit(-2.2),
                     },
                 },
             },
         ]
         .into_iter(),
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: particle_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(2.6),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(2.6),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(1.3),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(1.3),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
             immobile_particle.clone(),
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: particle_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(8.4),
-                        vertical_component: data_structure::VerticalPositionUnit(4.6),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(8.4),
+                        vertical_component: VerticalPositionUnit(4.6),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                        vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.3),
+                        vertical_component: VerticalVelocityUnit(-2.2),
                     },
                 },
             },
         ]
         .into_iter(),
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: particle_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(3.9),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(3.9),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(1.3),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(1.3),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
             immobile_particle.clone(),
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: particle_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(8.7),
-                        vertical_component: data_structure::VerticalPositionUnit(2.4),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(8.7),
+                        vertical_component: VerticalPositionUnit(2.4),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(0.3),
-                        vertical_component: data_structure::VerticalVelocityUnit(-2.2),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(0.3),
+                        vertical_component: VerticalVelocityUnit(-2.2),
                     },
                 },
             },
@@ -606,7 +611,7 @@ where
 
 pub fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest<T, U>(
     tested_implementation: &mut T,
-    dead_zone_radius: &data_structure::SeparationUnit,
+    dead_zone_radius: &SpatialSeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -614,44 +619,40 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let particle_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(4.0),
-            data_structure::GreenColorUnit(5.0),
-            data_structure::BlueColorUnit(6.0),
+    let particle_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(0.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(1.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(4.0),
+            GreenColorUnit(5.0),
+            BlueColorUnit(6.0),
         ),
     };
 
-    let left_particle = data_structure::IndividualParticle {
+    let left_particle = IndividualParticle {
         intrinsic_values: particle_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(
-                    0.2 * dead_zone_radius.0,
-                ),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(0.2 * dead_zone_radius.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
-    let right_particle = data_structure::IndividualParticle {
+    let right_particle = IndividualParticle {
         intrinsic_values: particle_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(
-                    0.7 * dead_zone_radius.0,
-                ),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(0.7 * dead_zone_radius.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
@@ -661,7 +662,7 @@ where
         initial_conditions
             .iter()
             .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .collect::<std::vec::Vec<IndividualParticle>>()
             .into_iter(),
         vec![left_particle.clone(), right_particle.clone()].into_iter(),
         vec![left_particle.clone(), right_particle.clone()].into_iter(),
@@ -686,7 +687,7 @@ where
 /// to come to rest infinitely far apart from each other.
 pub fn test_equal_masses_attracting_inverse_fourth_critical_escape<T, U>(
     tested_implementation: &mut T,
-    dead_zone_radius: &data_structure::SeparationUnit,
+    dead_zone_radius: &SpatialSeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -694,14 +695,14 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let test_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(4.0),
-            data_structure::GreenColorUnit(5.0),
-            data_structure::BlueColorUnit(6.0),
+    let test_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(0.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(1.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(4.0),
+            GreenColorUnit(5.0),
+            BlueColorUnit(6.0),
         ),
     };
 
@@ -713,29 +714,29 @@ where
     // The test starts at t = 1, and it doesn't actually matter what m is as long as it is not 0.
     // Hence x = 1.0, so the particles are at +1.0 and at -1.0, and the velocities are +0.2 and
     // -0.2 respectively.
-    let left_particle = data_structure::IndividualParticle {
+    let left_particle = IndividualParticle {
         intrinsic_values: test_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(-1.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(-1.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(-0.4),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(-0.4),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
-    let right_particle = data_structure::IndividualParticle {
+    let right_particle = IndividualParticle {
         intrinsic_values: test_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(1.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.4),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.4),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
@@ -749,77 +750,61 @@ where
         initial_conditions
             .iter()
             .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .collect::<std::vec::Vec<IndividualParticle>>()
             .into_iter(),
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: test_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
-                            -second_right_position,
-                        ),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(-second_right_position),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
-                            -second_right_speed,
-                        ),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(-second_right_speed),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: test_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
-                            second_right_position,
-                        ),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(second_right_position),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
-                            second_right_speed,
-                        ),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(second_right_speed),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
         ]
         .into_iter(),
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: test_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
-                            -third_right_position,
-                        ),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(-third_right_position),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
-                            -third_right_speed,
-                        ),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(-third_right_speed),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: test_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
-                            third_right_position,
-                        ),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(third_right_position),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
-                            third_right_speed,
-                        ),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(third_right_speed),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
@@ -853,23 +838,21 @@ where
         evolution_result,
         expected_sequence.into_iter(),
         &test_tolerances,
-        Some(
-            |particle_list: &std::vec::Vec<data_structure::IndividualParticle>| {
-                check_energy_given_potential(
-                    2,
-                    0.0,
-                    TEST_DEFAULT_TOLERANCE,
-                    particle_list,
-                    inverse_fourth_potential_of_pair,
-                )
-            },
-        ),
+        Some(|particle_list: &std::vec::Vec<IndividualParticle>| {
+            check_energy_given_potential(
+                2,
+                0.0,
+                TEST_DEFAULT_TOLERANCE,
+                particle_list,
+                inverse_fourth_potential_of_pair,
+            )
+        }),
     )
 }
 
 pub fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally<T, U>(
     tested_implementation: &mut T,
-    dead_zone_radius: &data_structure::SeparationUnit,
+    dead_zone_radius: &SpatialSeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -877,49 +860,49 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let left_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(4.0),
-            data_structure::GreenColorUnit(5.0),
-            data_structure::BlueColorUnit(6.0),
+    let left_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(0.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(1.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(4.0),
+            GreenColorUnit(5.0),
+            BlueColorUnit(6.0),
         ),
     };
-    let left_particle = data_structure::IndividualParticle {
+    let left_particle = IndividualParticle {
         intrinsic_values: left_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(2.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(2.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
-    let right_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(0.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(2.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(4.0),
-            data_structure::GreenColorUnit(5.0),
-            data_structure::BlueColorUnit(6.0),
+    let right_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(0.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(2.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(4.0),
+            GreenColorUnit(5.0),
+            BlueColorUnit(6.0),
         ),
     };
-    let right_particle = data_structure::IndividualParticle {
+    let right_particle = IndividualParticle {
         intrinsic_values: right_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(5.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(5.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
@@ -969,17 +952,17 @@ where
         half_of_speed_range,
         TEST_DEFAULT_TOLERANCE,
     );
-    let mean_of_right_travel_bounds_as_position = data_structure::PositionVector {
-        horizontal_component: data_structure::HorizontalPositionUnit(mean_of_travel_bounds),
-        vertical_component: data_structure::VerticalPositionUnit(0.0),
+    let mean_of_right_travel_bounds_as_position = PositionVector {
+        horizontal_component: HorizontalPositionUnit(mean_of_travel_bounds),
+        vertical_component: VerticalPositionUnit(0.0),
     };
     let mut left_mean_of_position_bounds = left_particle.variable_values.position_vector.clone();
     left_mean_of_position_bounds -= mean_of_right_travel_bounds_as_position;
     let mut right_mean_of_position_bounds = right_particle.variable_values.position_vector.clone();
     right_mean_of_position_bounds += mean_of_right_travel_bounds_as_position;
-    let mean_of_right_speed_bounds_as_velocity = data_structure::VelocityVector {
-        horizontal_component: data_structure::HorizontalVelocityUnit(mean_of_speed_bounds),
-        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+    let mean_of_right_speed_bounds_as_velocity = VelocityVector {
+        horizontal_component: HorizontalVelocityUnit(mean_of_speed_bounds),
+        vertical_component: VerticalVelocityUnit(0.0),
     };
     let mut left_mean_of_velocity_bounds = left_particle.variable_values.velocity_vector.clone();
     left_mean_of_velocity_bounds -= mean_of_right_speed_bounds_as_velocity;
@@ -989,19 +972,19 @@ where
         initial_conditions
             .iter()
             .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .collect::<std::vec::Vec<IndividualParticle>>()
             .into_iter(),
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: left_intrinsics,
-                variable_values: data_structure::ParticleVariables {
+                variable_values: ParticleVariables {
                     position_vector: left_mean_of_position_bounds,
                     velocity_vector: left_mean_of_velocity_bounds,
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: right_intrinsics,
-                variable_values: data_structure::ParticleVariables {
+                variable_values: ParticleVariables {
                     position_vector: right_mean_of_position_bounds,
                     velocity_vector: right_mean_of_velocity_bounds,
                 },
@@ -1049,17 +1032,15 @@ where
         evolution_result,
         expected_sequence.into_iter(),
         &test_tolerances,
-        Some(
-            |particle_list: &std::vec::Vec<data_structure::IndividualParticle>| {
-                check_energy_given_potential(
-                    2,
-                    expected_initial_energy,
-                    TEST_DEFAULT_TOLERANCE,
-                    particle_list,
-                    inverse_fourth_potential_of_pair,
-                )
-            },
-        ),
+        Some(|particle_list: &std::vec::Vec<IndividualParticle>| {
+            check_energy_given_potential(
+                2,
+                expected_initial_energy,
+                TEST_DEFAULT_TOLERANCE,
+                particle_list,
+                inverse_fourth_potential_of_pair,
+            )
+        }),
     )
 }
 
@@ -1070,7 +1051,7 @@ where
 /// force instead of inverse-fourth.)
 pub fn test_equal_masses_attracting_inverse_square_critical_escape<T, U>(
     tested_implementation: &mut T,
-    dead_zone_radius: &data_structure::SeparationUnit,
+    dead_zone_radius: &SpatialSeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -1078,14 +1059,14 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let test_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(4.0),
-            data_structure::GreenColorUnit(5.0),
-            data_structure::BlueColorUnit(6.0),
+    let test_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(0.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(4.0),
+            GreenColorUnit(5.0),
+            BlueColorUnit(6.0),
         ),
     };
 
@@ -1097,29 +1078,29 @@ where
     // The test starts at t = 1, and it doesn't actually matter what m is as long as it is not 0.
     // Hence x = 1.0, so the particles are at +1.0 and at -1.0, and the velocities are +2/3 and
     // -12/3 respectively.
-    let left_particle = data_structure::IndividualParticle {
+    let left_particle = IndividualParticle {
         intrinsic_values: test_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(-1.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(-1.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(-2.0 / 3.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(-2.0 / 3.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
-    let right_particle = data_structure::IndividualParticle {
+    let right_particle = IndividualParticle {
         intrinsic_values: test_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(1.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(2.0 / 3.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(2.0 / 3.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
@@ -1133,77 +1114,61 @@ where
         initial_conditions
             .iter()
             .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .collect::<std::vec::Vec<IndividualParticle>>()
             .into_iter(),
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: test_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
-                            -second_right_position,
-                        ),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(-second_right_position),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
-                            -second_right_speed,
-                        ),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(-second_right_speed),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: test_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
-                            second_right_position,
-                        ),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(second_right_position),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
-                            second_right_speed,
-                        ),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(second_right_speed),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
         ]
         .into_iter(),
         vec![
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: test_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
-                            -third_right_position,
-                        ),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(-third_right_position),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
-                            -third_right_speed,
-                        ),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(-third_right_speed),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
-            data_structure::IndividualParticle {
+            IndividualParticle {
                 intrinsic_values: test_intrinsics,
-                variable_values: data_structure::ParticleVariables {
-                    position_vector: data_structure::PositionVector {
-                        horizontal_component: data_structure::HorizontalPositionUnit(
-                            third_right_position,
-                        ),
-                        vertical_component: data_structure::VerticalPositionUnit(0.0),
+                variable_values: ParticleVariables {
+                    position_vector: PositionVector {
+                        horizontal_component: HorizontalPositionUnit(third_right_position),
+                        vertical_component: VerticalPositionUnit(0.0),
                     },
-                    velocity_vector: data_structure::VelocityVector {
-                        horizontal_component: data_structure::HorizontalVelocityUnit(
-                            third_right_speed,
-                        ),
-                        vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                    velocity_vector: VelocityVector {
+                        horizontal_component: HorizontalVelocityUnit(third_right_speed),
+                        vertical_component: VerticalVelocityUnit(0.0),
                     },
                 },
             },
@@ -1237,23 +1202,21 @@ where
         evolution_result,
         expected_sequence.into_iter(),
         &test_tolerances,
-        Some(
-            |particle_list: &std::vec::Vec<data_structure::IndividualParticle>| {
-                check_energy_given_potential(
-                    2,
-                    0.0,
-                    TEST_DEFAULT_TOLERANCE,
-                    particle_list,
-                    inverse_squared_potential_of_pair,
-                )
-            },
-        ),
+        Some(|particle_list: &std::vec::Vec<IndividualParticle>| {
+            check_energy_given_potential(
+                2,
+                0.0,
+                TEST_DEFAULT_TOLERANCE,
+                particle_list,
+                inverse_squared_potential_of_pair,
+            )
+        }),
     )
 }
 
 pub fn test_equal_masses_attracting_inverse_square_circular_orbit<T, U>(
     tested_implementation: &mut T,
-    dead_zone_radius: &data_structure::SeparationUnit,
+    dead_zone_radius: &SpatialSeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -1261,53 +1224,53 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let red_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(1.0),
-            data_structure::GreenColorUnit(0.0),
-            data_structure::BlueColorUnit(0.0),
+    let red_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(0.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(1.0),
+            GreenColorUnit(0.0),
+            BlueColorUnit(0.0),
         ),
     };
-    let blue_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(0.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(0.0),
-            data_structure::GreenColorUnit(0.0),
-            data_structure::BlueColorUnit(1.0),
+    let blue_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(0.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(0.0),
+            GreenColorUnit(0.0),
+            BlueColorUnit(1.0),
         ),
     };
 
     // The force needs to be m r w^2 where w is the angular speed.
     // Since m = r = 1, we pick F = w = 1, so both should have charge 1 and the overall coupling
     // should be 4 to account for the separation being 2, so inverse squared giving 1/4.
-    let left_particle = data_structure::IndividualParticle {
+    let left_particle = IndividualParticle {
         intrinsic_values: red_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(-1.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(-1.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(-1.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(-1.0),
             },
         },
     };
-    let right_particle = data_structure::IndividualParticle {
+    let right_particle = IndividualParticle {
         intrinsic_values: blue_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(1.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(1.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(1.0),
             },
         },
     };
@@ -1322,53 +1285,45 @@ where
             let cosine_value = time_value.cos();
             let sine_value = time_value.sin();
             vec![
-                data_structure::IndividualParticle {
+                IndividualParticle {
                     intrinsic_values: red_intrinsics,
-                    variable_values: data_structure::ParticleVariables {
-                        position_vector: data_structure::PositionVector {
-                            horizontal_component: data_structure::HorizontalPositionUnit(
-                                -cosine_value,
-                            ),
-                            vertical_component: data_structure::VerticalPositionUnit(-sine_value),
+                    variable_values: ParticleVariables {
+                        position_vector: PositionVector {
+                            horizontal_component: HorizontalPositionUnit(-cosine_value),
+                            vertical_component: VerticalPositionUnit(-sine_value),
                         },
-                        velocity_vector: data_structure::VelocityVector {
-                            horizontal_component: data_structure::HorizontalVelocityUnit(
-                                sine_value,
-                            ),
-                            vertical_component: data_structure::VerticalVelocityUnit(-cosine_value),
+                        velocity_vector: VelocityVector {
+                            horizontal_component: HorizontalVelocityUnit(sine_value),
+                            vertical_component: VerticalVelocityUnit(-cosine_value),
                         },
                     },
                 },
-                data_structure::IndividualParticle {
+                IndividualParticle {
                     intrinsic_values: blue_intrinsics,
-                    variable_values: data_structure::ParticleVariables {
-                        position_vector: data_structure::PositionVector {
-                            horizontal_component: data_structure::HorizontalPositionUnit(
-                                cosine_value,
-                            ),
-                            vertical_component: data_structure::VerticalPositionUnit(sine_value),
+                    variable_values: ParticleVariables {
+                        position_vector: PositionVector {
+                            horizontal_component: HorizontalPositionUnit(cosine_value),
+                            vertical_component: VerticalPositionUnit(sine_value),
                         },
-                        velocity_vector: data_structure::VelocityVector {
-                            horizontal_component: data_structure::HorizontalVelocityUnit(
-                                -sine_value,
-                            ),
-                            vertical_component: data_structure::VerticalVelocityUnit(cosine_value),
+                        velocity_vector: VelocityVector {
+                            horizontal_component: HorizontalVelocityUnit(-sine_value),
+                            vertical_component: VerticalVelocityUnit(cosine_value),
                         },
                     },
                 },
             ]
             .into_iter()
         })
-        .collect::<std::vec::Vec<std::vec::IntoIter<data_structure::IndividualParticle>>>();
+        .collect::<std::vec::Vec<std::vec::IntoIter<IndividualParticle>>>();
 
     let expected_sequence = vec![initial_conditions
         .iter()
         .cloned()
-        .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+        .collect::<std::vec::Vec<IndividualParticle>>()
         .into_iter()]
     .into_iter()
     .chain(following_expecteds)
-    .collect::<std::vec::Vec<std::vec::IntoIter<data_structure::IndividualParticle>>>();
+    .collect::<std::vec::Vec<std::vec::IntoIter<IndividualParticle>>>();
 
     let number_of_time_slices = expected_sequence.len();
 
@@ -1399,23 +1354,21 @@ where
         evolution_result,
         expected_sequence.into_iter(),
         &test_tolerances,
-        Some(
-            |particle_list: &std::vec::Vec<data_structure::IndividualParticle>| {
-                check_energy_given_potential(
-                    2,
-                    -1.0,
-                    TEST_DEFAULT_TOLERANCE,
-                    particle_list,
-                    inverse_squared_potential_of_pair,
-                )
-            },
-        ),
+        Some(|particle_list: &std::vec::Vec<IndividualParticle>| {
+            check_energy_given_potential(
+                2,
+                -1.0,
+                TEST_DEFAULT_TOLERANCE,
+                particle_list,
+                inverse_squared_potential_of_pair,
+            )
+        }),
     )
 }
 
 pub fn test_triangle_at_cancelling_forces_is_stable<T, U>(
     tested_implementation: &mut T,
-    dead_zone_radius: &data_structure::SeparationUnit,
+    dead_zone_radius: &SpatialSeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -1423,69 +1376,69 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let origin_particle = data_structure::IndividualParticle {
-        intrinsic_values: data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(1.0),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(1.0),
-                data_structure::GreenColorUnit(0.0),
-                data_structure::BlueColorUnit(0.0),
+    let origin_particle = IndividualParticle {
+        intrinsic_values: ParticleIntrinsics {
+            inertial_mass: InertialMassUnit(1.0),
+            inverse_squared_charge: InverseSquaredChargeUnit(1.0),
+            inverse_fourth_charge: InverseFourthChargeUnit(1.0),
+            color_brightness: data_structure::color::new_triplet(
+                RedColorUnit(1.0),
+                GreenColorUnit(0.0),
+                BlueColorUnit(0.0),
             ),
         },
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(0.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(0.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
-    let right_particle = data_structure::IndividualParticle {
-        intrinsic_values: data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(1.0),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(2.0),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(0.0),
-                data_structure::GreenColorUnit(0.0),
-                data_structure::BlueColorUnit(1.0),
+    let right_particle = IndividualParticle {
+        intrinsic_values: ParticleIntrinsics {
+            inertial_mass: InertialMassUnit(1.0),
+            inverse_squared_charge: InverseSquaredChargeUnit(1.0),
+            inverse_fourth_charge: InverseFourthChargeUnit(2.0),
+            color_brightness: data_structure::color::new_triplet(
+                RedColorUnit(0.0),
+                GreenColorUnit(0.0),
+                BlueColorUnit(1.0),
             ),
         },
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(1.0),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(1.0),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
-    let upper_particle = data_structure::IndividualParticle {
-        intrinsic_values: data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(1.0),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(2.0),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(0.0),
-                data_structure::GreenColorUnit(1.0),
-                data_structure::BlueColorUnit(0.0),
+    let upper_particle = IndividualParticle {
+        intrinsic_values: ParticleIntrinsics {
+            inertial_mass: InertialMassUnit(1.0),
+            inverse_squared_charge: InverseSquaredChargeUnit(1.0),
+            inverse_fourth_charge: InverseFourthChargeUnit(2.0),
+            color_brightness: data_structure::color::new_triplet(
+                RedColorUnit(0.0),
+                GreenColorUnit(1.0),
+                BlueColorUnit(0.0),
             ),
         },
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(0.0),
-                vertical_component: data_structure::VerticalPositionUnit(1.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(0.0),
+                vertical_component: VerticalPositionUnit(1.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
@@ -1498,17 +1451,17 @@ where
         initial_conditions
             .iter()
             .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .collect::<std::vec::Vec<IndividualParticle>>()
             .into_iter(),
         initial_conditions
             .iter()
             .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .collect::<std::vec::Vec<IndividualParticle>>()
             .into_iter(),
         initial_conditions
             .iter()
             .cloned()
-            .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+            .collect::<std::vec::Vec<IndividualParticle>>()
             .into_iter(),
     ];
     let number_of_time_slices = expected_sequence.len();
@@ -1545,7 +1498,7 @@ where
 
 pub fn test_approximate_harmonic_oscillator<T, U>(
     tested_implementation: &mut T,
-    dead_zone_radius: &data_structure::SeparationUnit,
+    dead_zone_radius: &SpatialSeparationUnit,
 ) -> Result<(), String>
 where
     T: super::ParticlesInTimeEvolver<U>,
@@ -1553,24 +1506,24 @@ where
         Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
     >,
 {
-    let red_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(1.0),
-            data_structure::GreenColorUnit(0.0),
-            data_structure::BlueColorUnit(0.0),
+    let red_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(1.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(1.0),
+            GreenColorUnit(0.0),
+            BlueColorUnit(0.0),
         ),
     };
-    let blue_intrinsics = data_structure::ParticleIntrinsics {
-        inertial_mass: data_structure::InertialMassUnit(1.0),
-        inverse_squared_charge: data_structure::InverseSquaredChargeUnit(1.0),
-        inverse_fourth_charge: data_structure::InverseFourthChargeUnit(1.0),
-        color_brightness: data_structure::new_color_triplet(
-            data_structure::RedColorUnit(0.0),
-            data_structure::GreenColorUnit(0.0),
-            data_structure::BlueColorUnit(1.0),
+    let blue_intrinsics = ParticleIntrinsics {
+        inertial_mass: InertialMassUnit(1.0),
+        inverse_squared_charge: InverseSquaredChargeUnit(1.0),
+        inverse_fourth_charge: InverseFourthChargeUnit(1.0),
+        color_brightness: data_structure::color::new_triplet(
+            RedColorUnit(0.0),
+            GreenColorUnit(0.0),
+            BlueColorUnit(1.0),
         ),
     };
 
@@ -1578,33 +1531,29 @@ where
     let equilibrium_distance_from_origin = 0.5;
     let initial_distance_from_origin =
         equilibrium_distance_from_origin + displacement_from_equilibrium;
-    let left_particle = data_structure::IndividualParticle {
+    let left_particle = IndividualParticle {
         intrinsic_values: red_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(
-                    -initial_distance_from_origin,
-                ),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(-initial_distance_from_origin),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
-    let right_particle = data_structure::IndividualParticle {
+    let right_particle = IndividualParticle {
         intrinsic_values: blue_intrinsics,
-        variable_values: data_structure::ParticleVariables {
-            position_vector: data_structure::PositionVector {
-                horizontal_component: data_structure::HorizontalPositionUnit(
-                    initial_distance_from_origin,
-                ),
-                vertical_component: data_structure::VerticalPositionUnit(0.0),
+        variable_values: ParticleVariables {
+            position_vector: PositionVector {
+                horizontal_component: HorizontalPositionUnit(initial_distance_from_origin),
+                vertical_component: VerticalPositionUnit(0.0),
             },
-            velocity_vector: data_structure::VelocityVector {
-                horizontal_component: data_structure::HorizontalVelocityUnit(0.0),
-                vertical_component: data_structure::VerticalVelocityUnit(0.0),
+            velocity_vector: VelocityVector {
+                horizontal_component: HorizontalVelocityUnit(0.0),
+                vertical_component: VerticalVelocityUnit(0.0),
             },
         },
     };
@@ -1625,53 +1574,49 @@ where
                 equilibrium_distance_from_origin + (cosine_value * displacement_from_equilibrium);
             let current_speed = sine_value * displacement_from_equilibrium;
             vec![
-                data_structure::IndividualParticle {
+                IndividualParticle {
                     intrinsic_values: red_intrinsics,
-                    variable_values: data_structure::ParticleVariables {
-                        position_vector: data_structure::PositionVector {
-                            horizontal_component: data_structure::HorizontalPositionUnit(
+                    variable_values: ParticleVariables {
+                        position_vector: PositionVector {
+                            horizontal_component: HorizontalPositionUnit(
                                 -current_distance_from_origin,
                             ),
-                            vertical_component: data_structure::VerticalPositionUnit(0.0),
+                            vertical_component: VerticalPositionUnit(0.0),
                         },
-                        velocity_vector: data_structure::VelocityVector {
-                            horizontal_component: data_structure::HorizontalVelocityUnit(
-                                current_speed,
-                            ),
-                            vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                        velocity_vector: VelocityVector {
+                            horizontal_component: HorizontalVelocityUnit(current_speed),
+                            vertical_component: VerticalVelocityUnit(0.0),
                         },
                     },
                 },
-                data_structure::IndividualParticle {
+                IndividualParticle {
                     intrinsic_values: blue_intrinsics,
-                    variable_values: data_structure::ParticleVariables {
-                        position_vector: data_structure::PositionVector {
-                            horizontal_component: data_structure::HorizontalPositionUnit(
+                    variable_values: ParticleVariables {
+                        position_vector: PositionVector {
+                            horizontal_component: HorizontalPositionUnit(
                                 current_distance_from_origin,
                             ),
-                            vertical_component: data_structure::VerticalPositionUnit(0.0),
+                            vertical_component: VerticalPositionUnit(0.0),
                         },
-                        velocity_vector: data_structure::VelocityVector {
-                            horizontal_component: data_structure::HorizontalVelocityUnit(
-                                -current_speed,
-                            ),
-                            vertical_component: data_structure::VerticalVelocityUnit(0.0),
+                        velocity_vector: VelocityVector {
+                            horizontal_component: HorizontalVelocityUnit(-current_speed),
+                            vertical_component: VerticalVelocityUnit(0.0),
                         },
                     },
                 },
             ]
             .into_iter()
         })
-        .collect::<std::vec::Vec<std::vec::IntoIter<data_structure::IndividualParticle>>>();
+        .collect::<std::vec::Vec<std::vec::IntoIter<IndividualParticle>>>();
 
     let expected_sequence = vec![initial_conditions
         .iter()
         .cloned()
-        .collect::<std::vec::Vec<data_structure::IndividualParticle>>()
+        .collect::<std::vec::Vec<IndividualParticle>>()
         .into_iter()]
     .into_iter()
     .chain(following_expecteds)
-    .collect::<std::vec::Vec<std::vec::IntoIter<data_structure::IndividualParticle>>>();
+    .collect::<std::vec::Vec<std::vec::IntoIter<IndividualParticle>>>();
 
     let number_of_time_slices = expected_sequence.len();
 
@@ -1717,16 +1662,14 @@ where
         evolution_result,
         expected_sequence.into_iter(),
         &test_tolerances,
-        Some(
-            |particle_list: &std::vec::Vec<data_structure::IndividualParticle>| {
-                check_energy_given_potential(
-                    2,
-                    initial_energy,
-                    TEST_DEFAULT_TOLERANCE,
-                    particle_list,
-                    potential_of_pair,
-                )
-            },
-        ),
+        Some(|particle_list: &std::vec::Vec<IndividualParticle>| {
+            check_energy_given_potential(
+                2,
+                initial_energy,
+                TEST_DEFAULT_TOLERANCE,
+                particle_list,
+                potential_of_pair,
+            )
+        }),
     )
 }

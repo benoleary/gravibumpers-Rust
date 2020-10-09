@@ -6,7 +6,7 @@ use super::VerticalPixelAmount;
 
 pub struct ColoredPixelMatrixSequence<T: ColoredPixelMatrix> {
     pub colored_pixel_matrices: Vec<T>,
-    pub maximum_brightness: data_structure::AbsoluteColorUnit,
+    pub maximum_brightness: data_structure::color::AbsoluteUnit,
 }
 
 pub trait ParticleToPixelMapper {
@@ -14,7 +14,9 @@ pub trait ParticleToPixelMapper {
     fn aggregate_particle_colors_to_pixels(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
+            Item = impl std::iter::ExactSizeIterator<
+                Item = impl data_structure::particle::IndividualRepresentation,
+            >,
         >,
     ) -> Result<ColoredPixelMatrixSequence<Self::Output>, Box<dyn std::error::Error>>;
 

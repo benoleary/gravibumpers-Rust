@@ -39,7 +39,9 @@ impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {
     fn animate_sequence(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
+            Item = impl std::iter::ExactSizeIterator<
+                Item = impl data_structure::particle::IndividualRepresentation,
+            >,
         >,
         milliseconds_per_frame: u16,
         output_filename: &str,
@@ -104,7 +106,7 @@ fn ceiling_as_byte(color_intensity: f64) -> u8 {
 // floating-point numbers representing red-green-blue quantities.
 fn flattened_color_bytes_from(
     pixel_matrix: impl ColoredPixelMatrix,
-    maximum_color_intensity: &data_structure::AbsoluteColorUnit,
+    maximum_color_intensity: &data_structure::color::AbsoluteUnit,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let width_in_pixels = pixel_matrix.width_in_pixels().0;
     let height_in_pixels = pixel_matrix.height_in_pixels().0;
@@ -153,7 +155,7 @@ mod tests {
     impl ColoredPixelMatrix for MockColoredPixelMatrix {
         fn color_fractions_at(
             &self,
-            _reference_intensity: &data_structure::AbsoluteColorUnit,
+            _reference_intensity: &data_structure::color::AbsoluteUnit,
             horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
             vertical_pixels_from_bottom_left: &VerticalPixelAmount,
         ) -> Result<ColorFraction, Box<dyn std::error::Error>> {
@@ -203,7 +205,7 @@ mod tests {
     fn test_flattened_color_bytes_from() {
         let mock_matrix = MockColoredPixelMatrix {};
 
-        let full_intensity = data_structure::AbsoluteColorUnit(1.0);
+        let full_intensity = data_structure::color::AbsoluteUnit(1.0);
 
         #[rustfmt::skip]
         let expected_bytes: Vec<u8> = vec![

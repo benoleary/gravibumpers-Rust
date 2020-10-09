@@ -3,8 +3,8 @@
 use super::OutOfBoundsError;
 
 pub fn fraction_from_triplets(
-    numerator_triplet: &data_structure::ColorTriplet,
-    denominator_value: &data_structure::AbsoluteColorUnit,
+    numerator_triplet: &data_structure::color::RedGreenBlueTriplet,
+    denominator_value: &data_structure::color::AbsoluteUnit,
 ) -> Result<FractionTriplet, Box<dyn std::error::Error>> {
     // If the triplet is zero-brightness, then we take a zero fraction no matter what the reference
     // brightness is.
@@ -34,11 +34,11 @@ pub fn fraction_from_triplets(
     })
 }
 
-pub fn zero_brightness() -> data_structure::ColorTriplet {
-    data_structure::new_color_triplet(
-        data_structure::RedColorUnit(0.0),
-        data_structure::GreenColorUnit(0.0),
-        data_structure::BlueColorUnit(0.0),
+pub fn zero_brightness() -> data_structure::color::RedGreenBlueTriplet {
+    data_structure::color::new_triplet(
+        data_structure::color::RedUnit(0.0),
+        data_structure::color::GreenUnit(0.0),
+        data_structure::color::BlueUnit(0.0),
     )
 }
 
@@ -49,17 +49,17 @@ pub struct FractionTriplet {
     blue_fraction: f64,
 }
 
-impl std::ops::Mul<&data_structure::AbsoluteColorUnit> for FractionTriplet {
-    type Output = data_structure::ColorTriplet;
+impl std::ops::Mul<&data_structure::color::AbsoluteUnit> for FractionTriplet {
+    type Output = data_structure::color::RedGreenBlueTriplet;
 
     fn mul(
         self,
-        reference_brightness: &data_structure::AbsoluteColorUnit,
-    ) -> data_structure::ColorTriplet {
-        data_structure::new_color_triplet(
-            data_structure::RedColorUnit(self.red_fraction * reference_brightness.0),
-            data_structure::GreenColorUnit(self.green_fraction * reference_brightness.0),
-            data_structure::BlueColorUnit(self.blue_fraction * reference_brightness.0),
+        reference_brightness: &data_structure::color::AbsoluteUnit,
+    ) -> data_structure::color::RedGreenBlueTriplet {
+        data_structure::color::new_triplet(
+            data_structure::color::RedUnit(self.red_fraction * reference_brightness.0),
+            data_structure::color::GreenUnit(self.green_fraction * reference_brightness.0),
+            data_structure::color::BlueUnit(self.blue_fraction * reference_brightness.0),
         )
     }
 }

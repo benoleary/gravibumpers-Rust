@@ -13,7 +13,7 @@ const BLUE_PIXEL_STRENGTH_LABEL: &str = "bluePixelStrength";
 
 pub fn from_json(
     given_configuration: &serde_json::Value,
-) -> Result<std::vec::Vec<data_structure::IndividualParticle>, Box<dyn std::error::Error>> {
+) -> Result<std::vec::Vec<data_structure::particle::BasicIndividual>, Box<dyn std::error::Error>> {
     let particle_displacement =
         super::parse_position(&given_configuration[COMMON_DISPLACEMENT_IN_PIXELS_LABEL])?;
     let particle_velocity =
@@ -37,20 +37,22 @@ pub fn from_json(
     let blue_brightness =
         super::configuration_parsing::parse_f64(BLUE_PIXEL_STRENGTH_LABEL, given_configuration)?;
 
-    Ok(vec![data_structure::IndividualParticle {
-        intrinsic_values: data_structure::ParticleIntrinsics {
-            inertial_mass: data_structure::InertialMassUnit(inertial_mass),
-            inverse_squared_charge: data_structure::InverseSquaredChargeUnit(
+    Ok(vec![data_structure::particle::BasicIndividual {
+        intrinsic_values: data_structure::particle::IntrinsicPart {
+            inertial_mass: data_structure::charge::InertialMassUnit(inertial_mass),
+            inverse_squared_charge: data_structure::charge::InverseSquaredChargeUnit(
                 inverse_squared_charge,
             ),
-            inverse_fourth_charge: data_structure::InverseFourthChargeUnit(inverse_fourth_charge),
-            color_brightness: data_structure::new_color_triplet(
-                data_structure::RedColorUnit(red_brightness),
-                data_structure::GreenColorUnit(green_brightness),
-                data_structure::BlueColorUnit(blue_brightness),
+            inverse_fourth_charge: data_structure::charge::InverseFourthChargeUnit(
+                inverse_fourth_charge,
+            ),
+            color_brightness: data_structure::color::new_triplet(
+                data_structure::color::RedUnit(red_brightness),
+                data_structure::color::GreenUnit(green_brightness),
+                data_structure::color::BlueUnit(blue_brightness),
             ),
         },
-        variable_values: data_structure::ParticleVariables {
+        variable_values: data_structure::particle::VariablePart {
             position_vector: particle_displacement,
             velocity_vector: particle_velocity,
         },

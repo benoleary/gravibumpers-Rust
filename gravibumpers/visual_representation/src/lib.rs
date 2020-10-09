@@ -40,7 +40,9 @@ pub trait SequenceAnimator {
     fn animate_sequence(
         &self,
         particle_map_sequence: impl std::iter::ExactSizeIterator<
-            Item = impl std::iter::ExactSizeIterator<Item = impl data_structure::ParticleRepresentation>,
+            Item = impl std::iter::ExactSizeIterator<
+                Item = impl data_structure::particle::IndividualRepresentation,
+            >,
         >,
         milliseconds_per_frame: u16,
         output_filename: &str,
@@ -53,7 +55,7 @@ pub trait SequenceAnimator {
 pub struct HorizontalPixelAmount(pub i32);
 
 pub fn new_horizontal_pixel_unit_rounding_to_negative_infinity(
-    horizontal_coordinate: data_structure::HorizontalPositionUnit,
+    horizontal_coordinate: data_structure::position::HorizontalUnit,
 ) -> HorizontalPixelAmount {
     if horizontal_coordinate.0 < 0.0 {
         HorizontalPixelAmount(horizontal_coordinate.0 as i32 - 1)
@@ -68,8 +70,8 @@ impl HorizontalPixelAmount {
         self.0.abs() as usize
     }
 
-    pub fn as_position_unit(&self) -> data_structure::HorizontalPositionUnit {
-        data_structure::HorizontalPositionUnit(self.0 as f64)
+    pub fn as_position_unit(&self) -> data_structure::position::HorizontalUnit {
+        data_structure::position::HorizontalUnit(self.0 as f64)
     }
 }
 
@@ -93,7 +95,7 @@ impl std::ops::Sub<HorizontalPixelAmount> for HorizontalPixelAmount {
 pub struct VerticalPixelAmount(pub i32);
 
 pub fn new_vertical_pixel_unit_rounding_to_negative_infinity(
-    vertical_coordinate: data_structure::VerticalPositionUnit,
+    vertical_coordinate: data_structure::position::VerticalUnit,
 ) -> VerticalPixelAmount {
     if vertical_coordinate.0 < 0.0 {
         VerticalPixelAmount(vertical_coordinate.0 as i32 - 1)
@@ -108,8 +110,8 @@ impl VerticalPixelAmount {
         self.0.abs() as usize
     }
 
-    pub fn as_position_unit(&self) -> data_structure::VerticalPositionUnit {
-        data_structure::VerticalPositionUnit(self.0 as f64)
+    pub fn as_position_unit(&self) -> data_structure::position::VerticalUnit {
+        data_structure::position::VerticalUnit(self.0 as f64)
     }
 }
 
@@ -132,7 +134,7 @@ impl std::ops::Sub<VerticalPixelAmount> for VerticalPixelAmount {
 pub trait ColoredPixelMatrix {
     fn color_fractions_at(
         &self,
-        reference_brightness: &data_structure::AbsoluteColorUnit,
+        reference_brightness: &data_structure::color::AbsoluteUnit,
         horizontal_pixels_from_bottom_left: &HorizontalPixelAmount,
         vertical_pixels_from_bottom_left: &VerticalPixelAmount,
     ) -> Result<color::FractionTriplet, Box<dyn std::error::Error>>;
