@@ -1,62 +1,51 @@
 /// This module provides an implementation of ParticlesInTimeEvolver which uses a contiguous array
 /// of structs of structs, so the maximally contiguous case.
 use crate::data_structure::particle::IndexedCollectionInForceField;
+use crate::data_structure::particle::IndexedCollectionInForceFieldGenerator;
+use crate::data_structure::particle::WritableInForceField;
 
-pub struct SecondOrderEuler {
-    number_of_internal_slices_per_time_slice: u32,
-}
-
-impl SecondOrderEuler {
-    /// This updates the velocities and positions assuming a constant acceleration for the time interval.
-    fn update_velocities_and_positions<'a, T, U>(
-        &'a self,
-        time_difference_per_internal_slice: &data_structure::time::IntervalUnit,
-        particles_and_forces: U,
-    ) where
-        T: data_structure::particle::IndividualInForceField + 'a,
-        U: std::iter::ExactSizeIterator<Item = &'a mut T>,
-    {
-        for particle_and_force in particles_and_forces {
-            let velocity_difference = data_structure::velocity_change_from_force(
-                particle_and_force.read_experienced_force(),
-                particle_and_force.read_timestep_over_inertial_mass(),
-            );
-            let particle_variables = particle_and_force.write_particle_variables();
-            let average_velocity = data_structure::velocity::sum_with_scaled_other(
-                &particle_variables.velocity_vector,
-                &velocity_difference,
-                0.5,
-            );
-            particle_variables.velocity_vector += velocity_difference;
-            data_structure::increment_position_by_velocity_for_time_interval(
-                &mut particle_variables.position_vector,
-                &average_velocity,
-                &time_difference_per_internal_slice,
-            );
-        }
-    }
-}
-
-fn create_time_slice_copy_without_force<'a, T, U>(
-    particles_with_forces: U,
-) -> std::vec::IntoIter<data_structure::particle::BasicIndividual>
+pub struct SecondOrderEuler<T, U>
 where
-    T: data_structure::particle::IndividualInForceField + 'a,
-    U: std::iter::ExactSizeIterator<Item = &'a T>,
+    T: WritableInForceField,
+    U: IndexedCollectionInForceFieldGenerator<T>,
 {
-    particles_with_forces
-        .map(|particle_with_force| particle_with_force.into_individual_particle())
-        .collect::<std::vec::Vec<data_structure::particle::BasicIndividual>>()
-        .into_iter()
+    number_of_internal_slices_per_time_slice: u32,
+    collection_generator: U,
+
+    phantom_particle_type: std::marker::PhantomData<T>,
 }
 
-fn aggregate_pairwise_forces<'a, 'b, T, U>(
-    evolution_configuration: &configuration_parsing::EvolutionConfiguration,
-    particles_with_forces: &'a mut U,
+/// This updates the velocity and position assuming a constant acceleration for the time interval.
+fn update_velocity_and_position<T>(
+    time_difference_per_internal_slice: &data_structure::time::IntervalUnit,
+    particle_and_force: &mut T,
 ) where
-    T: data_structure::particle::IndividualInForceField + 'b,
-    U: data_structure::particle::IndexedCollectionInForceField<'b, Output = T> + 'a,
-    'a: 'b,
+    T: WritableInForceField,
+{
+    let velocity_difference = data_structure::velocity_change_from_force(
+        particle_and_force.read_experienced_force(),
+        particle_and_force.read_timestep_over_inertial_mass(),
+    );
+    let particle_variables = particle_and_force.write_particle_variables();
+    let average_velocity = data_structure::velocity::sum_with_scaled_other(
+        &particle_variables.velocity_vector,
+        &velocity_difference,
+        0.5,
+    );
+    particle_variables.velocity_vector += velocity_difference;
+    data_structure::increment_position_by_velocity_for_time_interval(
+        &mut particle_variables.position_vector,
+        &average_velocity,
+        &time_difference_per_internal_slice,
+    );
+}
+
+fn aggregate_pairwise_forces<T>(
+    evolution_configuration: &configuration_parsing::EvolutionConfiguration,
+    particles_with_forces: &mut T,
+) where
+    T: IndexedCollectionInForceField,
+    <T as std::ops::Index<usize>>::Output: WritableInForceField,
 {
     let number_of_particles = particles_with_forces.get_length();
     for first_particle_index in 0..(number_of_particles - 1) {
@@ -75,21 +64,99 @@ fn aggregate_pairwise_forces<'a, 'b, T, U>(
     }
 }
 
-fn update_forces<'a, 'b, T, U>(
-    evolution_configuration: &configuration_parsing::EvolutionConfiguration,
-    particles_with_forces: &'a mut U,
-) where
-    T: data_structure::particle::IndividualInForceField + 'b,
-    U: data_structure::particle::IndexedCollectionInForceField<'b, Output = T> + 'a,
-    'a: 'b,
+fn create_particles_in_force_field<T, U>(
+    initial_conditions: impl std::iter::ExactSizeIterator<
+        Item = impl data_structure::particle::IndividualRepresentation,
+    >,
+    collection_generator: &U,
+    time_interval_per_internal_slice: &data_structure::time::IntervalUnit,
+) -> Result<U::CreatedCollection, Box<dyn std::error::Error>>
+where
+    T: WritableInForceField,
+    U: IndexedCollectionInForceFieldGenerator<T>,
 {
-    // First all the forces must be set to zero so that we can aggregate the pairwise forces.
-    particles_with_forces.reset_forces();
+    let mut evolving_particles = collection_generator.create_collection();
+    let mut initial_condition_errors: std::vec::Vec<(usize, Box<dyn std::error::Error>)> = vec![];
+    for (initial_particle_index, initial_particle) in initial_conditions.enumerate() {
+        match data_structure::time::divide_time_by_mass(
+            time_interval_per_internal_slice,
+            &initial_particle.read_intrinsics().inertial_mass,
+        ) {
+            Ok(time_over_mass) => {
+                evolving_particles.add_particle(&initial_particle, &time_over_mass)
+            }
+            Err(initial_condition_error) => {
+                initial_condition_errors.push((initial_particle_index, initial_condition_error))
+            }
+        };
+    }
 
-    aggregate_pairwise_forces(evolution_configuration, particles_with_forces);
+    if !initial_condition_errors.is_empty() {
+        return Err(Box::new(super::EvolutionError::new(&format!(
+            "The following initial particles could not be set up for time evolution: {:?}",
+            initial_condition_errors
+        ))));
+    }
+
+    Ok(evolving_particles)
 }
 
-impl super::ParticlesInTimeEvolver for SecondOrderEuler {
+fn update_forces<T>(
+    evolution_configuration: &configuration_parsing::EvolutionConfiguration,
+    particles_with_forces: &mut T,
+) where
+    T: IndexedCollectionInForceField,
+    <T as std::ops::Index<usize>>::Output: WritableInForceField,
+{
+    // First all the forces must be set to zero so that we can aggregate the pairwise forces.
+    particles_with_forces.update_particles(|particle_with_force| {
+        let mut force_on_particle = particle_with_force.write_experienced_force();
+        force_on_particle.horizontal_component = data_structure::force::HorizontalUnit(0.0);
+        force_on_particle.vertical_component = data_structure::force::VerticalUnit(0.0);
+    });
+
+    aggregate_pairwise_forces::<T>(evolution_configuration, particles_with_forces);
+}
+
+fn evolve_particle_configuration<T, U>(
+    evolution_configuration: &configuration_parsing::EvolutionConfiguration,
+    evolving_particles: &mut U,
+    number_of_internal_slices_per_time_slice: u32,
+    time_interval_per_internal_slice: &data_structure::time::IntervalUnit,
+) -> std::vec::Vec<std::vec::IntoIter<data_structure::particle::BasicIndividual>>
+where
+    T: WritableInForceField,
+    U: IndexedCollectionInForceField<Output = T, MutableElement = T>,
+{
+    let mut evaluations_at_time_slices: std::vec::Vec<
+        std::vec::IntoIter<data_structure::particle::BasicIndividual>,
+    > = std::vec::Vec::with_capacity(evolution_configuration.number_of_time_slices);
+
+    let initial_time_slice_without_force =
+        evolving_particles.create_time_slice_copy_without_force();
+    evaluations_at_time_slices.push(initial_time_slice_without_force.into_iter());
+
+    for _ in 1..evolution_configuration.number_of_time_slices {
+        for _ in 0..number_of_internal_slices_per_time_slice {
+            update_forces(evolution_configuration, evolving_particles);
+
+            evolving_particles.update_particles(|particle_with_force| {
+                update_velocity_and_position(time_interval_per_internal_slice, particle_with_force)
+            });
+        }
+
+        let current_time_slice_without_force =
+            evolving_particles.create_time_slice_copy_without_force();
+        evaluations_at_time_slices.push(current_time_slice_without_force.into_iter());
+    }
+    evaluations_at_time_slices
+}
+
+impl<T, U> super::ParticlesInTimeEvolver for SecondOrderEuler<T, U>
+where
+    T: WritableInForceField,
+    U: IndexedCollectionInForceFieldGenerator<T>,
+{
     type EmittedParticle = data_structure::particle::BasicIndividual;
     type ParticleIterator = std::vec::IntoIter<Self::EmittedParticle>;
     type IteratorIterator = std::vec::IntoIter<Self::ParticleIterator>;
@@ -113,9 +180,6 @@ impl super::ParticlesInTimeEvolver for SecondOrderEuler {
                 "Dead zone radius must be > 0.",
             )));
         }
-        let seconds_between_configurations = (evolution_configuration.milliseconds_per_time_slice
-            as f64)
-            * configuration_parsing::SECONDS_PER_MILLISECOND;
 
         if evolution_configuration.number_of_time_slices < 1 {
             return Ok(super::ParticleSetEvolution {
@@ -124,67 +188,44 @@ impl super::ParticlesInTimeEvolver for SecondOrderEuler {
                     .milliseconds_per_time_slice,
             });
         }
-        let mut evaluations_at_time_slices: std::vec::Vec<Self::ParticleIterator> =
-            std::vec::Vec::with_capacity(evolution_configuration.number_of_time_slices);
+
+        let seconds_between_configurations = (evolution_configuration.milliseconds_per_time_slice
+            as f64)
+            * configuration_parsing::SECONDS_PER_MILLISECOND;
 
         // The calculation uses a smaller time interval than the output time difference between the
         // configurations.
         let time_interval_per_internal_slice = data_structure::time::IntervalUnit(
             seconds_between_configurations / (self.number_of_internal_slices_per_time_slice as f64),
         );
-        let mut evolving_particles: std::vec::Vec<
-            data_structure::particle::MassNormalizedWithForceField,
-        > = std::vec::Vec::with_capacity(initial_conditions.len());
-        let mut initial_condition_errors: std::vec::Vec<(usize, Box<dyn std::error::Error>)> =
-            vec![];
-        for (initial_particle_index, initial_particle) in initial_conditions.enumerate() {
-            match data_structure::time::divide_time_by_mass(
-                &time_interval_per_internal_slice,
-                &initial_particle.read_intrinsics().inertial_mass,
-            ) {
-                Ok(time_over_mass) => {
-                    evolving_particles.add_particle(&initial_particle, &time_over_mass)
-                }
-                Err(initial_condition_error) => {
-                    initial_condition_errors.push((initial_particle_index, initial_condition_error))
-                }
-            };
-        }
+        let mut evolving_particles = create_particles_in_force_field(
+            initial_conditions,
+            &self.collection_generator,
+            &time_interval_per_internal_slice,
+        )?;
+        let time_slices_without_forces = evolve_particle_configuration(
+            evolution_configuration,
+            &mut evolving_particles,
+            self.number_of_internal_slices_per_time_slice,
+            &time_interval_per_internal_slice,
+        );
 
-        if !initial_condition_errors.is_empty() {
-            return Err(Box::new(super::EvolutionError::new(&format!(
-                "The following initial particles could not be set up for time evolution: {:?}",
-                initial_condition_errors
-            ))));
-        }
-
-        evaluations_at_time_slices.push(create_time_slice_copy_without_force(
-            evolving_particles.get_immutable_iterator(),
-        ));
-        for _ in 1..evolution_configuration.number_of_time_slices {
-            for _ in 0..self.number_of_internal_slices_per_time_slice {
-                update_forces(evolution_configuration, &mut evolving_particles);
-                self.update_velocities_and_positions(
-                    &time_interval_per_internal_slice,
-                    evolving_particles.get_mutable_iterator(),
-                );
-            }
-
-            evaluations_at_time_slices.push(create_time_slice_copy_without_force(
-                evolving_particles.iter(),
-            ));
-        }
         Ok(super::ParticleSetEvolution {
-            particle_configurations: evaluations_at_time_slices.into_iter(),
+            particle_configurations: time_slices_without_forces.into_iter(),
             milliseconds_between_configurations: evolution_configuration
                 .milliseconds_per_time_slice,
         })
     }
 }
 
-pub fn new_second_order_euler(
+pub fn new_given_memory_strategy<T, U>(
     number_of_internal_slices_per_time_slice: u32,
-) -> Result<SecondOrderEuler, Box<dyn std::error::Error>> {
+    collection_generator: U,
+) -> Result<SecondOrderEuler<T, U>, Box<dyn std::error::Error>>
+where
+    T: WritableInForceField,
+    U: IndexedCollectionInForceFieldGenerator<T>,
+{
     if number_of_internal_slices_per_time_slice == 0 {
         Err(Box::new(super::ParameterError::new(
             "Number of internal slices between displayed slices must be > 0.",
@@ -192,6 +233,8 @@ pub fn new_second_order_euler(
     } else {
         Ok(SecondOrderEuler {
             number_of_internal_slices_per_time_slice: number_of_internal_slices_per_time_slice,
+            collection_generator: collection_generator,
+            phantom_particle_type: std::marker::PhantomData,
         })
     }
 }
@@ -204,8 +247,18 @@ mod tests {
     const TEST_DEAD_ZONE_RADIUS: data_structure::position::SeparationUnit =
         data_structure::position::SeparationUnit(1.0);
 
-    fn new_maximally_contiguous_euler_for_test() -> Result<SecondOrderEuler, String> {
-        new_second_order_euler(100).or_else(|construction_error| {
+    fn new_maximally_contiguous_euler_for_test() -> Result<
+        SecondOrderEuler<
+            data_structure::particle::MassNormalizedWithForceField,
+            data_structure::particle::MassNormalizedWithForceFieldVectorGenerator,
+        >,
+        String,
+    > {
+        new_given_memory_strategy(
+            100,
+            data_structure::particle::MassNormalizedWithForceFieldVectorGenerator {},
+        )
+        .or_else(|construction_error| {
             Err(String::from(format!(
                 "Constructor error: {:?}",
                 construction_error
