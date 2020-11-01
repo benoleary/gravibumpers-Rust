@@ -128,7 +128,7 @@ fn run_from_configuration_file(
             parsed_configuration
                 .evolver_configuration
                 .number_of_steps_per_time_slice,
-            data_structure::particle::MassNormalizedWithForceFieldVectorGenerator {},
+            data_structure::particle::VectorOfMassNormalizedWithForceFieldsGenerator {},
         )?;
     let instant_before_evolution = std::time::Instant::now();
     let particle_set_evolution = particles_in_time_evolver.create_time_sequence(
@@ -151,7 +151,7 @@ fn run_from_configuration_file(
     )?;
     let particle_animator = visual_representation::apng::new(pixel_brightness_aggregator, 1);
 
-    let instant_before_animtion = std::time::Instant::now();
+    let instant_before_animation = std::time::Instant::now();
     particle_animator.animate_sequence(
         particle_set_evolution.particle_configurations,
         particle_set_evolution.milliseconds_between_configurations,
@@ -160,7 +160,7 @@ fn run_from_configuration_file(
 
     println!(
         "Animation took {}ms",
-        instant_before_animtion.elapsed().as_millis()
+        instant_before_animation.elapsed().as_millis()
     );
 
     Ok(())

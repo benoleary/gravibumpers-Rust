@@ -16,6 +16,12 @@ const COLOR_DEPTH: apng_encoder::Color = apng_encoder::Color::RGB(8);
 
 const MAXIMUM_COLOR_BYTE: u8 = 0xFF;
 
+pub struct ApngAnimator<T: ParticleToPixelMapper> {
+    color_palette: apng_encoder::Color,
+    particle_to_pixel_mapper: T,
+    number_of_plays: u32,
+}
+
 pub fn new<T: ParticleToPixelMapper>(
     particle_to_pixel_mapper: T,
     number_of_plays: u32,
@@ -27,12 +33,6 @@ pub fn new<T: ParticleToPixelMapper>(
         particle_to_pixel_mapper: particle_to_pixel_mapper,
         number_of_plays: number_of_plays,
     }
-}
-
-pub struct ApngAnimator<T: ParticleToPixelMapper> {
-    color_palette: apng_encoder::Color,
-    particle_to_pixel_mapper: T,
-    number_of_plays: u32,
 }
 
 impl<T: ParticleToPixelMapper> SequenceAnimator for ApngAnimator<T> {

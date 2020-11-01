@@ -81,20 +81,28 @@ fn create_test_evolution_configuration(
     }
 }
 
-fn apply_check_then_compare_time_slices<T, U, V, W, X, Y, Z>(
-    actual_sequence: V,
-    expected_sequence: Y,
+fn apply_check_then_compare_time_slices<
+    ActualInnerItem,
+    ActualInnerIterator,
+    ActualOuterIterator,
+    ExpectedInnerItem,
+    ExpectedInnerIterator,
+    ExpectedOuterIterator,
+    CheckFunction,
+>(
+    actual_sequence: ActualOuterIterator,
+    expected_sequence: ExpectedOuterIterator,
     tolerances_as_particle: &impl super::ParticleRepresentation,
-    additional_check: Z,
+    additional_check: CheckFunction,
 ) -> Result<(), String>
 where
-    T: super::ParticleRepresentation,
-    U: std::iter::ExactSizeIterator<Item = T>,
-    V: std::iter::ExactSizeIterator<Item = U>,
-    W: super::ParticleRepresentation,
-    X: std::iter::ExactSizeIterator<Item = W>,
-    Y: std::iter::ExactSizeIterator<Item = X>,
-    Z: Fn(&std::vec::Vec<IndividualParticle>) -> Result<(), String>,
+    ActualInnerItem: super::ParticleRepresentation,
+    ActualInnerIterator: std::iter::ExactSizeIterator<Item = ActualInnerItem>,
+    ActualOuterIterator: std::iter::ExactSizeIterator<Item = ActualInnerIterator>,
+    ExpectedInnerItem: super::ParticleRepresentation,
+    ExpectedInnerIterator: std::iter::ExactSizeIterator<Item = ExpectedInnerItem>,
+    ExpectedOuterIterator: std::iter::ExactSizeIterator<Item = ExpectedInnerIterator>,
+    CheckFunction: Fn(&std::vec::Vec<IndividualParticle>) -> Result<(), String>,
 {
     let mut copied_sequence = vec![];
 
@@ -121,20 +129,31 @@ where
 /// The optional additional check needs to operate on a Vec of IndividualParticle because that is
 /// what will hold a copy of the actual time slice and will be passed as the parameter. The actual
 /// functions passed as optional_additional_check are free to use trait bounds or whatever.
-fn compare_time_slices_to_expected<T, U, V, W, X, Y, Z>(
-    evolution_result: Result<super::ParticleSetEvolution<T, U, V>, Box<dyn std::error::Error>>,
-    expected_sequence: Y,
+fn compare_time_slices_to_expected<
+    ActualInnerItem,
+    ActualInnerIterator,
+    ActualOuterIterator,
+    ExpectedInnerItem,
+    ExpectedInnerIterator,
+    ExpectedOuterIterator,
+    CheckFunction,
+>(
+    evolution_result: Result<
+        super::ParticleSetEvolution<ActualInnerItem, ActualInnerIterator, ActualOuterIterator>,
+        Box<dyn std::error::Error>,
+    >,
+    expected_sequence: ExpectedOuterIterator,
     tolerances_as_particle: &impl super::ParticleRepresentation,
-    optional_additional_check: Option<Z>,
+    optional_additional_check: Option<CheckFunction>,
 ) -> Result<(), String>
 where
-    T: super::ParticleRepresentation,
-    U: std::iter::ExactSizeIterator<Item = T>,
-    V: std::iter::ExactSizeIterator<Item = U>,
-    W: super::ParticleRepresentation,
-    X: std::iter::ExactSizeIterator<Item = W>,
-    Y: std::iter::ExactSizeIterator<Item = X>,
-    Z: Fn(&std::vec::Vec<IndividualParticle>) -> Result<(), String>,
+    ActualInnerItem: super::ParticleRepresentation,
+    ActualInnerIterator: std::iter::ExactSizeIterator<Item = ActualInnerItem>,
+    ActualOuterIterator: std::iter::ExactSizeIterator<Item = ActualInnerIterator>,
+    ExpectedInnerItem: super::ParticleRepresentation,
+    ExpectedInnerIterator: std::iter::ExactSizeIterator<Item = ExpectedInnerItem>,
+    ExpectedOuterIterator: std::iter::ExactSizeIterator<Item = ExpectedInnerIterator>,
+    CheckFunction: Fn(&std::vec::Vec<IndividualParticle>) -> Result<(), String>,
 {
     match evolution_result {
         Ok(actual_evolution) => {

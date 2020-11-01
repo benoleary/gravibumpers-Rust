@@ -58,13 +58,13 @@ impl std::fmt::Display for ParameterError {
     }
 }
 
-pub struct ParticleSetEvolution<T, U, V>
+pub struct ParticleSetEvolution<InnerItem, InnerIterator, OuterIterator>
 where
-    T: ParticleRepresentation,
-    U: std::iter::ExactSizeIterator<Item = T>,
-    V: std::iter::ExactSizeIterator<Item = U>,
+    InnerItem: ParticleRepresentation,
+    InnerIterator: std::iter::ExactSizeIterator<Item = InnerItem>,
+    OuterIterator: std::iter::ExactSizeIterator<Item = InnerIterator>,
 {
-    pub particle_configurations: V,
+    pub particle_configurations: OuterIterator,
     pub milliseconds_between_configurations: u16,
 }
 

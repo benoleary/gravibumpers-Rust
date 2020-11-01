@@ -7,6 +7,7 @@
 /// There are public modules (comparison, color) but these exist to provide traits, structs, and
 /// simple utility functions, or utility functions for tests, so also have no #[cfg(test)].
 pub mod charge;
+pub mod collection;
 pub mod color;
 pub mod comparison;
 pub mod force;

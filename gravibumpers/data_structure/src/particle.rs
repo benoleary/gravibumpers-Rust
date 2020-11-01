@@ -1,4 +1,6 @@
 /// This module provides traits and structs for representing particles.
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 /// The particles have some intrinsic qualities which do not change, unlike their
 /// positions and velocities.
@@ -19,8 +21,8 @@ pub struct VariablePart {
 }
 
 pub trait IndividualRepresentation {
-    fn read_intrinsics(&self) -> &IntrinsicPart;
-    fn read_variables(&self) -> &VariablePart;
+    fn read_intrinsics<'a>(&'a self) -> &'a IntrinsicPart;
+    fn read_variables<'a>(&'a self) -> &'a VariablePart;
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -30,19 +32,19 @@ pub struct BasicIndividual {
 }
 
 impl IndividualRepresentation for BasicIndividual {
-    fn read_intrinsics(&self) -> &IntrinsicPart {
+    fn read_intrinsics<'a>(&'a self) -> &'a IntrinsicPart {
         &self.intrinsic_values
     }
-    fn read_variables(&self) -> &VariablePart {
+    fn read_variables<'a>(&'a self) -> &'a VariablePart {
         &self.variable_values
     }
 }
 
 impl IndividualRepresentation for &BasicIndividual {
-    fn read_intrinsics(&self) -> &IntrinsicPart {
+    fn read_intrinsics<'a>(&'a self) -> &'a IntrinsicPart {
         &self.intrinsic_values
     }
-    fn read_variables(&self) -> &VariablePart {
+    fn read_variables<'a>(&'a self) -> &'a VariablePart {
         &self.variable_values
     }
 }
@@ -61,41 +63,25 @@ pub fn create_individual_from_representation(
 /// then update the positions for a time step, assuming constant forces for the time step. We also
 /// prepare a factor which is the common timestep of the evolution divided by the inertial mass,
 /// which is used for multiplication with the force, for better efficiency.
-pub trait ReadOnlyInForceField: IndividualRepresentation + Sized {
+pub trait ReadOnlyInForceField: IndividualRepresentation {
     fn into_individual_particle(&self) -> BasicIndividual;
-    fn read_experienced_force(&self) -> &super::force::DimensionfulVector;
-    fn read_timestep_over_inertial_mass(&self) -> &super::time::OverMassUnit;
+    fn read_experienced_force<'a>(&'a self) -> &'a super::force::DimensionfulVector;
+    fn read_timestep_over_inertial_mass<'a>(&'a self) -> &'a super::time::OverMassUnit;
 }
 
 pub trait WritableInForceField: ReadOnlyInForceField {
-    fn write_particle_variables(&mut self) -> &mut VariablePart;
-    fn write_experienced_force(&mut self) -> &mut super::force::DimensionfulVector;
+    fn write_particle_variables<'a>(&'a mut self) -> &'a mut VariablePart;
+    fn write_experienced_force<'a>(&'a mut self) -> &'a mut super::force::DimensionfulVector;
 }
 
-/// The trait should have a consistent order of iteration.
-pub trait IndexedCollectionInForceFieldWithoutAdd:
-    std::ops::Index<usize> + std::ops::IndexMut<usize> + Sized
-where
-    <Self as std::ops::Index<usize>>::Output: ReadOnlyInForceField,
-{
+pub trait CollectionInForceField {
     type MutableElement: WritableInForceField;
-    fn get_length(&self) -> usize;
-    fn update_particles<T>(&mut self, update_particle: T)
-    where
-        T: Fn(&mut Self::MutableElement) -> ();
-    fn apply_pairwise_force(
-        &mut self,
-        index_for_adding_given_force: usize,
-        index_for_subtracting_given_force: usize,
-        force_vector: &super::force::DimensionfulVector,
-    );
-    fn create_time_slice_copy_without_force(&self) -> std::vec::Vec<BasicIndividual>;
-}
+    type FixedSizeCollection: super::collection::SingleAndPairwiseFinite<
+        MutableElement = Self::MutableElement,
+    >;
 
-pub trait IndexedCollectionInForceField: IndexedCollectionInForceFieldWithoutAdd
-where
-    <Self as std::ops::Index<usize>>::Output: ReadOnlyInForceField,
-{
+    fn access_mutable_elements<'a>(&'a mut self) -> &'a mut Self::FixedSizeCollection;
+
     fn add_particle(
         &mut self,
         particle_to_add: &impl IndividualRepresentation,
@@ -103,12 +89,14 @@ where
     );
 }
 
-pub trait IndexedCollectionInForceFieldGenerator<T: WritableInForceField> {
-    type CreatedCollection: IndexedCollectionInForceField<Output = T, MutableElement = T>;
+pub trait CollectionInForceFieldGenerator {
+    type MutableElement: WritableInForceField;
+    type CreatedCollection: CollectionInForceField<MutableElement = Self::MutableElement>;
 
     fn create_collection(&self) -> Self::CreatedCollection;
 }
 
+#[derive(Debug)]
 pub struct MassNormalizedWithForceField {
     particle_description: BasicIndividual,
     experienced_force: super::force::DimensionfulVector,
@@ -116,11 +104,11 @@ pub struct MassNormalizedWithForceField {
 }
 
 impl IndividualRepresentation for MassNormalizedWithForceField {
-    fn read_intrinsics(&self) -> &IntrinsicPart {
+    fn read_intrinsics<'a>(&'a self) -> &'a IntrinsicPart {
         self.particle_description.read_intrinsics()
     }
 
-    fn read_variables(&self) -> &VariablePart {
+    fn read_variables<'a>(&'a self) -> &'a VariablePart {
         self.particle_description.read_variables()
     }
 }
@@ -149,43 +137,47 @@ impl WritableInForceField for MassNormalizedWithForceField {
     }
 }
 
-impl<T> IndexedCollectionInForceFieldWithoutAdd for std::vec::Vec<T>
-where
-    T: WritableInForceField,
-{
-    type MutableElement = T;
-
-    fn get_length(&self) -> usize {
-        self.len()
+impl IndividualRepresentation for std::boxed::Box<dyn WritableInForceField> {
+    fn read_intrinsics<'a>(&self) -> &IntrinsicPart {
+        self.deref().read_intrinsics()
     }
 
-    fn update_particles<U>(&mut self, update_particle: U)
-    where
-        U: Fn(&mut Self::MutableElement) -> (),
-    {
-        for particle_with_force in self.iter_mut() {
-            update_particle(particle_with_force);
-        }
-    }
-
-    fn apply_pairwise_force(
-        &mut self,
-        index_for_adding_given_force: usize,
-        index_for_subtracting_given_force: usize,
-        force_vector: &super::force::DimensionfulVector,
-    ) {
-        *self[index_for_adding_given_force].write_experienced_force() += *force_vector;
-        *self[index_for_subtracting_given_force].write_experienced_force() -= *force_vector;
-    }
-
-    fn create_time_slice_copy_without_force(&self) -> std::vec::Vec<BasicIndividual> {
-        self.iter()
-            .map(|particle_with_force| particle_with_force.into_individual_particle())
-            .collect::<std::vec::Vec<BasicIndividual>>()
+    fn read_variables<'a>(&self) -> &VariablePart {
+        self.deref().read_variables()
     }
 }
 
-impl IndexedCollectionInForceField for std::vec::Vec<MassNormalizedWithForceField> {
+impl ReadOnlyInForceField for std::boxed::Box<dyn WritableInForceField> {
+    fn into_individual_particle(&self) -> BasicIndividual {
+        self.deref().into_individual_particle()
+    }
+
+    fn read_experienced_force<'a>(&'a self) -> &'a super::force::DimensionfulVector {
+        self.deref().read_experienced_force()
+    }
+
+    fn read_timestep_over_inertial_mass<'a>(&'a self) -> &'a super::time::OverMassUnit {
+        self.deref().read_timestep_over_inertial_mass()
+    }
+}
+
+impl WritableInForceField for std::boxed::Box<dyn WritableInForceField> {
+    fn write_particle_variables<'a>(&'a mut self) -> &'a mut VariablePart {
+        self.deref_mut().write_particle_variables()
+    }
+
+    fn write_experienced_force<'a>(&'a mut self) -> &'a mut super::force::DimensionfulVector {
+        self.deref_mut().write_experienced_force()
+    }
+}
+
+impl CollectionInForceField for std::vec::Vec<MassNormalizedWithForceField> {
+    type MutableElement = MassNormalizedWithForceField;
+    type FixedSizeCollection = std::vec::Vec<MassNormalizedWithForceField>;
+    fn access_mutable_elements<'a>(&'a mut self) -> &'a mut Self::FixedSizeCollection {
+        self
+    }
+
     fn add_particle(
         &mut self,
         particle_to_add: &impl IndividualRepresentation,
@@ -202,14 +194,47 @@ impl IndexedCollectionInForceField for std::vec::Vec<MassNormalizedWithForceFiel
     }
 }
 
-pub struct MassNormalizedWithForceFieldVectorGenerator {}
+impl CollectionInForceField for std::vec::Vec<std::boxed::Box<dyn WritableInForceField>> {
+    type MutableElement = std::boxed::Box<dyn WritableInForceField>;
+    type FixedSizeCollection = std::vec::Vec<std::boxed::Box<dyn WritableInForceField>>;
+    fn access_mutable_elements<'a>(&'a mut self) -> &'a mut Self::FixedSizeCollection {
+        self
+    }
 
-impl IndexedCollectionInForceFieldGenerator<MassNormalizedWithForceField>
-    for MassNormalizedWithForceFieldVectorGenerator
-{
+    fn add_particle(
+        &mut self,
+        particle_to_add: &impl IndividualRepresentation,
+        timestep_over_inertial_mass: &super::time::OverMassUnit,
+    ) {
+        self.push(std::boxed::Box::new(MassNormalizedWithForceField {
+            particle_description: create_individual_from_representation(particle_to_add),
+            experienced_force: super::force::DimensionfulVector {
+                horizontal_component: super::force::HorizontalUnit(0.0),
+                vertical_component: super::force::VerticalUnit(0.0),
+            },
+            timestep_over_inertial_mass: *timestep_over_inertial_mass,
+        }))
+    }
+}
+
+pub struct VectorOfMassNormalizedWithForceFieldsGenerator {}
+
+impl CollectionInForceFieldGenerator for VectorOfMassNormalizedWithForceFieldsGenerator {
+    type MutableElement = MassNormalizedWithForceField;
     type CreatedCollection = std::vec::Vec<MassNormalizedWithForceField>;
 
-    fn create_collection(&self) -> Self::CreatedCollection {
+    fn create_collection(&self) -> std::vec::Vec<MassNormalizedWithForceField> {
+        vec![]
+    }
+}
+
+pub struct VectorOfBoxedMassNormalizedWithForceFieldsGenerator {}
+
+impl CollectionInForceFieldGenerator for VectorOfBoxedMassNormalizedWithForceFieldsGenerator {
+    type MutableElement = std::boxed::Box<dyn WritableInForceField>;
+    type CreatedCollection = std::vec::Vec<std::boxed::Box<dyn WritableInForceField>>;
+
+    fn create_collection(&self) -> std::vec::Vec<std::boxed::Box<dyn WritableInForceField>> {
         vec![]
     }
 }
