@@ -261,15 +261,9 @@ fn check_energy_given_potential(
     }
 }
 
-pub fn test_single_particle_at_rest_stays_at_rest<T, U>(
-    tested_implementation: &mut T,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+pub fn test_single_particle_at_rest_stays_at_rest(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
+) -> Result<(), String> {
     let expected_particle = IndividualParticle {
         intrinsic_values: ParticleIntrinsics {
             inertial_mass: InertialMassUnit(1.0),
@@ -314,15 +308,9 @@ where
     );
 }
 
-pub fn test_single_particle_at_constant_speed<T, U>(
-    tested_implementation: &mut T,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+pub fn test_single_particle_at_constant_speed(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
+) -> Result<(), String> {
     let particle_intrinsics = ParticleIntrinsics {
         inertial_mass: InertialMassUnit(1.0),
         inverse_squared_charge: InverseSquaredChargeUnit(2.0),
@@ -436,15 +424,9 @@ where
     );
 }
 
-pub fn test_uncharged_particles_do_not_accelerate<T, U>(
-    tested_implementation: &mut T,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+pub fn test_uncharged_particles_do_not_accelerate(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
+) -> Result<(), String> {
     let particle_intrinsics = ParticleIntrinsics {
         inertial_mass: InertialMassUnit(1.0),
         inverse_squared_charge: InverseSquaredChargeUnit(0.0),
@@ -609,16 +591,10 @@ where
     );
 }
 
-pub fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest<T, U>(
-    tested_implementation: &mut T,
+pub fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
     dead_zone_radius: &SpatialSeparationUnit,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+) -> Result<(), String> {
     let particle_intrinsics = ParticleIntrinsics {
         inertial_mass: InertialMassUnit(1.0),
         inverse_squared_charge: InverseSquaredChargeUnit(0.0),
@@ -685,16 +661,10 @@ where
 /// This test checks against a special case where there is an analytical solution for the motion of
 /// two equal masses under an attractive inverse-fourth force which have just enough kinetic energy
 /// to come to rest infinitely far apart from each other.
-pub fn test_equal_masses_attracting_inverse_fourth_critical_escape<T, U>(
-    tested_implementation: &mut T,
+pub fn test_equal_masses_attracting_inverse_fourth_critical_escape(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
     dead_zone_radius: &SpatialSeparationUnit,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+) -> Result<(), String> {
     let test_intrinsics = ParticleIntrinsics {
         inertial_mass: InertialMassUnit(1.0),
         inverse_squared_charge: InverseSquaredChargeUnit(0.0),
@@ -850,16 +820,10 @@ where
     )
 }
 
-pub fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally<T, U>(
-    tested_implementation: &mut T,
+pub fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
     dead_zone_radius: &SpatialSeparationUnit,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+) -> Result<(), String> {
     let left_intrinsics = ParticleIntrinsics {
         inertial_mass: InertialMassUnit(1.0),
         inverse_squared_charge: InverseSquaredChargeUnit(0.0),
@@ -1049,16 +1013,10 @@ where
 /// to come to rest infinitely far apart from each other. (So it is the same as
 /// test_equal_masses_attracting_inverse_fourth_critical_escape above but for an inverse-square
 /// force instead of inverse-fourth.)
-pub fn test_equal_masses_attracting_inverse_square_critical_escape<T, U>(
-    tested_implementation: &mut T,
+pub fn test_equal_masses_attracting_inverse_square_critical_escape(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
     dead_zone_radius: &SpatialSeparationUnit,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+) -> Result<(), String> {
     let test_intrinsics = ParticleIntrinsics {
         inertial_mass: InertialMassUnit(1.0),
         inverse_squared_charge: InverseSquaredChargeUnit(1.0),
@@ -1214,16 +1172,10 @@ where
     )
 }
 
-pub fn test_equal_masses_attracting_inverse_square_circular_orbit<T, U>(
-    tested_implementation: &mut T,
+pub fn test_equal_masses_attracting_inverse_square_circular_orbit(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
     dead_zone_radius: &SpatialSeparationUnit,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+) -> Result<(), String> {
     let red_intrinsics = ParticleIntrinsics {
         inertial_mass: InertialMassUnit(1.0),
         inverse_squared_charge: InverseSquaredChargeUnit(1.0),
@@ -1366,16 +1318,10 @@ where
     )
 }
 
-pub fn test_triangle_at_cancelling_forces_is_stable<T, U>(
-    tested_implementation: &mut T,
+pub fn test_triangle_at_cancelling_forces_is_stable(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
     dead_zone_radius: &SpatialSeparationUnit,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+) -> Result<(), String> {
     let origin_particle = IndividualParticle {
         intrinsic_values: ParticleIntrinsics {
             inertial_mass: InertialMassUnit(1.0),
@@ -1496,16 +1442,10 @@ where
     );
 }
 
-pub fn test_approximate_harmonic_oscillator<T, U>(
-    tested_implementation: &mut T,
+pub fn test_approximate_harmonic_oscillator(
+    tested_implementation: &mut impl super::ParticlesInTimeEvolver,
     dead_zone_radius: &SpatialSeparationUnit,
-) -> Result<(), String>
-where
-    T: super::ParticlesInTimeEvolver<U>,
-    U: std::iter::ExactSizeIterator<
-        Item = <T as super::ParticlesInTimeEvolver<U>>::EmittedIterator,
-    >,
-{
+) -> Result<(), String> {
     let red_intrinsics = ParticleIntrinsics {
         inertial_mass: InertialMassUnit(1.0),
         inverse_squared_charge: InverseSquaredChargeUnit(1.0),

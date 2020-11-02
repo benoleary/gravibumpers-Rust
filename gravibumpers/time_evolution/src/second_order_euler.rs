@@ -89,13 +89,10 @@ fn update_forces<'a, 'b, T, U>(
     aggregate_pairwise_forces(evolution_configuration, particles_with_forces);
 }
 
-impl
-    super::ParticlesInTimeEvolver<
-        std::vec::IntoIter<std::vec::IntoIter<data_structure::particle::BasicIndividual>>,
-    > for SecondOrderEuler
-{
+impl super::ParticlesInTimeEvolver for SecondOrderEuler {
     type EmittedParticle = data_structure::particle::BasicIndividual;
-    type EmittedIterator = std::vec::IntoIter<Self::EmittedParticle>;
+    type ParticleIterator = std::vec::IntoIter<Self::EmittedParticle>;
+    type IteratorIterator = std::vec::IntoIter<Self::ParticleIterator>;
 
     fn create_time_sequence(
         &mut self,
@@ -106,8 +103,8 @@ impl
     ) -> Result<
         super::ParticleSetEvolution<
             Self::EmittedParticle,
-            Self::EmittedIterator,
-            std::vec::IntoIter<Self::EmittedIterator>,
+            Self::ParticleIterator,
+            Self::IteratorIterator,
         >,
         Box<dyn std::error::Error>,
     > {
@@ -127,7 +124,7 @@ impl
                     .milliseconds_per_time_slice,
             });
         }
-        let mut evaluations_at_time_slices: std::vec::Vec<Self::EmittedIterator> =
+        let mut evaluations_at_time_slices: std::vec::Vec<Self::ParticleIterator> =
             std::vec::Vec::with_capacity(evolution_configuration.number_of_time_slices);
 
         // The calculation uses a smaller time interval than the output time difference between the

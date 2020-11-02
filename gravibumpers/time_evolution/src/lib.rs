@@ -68,20 +68,19 @@ where
     pub milliseconds_between_configurations: u16,
 }
 
-pub trait ParticlesInTimeEvolver<T: std::iter::ExactSizeIterator<Item = Self::EmittedIterator>> {
+pub trait ParticlesInTimeEvolver {
     type EmittedParticle: ParticleRepresentation;
-    type EmittedIterator: std::iter::ExactSizeIterator<Item = Self::EmittedParticle>;
+    type ParticleIterator: std::iter::ExactSizeIterator<Item = Self::EmittedParticle>;
+    type IteratorIterator: std::iter::ExactSizeIterator<Item = Self::ParticleIterator>;
 
     fn create_time_sequence(
         &mut self,
         evolution_configuration: &configuration_parsing::EvolutionConfiguration,
         initial_conditions: impl std::iter::ExactSizeIterator<Item = impl ParticleRepresentation>,
     ) -> Result<
-        ParticleSetEvolution<Self::EmittedParticle, Self::EmittedIterator, T>,
+        ParticleSetEvolution<Self::EmittedParticle, Self::ParticleIterator, Self::IteratorIterator>,
         Box<dyn std::error::Error>,
-    >
-    where
-        <Self as ParticlesInTimeEvolver<T>>::EmittedIterator: std::iter::ExactSizeIterator;
+    >;
 }
 
 fn force_on_first_particle_from_second_particle(
