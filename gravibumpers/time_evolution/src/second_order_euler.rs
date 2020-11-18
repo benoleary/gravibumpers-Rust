@@ -255,20 +255,22 @@ where
 mod tests {
     use super::super::test_functions as evolver_tests;
     use super::*;
+    use data_structure::particle::contiguous_struct as contiguous_particle_struct;
+    use data_structure::particle::struct_of_boxes as particle_struct_of_boxes;
 
     const TEST_DEAD_ZONE_RADIUS: data_structure::position::SeparationUnit =
         data_structure::position::SeparationUnit(1.0);
 
     fn new_maximally_contiguous_for_test() -> Result<
         SecondOrderEuler<
-            data_structure::particle::MassNormalizedWithForceField,
-            data_structure::particle::VectorOfMassNormalizedWithForceFieldsGenerator,
+            contiguous_particle_struct::MassNormalizedWithForceField,
+            contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator,
         >,
         String,
     > {
         new_given_memory_strategy(
             100,
-            data_structure::particle::VectorOfMassNormalizedWithForceFieldsGenerator {},
+            contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator {},
         )
         .or_else(|construction_error| {
             Err(String::from(format!(
@@ -281,13 +283,13 @@ mod tests {
     fn new_contiguous_pointers_for_test() -> Result<
         SecondOrderEuler<
             std::boxed::Box<dyn data_structure::particle::WritableInForceField>,
-            data_structure::particle::VectorOfBoxedMassNormalizedWithForceFieldsGenerator,
+            contiguous_particle_struct::VectorOfDynamicBoxedMassNormalizedWithForceFieldGenerator,
         >,
         String,
     > {
         new_given_memory_strategy(
             100,
-            data_structure::particle::VectorOfBoxedMassNormalizedWithForceFieldsGenerator {},
+            contiguous_particle_struct::VectorOfDynamicBoxedMassNormalizedWithForceFieldGenerator {},
         )
         .or_else(|construction_error| {
             Err(String::from(format!(
@@ -296,6 +298,26 @@ mod tests {
             )))
         })
     }
+
+    fn new_double_boxed_for_test() -> Result<
+        SecondOrderEuler<
+            std::boxed::Box<dyn data_structure::particle::WritableInForceField>,
+            particle_struct_of_boxes::VectorOfDynamicBoxedMassNormalizedBoxesWithForceFieldGenerator,
+        >,
+        String,
+>{
+        new_given_memory_strategy(
+            100,
+            particle_struct_of_boxes::VectorOfDynamicBoxedMassNormalizedBoxesWithForceFieldGenerator {},
+        )
+        .or_else(|construction_error| {
+            Err(String::from(format!(
+                "Constructor error in new_contiguous_pointers_for_test: {:?}",
+                construction_error
+            )))
+        })
+    }
+
     #[test]
     fn test_single_particle_at_rest_stays_at_rest_with_maximally_contiguous() -> Result<(), String>
     {
@@ -310,6 +332,12 @@ mod tests {
     }
 
     #[test]
+    fn test_single_particle_at_rest_stays_at_rest_with_double_boxed() -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
+        evolver_tests::test_single_particle_at_rest_stays_at_rest(&mut evolver_implementation)
+    }
+
+    #[test]
     fn test_single_particle_at_constant_speed_with_maximally_contiguous() -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_for_test()?;
         evolver_tests::test_single_particle_at_constant_speed(&mut evolver_implementation)
@@ -318,6 +346,12 @@ mod tests {
     #[test]
     fn test_single_particle_at_constant_speed_with_contiguous_pointers() -> Result<(), String> {
         let mut evolver_implementation = new_contiguous_pointers_for_test()?;
+        evolver_tests::test_single_particle_at_constant_speed(&mut evolver_implementation)
+    }
+
+    #[test]
+    fn test_single_particle_at_constant_speed_with_double_boxed() -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
         evolver_tests::test_single_particle_at_constant_speed(&mut evolver_implementation)
     }
 
@@ -335,6 +369,12 @@ mod tests {
     }
 
     #[test]
+    fn test_uncharged_particles_do_not_accelerate_with_double_boxed() -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
+        evolver_tests::test_uncharged_particles_do_not_accelerate(&mut evolver_implementation)
+    }
+
+    #[test]
     fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest_with_maximally_contiguous(
     ) -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_for_test()?;
@@ -348,6 +388,16 @@ mod tests {
     fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest_with_contiguous_pointers(
     ) -> Result<(), String> {
         let mut evolver_implementation = new_contiguous_pointers_for_test()?;
+        evolver_tests::test_immobile_repelling_particles_within_dead_zone_stay_at_rest(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
+    fn test_immobile_repelling_particles_within_dead_zone_stay_at_rest_with_double_boxed(
+    ) -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
         evolver_tests::test_immobile_repelling_particles_within_dead_zone_stay_at_rest(
             &mut evolver_implementation,
             &TEST_DEAD_ZONE_RADIUS,
@@ -375,6 +425,16 @@ mod tests {
     }
 
     #[test]
+    fn test_equal_masses_attracting_inverse_fourth_critical_escape_with_double_boxed(
+    ) -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
+        evolver_tests::test_equal_masses_attracting_inverse_fourth_critical_escape(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
     fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally_with_maximally_contiguous(
     ) -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_for_test()?;
@@ -388,6 +448,16 @@ mod tests {
     fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally_with_contiguous_pointers(
     ) -> Result<(), String> {
         let mut evolver_implementation = new_contiguous_pointers_for_test()?;
+        evolver_tests::test_equal_masses_repelling_inverse_fourth_accelerate_away_equally(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
+    fn test_equal_masses_repelling_inverse_fourth_accelerate_away_equally_with_double_boxed(
+    ) -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
         evolver_tests::test_equal_masses_repelling_inverse_fourth_accelerate_away_equally(
             &mut evolver_implementation,
             &TEST_DEAD_ZONE_RADIUS,
@@ -415,6 +485,16 @@ mod tests {
     }
 
     #[test]
+    fn test_equal_masses_attracting_inverse_square_critical_escape_with_double_boxed(
+    ) -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
+        evolver_tests::test_equal_masses_attracting_inverse_square_critical_escape(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
     fn test_equal_masses_attracting_inverse_square_circular_orbit_with_maximally_contiguous(
     ) -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_for_test()?;
@@ -428,6 +508,16 @@ mod tests {
     fn test_equal_masses_attracting_inverse_square_circular_orbit_with_contiguous_pointers(
     ) -> Result<(), String> {
         let mut evolver_implementation = new_contiguous_pointers_for_test()?;
+        evolver_tests::test_equal_masses_attracting_inverse_square_circular_orbit(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
+    fn test_equal_masses_attracting_inverse_square_circular_orbit_with_double_boxed(
+    ) -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
         evolver_tests::test_equal_masses_attracting_inverse_square_circular_orbit(
             &mut evolver_implementation,
             &TEST_DEAD_ZONE_RADIUS,
@@ -455,6 +545,15 @@ mod tests {
     }
 
     #[test]
+    fn test_triangle_at_cancelling_forces_is_stable_with_double_boxed() -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
+        evolver_tests::test_triangle_at_cancelling_forces_is_stable(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
     fn test_approximate_harmonic_oscillator_with_maximally_contiguous() -> Result<(), String> {
         let mut evolver_implementation = new_maximally_contiguous_for_test()?;
         evolver_tests::test_approximate_harmonic_oscillator(
@@ -466,6 +565,15 @@ mod tests {
     #[test]
     fn test_approximate_harmonic_oscillator_with_contiguous_pointers() -> Result<(), String> {
         let mut evolver_implementation = new_contiguous_pointers_for_test()?;
+        evolver_tests::test_approximate_harmonic_oscillator(
+            &mut evolver_implementation,
+            &TEST_DEAD_ZONE_RADIUS,
+        )
+    }
+
+    #[test]
+    fn test_approximate_harmonic_oscillator_with_double_boxed() -> Result<(), String> {
+        let mut evolver_implementation = new_double_boxed_for_test()?;
         evolver_tests::test_approximate_harmonic_oscillator(
             &mut evolver_implementation,
             &TEST_DEAD_ZONE_RADIUS,

@@ -2,6 +2,9 @@
 use std::ops::Deref;
 use std::ops::DerefMut;
 
+pub mod contiguous_struct;
+pub mod struct_of_boxes;
+
 /// The particles have some intrinsic qualities which do not change, unlike their
 /// positions and velocities.
 #[derive(Clone, Copy, Debug)]
@@ -96,47 +99,6 @@ pub trait CollectionInForceFieldGenerator {
     fn create_collection(&self) -> Self::CreatedCollection;
 }
 
-#[derive(Debug)]
-pub struct MassNormalizedWithForceField {
-    particle_description: BasicIndividual,
-    experienced_force: super::force::DimensionfulVector,
-    timestep_over_inertial_mass: super::time::OverMassUnit,
-}
-
-impl IndividualRepresentation for MassNormalizedWithForceField {
-    fn read_intrinsics<'a>(&'a self) -> &'a IntrinsicPart {
-        self.particle_description.read_intrinsics()
-    }
-
-    fn read_variables<'a>(&'a self) -> &'a VariablePart {
-        self.particle_description.read_variables()
-    }
-}
-
-impl ReadOnlyInForceField for MassNormalizedWithForceField {
-    fn into_individual_particle(&self) -> BasicIndividual {
-        self.particle_description
-    }
-
-    fn read_experienced_force<'a>(&'a self) -> &'a super::force::DimensionfulVector {
-        &self.experienced_force
-    }
-
-    fn read_timestep_over_inertial_mass<'a>(&'a self) -> &'a super::time::OverMassUnit {
-        &self.timestep_over_inertial_mass
-    }
-}
-
-impl WritableInForceField for MassNormalizedWithForceField {
-    fn write_particle_variables<'a>(&'a mut self) -> &'a mut VariablePart {
-        &mut self.particle_description.variable_values
-    }
-
-    fn write_experienced_force<'a>(&'a mut self) -> &'a mut super::force::DimensionfulVector {
-        &mut self.experienced_force
-    }
-}
-
 impl IndividualRepresentation for std::boxed::Box<dyn WritableInForceField> {
     fn read_intrinsics<'a>(&self) -> &IntrinsicPart {
         self.deref().read_intrinsics()
@@ -168,73 +130,5 @@ impl WritableInForceField for std::boxed::Box<dyn WritableInForceField> {
 
     fn write_experienced_force<'a>(&'a mut self) -> &'a mut super::force::DimensionfulVector {
         self.deref_mut().write_experienced_force()
-    }
-}
-
-impl CollectionInForceField for std::vec::Vec<MassNormalizedWithForceField> {
-    type MutableElement = MassNormalizedWithForceField;
-    type FixedSizeCollection = std::vec::Vec<MassNormalizedWithForceField>;
-    fn access_mutable_elements<'a>(&'a mut self) -> &'a mut Self::FixedSizeCollection {
-        self
-    }
-
-    fn add_particle(
-        &mut self,
-        particle_to_add: &impl IndividualRepresentation,
-        timestep_over_inertial_mass: &super::time::OverMassUnit,
-    ) {
-        self.push(MassNormalizedWithForceField {
-            particle_description: create_individual_from_representation(particle_to_add),
-            experienced_force: super::force::DimensionfulVector {
-                horizontal_component: super::force::HorizontalUnit(0.0),
-                vertical_component: super::force::VerticalUnit(0.0),
-            },
-            timestep_over_inertial_mass: *timestep_over_inertial_mass,
-        })
-    }
-}
-
-impl CollectionInForceField for std::vec::Vec<std::boxed::Box<dyn WritableInForceField>> {
-    type MutableElement = std::boxed::Box<dyn WritableInForceField>;
-    type FixedSizeCollection = std::vec::Vec<std::boxed::Box<dyn WritableInForceField>>;
-    fn access_mutable_elements<'a>(&'a mut self) -> &'a mut Self::FixedSizeCollection {
-        self
-    }
-
-    fn add_particle(
-        &mut self,
-        particle_to_add: &impl IndividualRepresentation,
-        timestep_over_inertial_mass: &super::time::OverMassUnit,
-    ) {
-        self.push(std::boxed::Box::new(MassNormalizedWithForceField {
-            particle_description: create_individual_from_representation(particle_to_add),
-            experienced_force: super::force::DimensionfulVector {
-                horizontal_component: super::force::HorizontalUnit(0.0),
-                vertical_component: super::force::VerticalUnit(0.0),
-            },
-            timestep_over_inertial_mass: *timestep_over_inertial_mass,
-        }))
-    }
-}
-
-pub struct VectorOfMassNormalizedWithForceFieldsGenerator {}
-
-impl CollectionInForceFieldGenerator for VectorOfMassNormalizedWithForceFieldsGenerator {
-    type MutableElement = MassNormalizedWithForceField;
-    type CreatedCollection = std::vec::Vec<MassNormalizedWithForceField>;
-
-    fn create_collection(&self) -> std::vec::Vec<MassNormalizedWithForceField> {
-        vec![]
-    }
-}
-
-pub struct VectorOfBoxedMassNormalizedWithForceFieldsGenerator {}
-
-impl CollectionInForceFieldGenerator for VectorOfBoxedMassNormalizedWithForceFieldsGenerator {
-    type MutableElement = std::boxed::Box<dyn WritableInForceField>;
-    type CreatedCollection = std::vec::Vec<std::boxed::Box<dyn WritableInForceField>>;
-
-    fn create_collection(&self) -> std::vec::Vec<std::boxed::Box<dyn WritableInForceField>> {
-        vec![]
     }
 }

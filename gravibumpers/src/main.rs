@@ -2,6 +2,7 @@ extern crate data_structure;
 extern crate serde_json;
 extern crate visual_representation;
 
+use data_structure::particle::contiguous_struct as contiguous_particle_struct;
 use time_evolution::ParticlesInTimeEvolver;
 use visual_representation::SequenceAnimator;
 
@@ -128,7 +129,7 @@ fn run_from_configuration_file(
             parsed_configuration
                 .evolver_configuration
                 .number_of_steps_per_time_slice,
-            data_structure::particle::VectorOfMassNormalizedWithForceFieldsGenerator {},
+            contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator {},
         )?;
     let instant_before_evolution = std::time::Instant::now();
     let particle_set_evolution = particles_in_time_evolver.create_time_sequence(
