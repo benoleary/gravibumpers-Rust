@@ -168,20 +168,30 @@ fn run_from_configuration_file(
     );
 
     // The memory layout configuration parameter will eventually control something here.
-    let mut particles_in_time_evolver =
-        time_evolution::second_order_euler::new_given_memory_strategy(
-            parsed_configuration
-                .evolver_configuration
-                .number_of_steps_per_time_slice,
-            contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator {},
-        )?;
-    evolve_and_animate(
-        &parsed_configuration,
-        &mut particles_in_time_evolver,
-        initial_particle_map.iter(),
-        should_draw_offscreen_on_border,
-        output_filename,
-    )
+    match parsed_configuration.evolver_configuration.memory_layout {
+        "VecOfPureStruct" => {
+            let mut particles_in_time_evolver =
+                time_evolution::second_order_euler::new_given_memory_strategy(
+                    parsed_configuration
+                        .evolver_configuration
+                        .number_of_steps_per_time_slice,
+                    contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator {},
+                )?;
+            evolve_and_animate(
+                &parsed_configuration,
+                &mut particles_in_time_evolver,
+                initial_particle_map.iter(),
+                should_draw_offscreen_on_border,
+                output_filename,
+            )
+        }
+        _ => Err(Box::new(
+            configuration_parsing::ConfigurationParseError::new(&format!(
+                "Memory layout \"{}\" is unknown",
+                parsed_configuration.evolver_configuration.memory_layout
+            )),
+        )),
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
