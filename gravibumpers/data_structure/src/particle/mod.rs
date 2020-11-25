@@ -3,6 +3,7 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 
 pub mod contiguous_struct;
+pub mod mixture;
 pub mod struct_of_boxes;
 
 /// The particles have some intrinsic qualities which do not change, unlike their

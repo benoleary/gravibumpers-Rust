@@ -8,6 +8,22 @@ pub struct MassNormalizedBoxesWithForceField {
     timestep_over_inertial_mass: std::boxed::Box<super::super::time::OverMassUnit>,
 }
 
+pub fn new_mass_normalized_boxes_with_force_field(
+    particle_to_add: &impl super::IndividualRepresentation,
+    timestep_over_inertial_mass: &super::super::time::OverMassUnit,
+) -> MassNormalizedBoxesWithForceField {
+    let basic_individual = super::create_individual_from_representation(particle_to_add);
+    MassNormalizedBoxesWithForceField {
+        intrinsic_values: std::boxed::Box::new(basic_individual.intrinsic_values),
+        variable_values: std::boxed::Box::new(basic_individual.variable_values),
+        experienced_force: std::boxed::Box::new(super::super::force::DimensionfulVector {
+            horizontal_component: super::super::force::HorizontalUnit(0.0),
+            vertical_component: super::super::force::VerticalUnit(0.0),
+        }),
+        timestep_over_inertial_mass: std::boxed::Box::new(*timestep_over_inertial_mass),
+    }
+}
+
 impl super::IndividualRepresentation for MassNormalizedBoxesWithForceField {
     fn read_intrinsics<'a>(&'a self) -> &'a super::IntrinsicPart {
         &self.intrinsic_values
@@ -60,17 +76,12 @@ impl super::CollectionInForceField for VectorOfDynamicBoxedMassNormalizedBoxesWi
         particle_to_add: &impl super::IndividualRepresentation,
         timestep_over_inertial_mass: &super::super::time::OverMassUnit,
     ) {
-        let basic_individual = super::create_individual_from_representation(particle_to_add);
-        self.0
-            .push(std::boxed::Box::new(MassNormalizedBoxesWithForceField {
-                intrinsic_values: std::boxed::Box::new(basic_individual.intrinsic_values),
-                variable_values: std::boxed::Box::new(basic_individual.variable_values),
-                experienced_force: std::boxed::Box::new(super::super::force::DimensionfulVector {
-                    horizontal_component: super::super::force::HorizontalUnit(0.0),
-                    vertical_component: super::super::force::VerticalUnit(0.0),
-                }),
-                timestep_over_inertial_mass: std::boxed::Box::new(*timestep_over_inertial_mass),
-            }));
+        self.0.push(std::boxed::Box::new(
+            new_mass_normalized_boxes_with_force_field(
+                particle_to_add,
+                timestep_over_inertial_mass,
+            ),
+        ));
     }
 }
 

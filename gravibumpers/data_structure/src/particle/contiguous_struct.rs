@@ -8,6 +8,20 @@ pub struct MassNormalizedWithForceField {
     timestep_over_inertial_mass: super::super::time::OverMassUnit,
 }
 
+pub fn new_mass_normalized_with_force_field(
+    particle_to_add: &impl super::IndividualRepresentation,
+    timestep_over_inertial_mass: &super::super::time::OverMassUnit,
+) -> MassNormalizedWithForceField {
+    MassNormalizedWithForceField {
+        particle_description: super::create_individual_from_representation(particle_to_add),
+        experienced_force: super::super::force::DimensionfulVector {
+            horizontal_component: super::super::force::HorizontalUnit(0.0),
+            vertical_component: super::super::force::VerticalUnit(0.0),
+        },
+        timestep_over_inertial_mass: *timestep_over_inertial_mass,
+    }
+}
+
 impl super::IndividualRepresentation for MassNormalizedWithForceField {
     fn read_intrinsics<'a>(&'a self) -> &'a super::IntrinsicPart {
         self.particle_description.read_intrinsics()
@@ -58,14 +72,10 @@ impl super::CollectionInForceField for VectorOfMassNormalizedWithForceField {
         particle_to_add: &impl super::IndividualRepresentation,
         timestep_over_inertial_mass: &super::super::time::OverMassUnit,
     ) {
-        self.0.push(MassNormalizedWithForceField {
-            particle_description: super::create_individual_from_representation(particle_to_add),
-            experienced_force: super::super::force::DimensionfulVector {
-                horizontal_component: super::super::force::HorizontalUnit(0.0),
-                vertical_component: super::super::force::VerticalUnit(0.0),
-            },
-            timestep_over_inertial_mass: *timestep_over_inertial_mass,
-        });
+        self.0.push(new_mass_normalized_with_force_field(
+            particle_to_add,
+            timestep_over_inertial_mass,
+        ));
     }
 }
 
