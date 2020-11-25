@@ -1,0 +1,210 @@
+{
+    "memoryLayout": "VecOfMixedBoxed",
+    "numberOfStepsPerFrame": 100,
+    "deadZoneRadius": 0.001,
+    "inverseSquaredCoupling": -1.0,
+    "inverseFourthCoupling": 1.0,
+    "millisecondsPerFrame": 200,
+    "numberOfFrames": 10,
+    "rightBorderCoordinate": 200,
+    "upperBorderCoordinate": 200,
+    "leftBorderCoordinate": -200,
+    "lowerBorderCoordinate": -200,
+    "generatorConfigurations":
+    [
+      {
+        "generatorName": "single",
+        "generatorConfiguration":
+        {
+          "commonDisplacementInPixels":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "linearVelocityInPixelsPerSecond":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "inertialMassInMassUnits": 10000.0,
+          "inverseSquaredChargeInDimensionlessUnits": 10000.0,
+          "inverseFourthChargeInDimensionlessUnits": 1.0,
+          "redPixelStrength": 100,
+          "greenPixelStrength": 100,
+          "bluePixelStrength": 0
+        }
+      },
+      {
+        "generatorName": "single",
+        "generatorConfiguration":
+        {
+          "commonDisplacementInPixels":
+          {
+            "x": 50.0,
+            "y": 0.0
+          },
+          "linearVelocityInPixelsPerSecond":
+          {
+            "x": 0.0,
+            "y": 15.0
+          },
+          "inertialMassInMassUnits": 100.0,
+          "inverseSquaredChargeInDimensionlessUnits": 100.0,
+          "inverseFourthChargeInDimensionlessUnits": 1.0,
+          "redPixelStrength": 100,
+          "greenPixelStrength": 0,
+          "bluePixelStrength": 0
+        }
+      },
+      {
+        "generatorName": "circle",
+        "generatorConfiguration":
+        {
+          "commonDisplacementInPixels":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "linearVelocityInPixelsPerSecond":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "radiusInPixels": 100,
+          "totalParticlesOnCircle": 60,
+          "angularVelocityInPixelRadiansPerSecond": 0.1,
+          "inertialMassInMassUnits": 1,
+          "inverseSquaredChargeInDimensionlessUnits": 1,
+          "inverseFourthChargeInDimensionlessUnits": 0.0001,
+          "redPixelStrength": 0,
+          "greenPixelStrength": 100,
+          "bluePixelStrength": 0
+        }
+      },
+      {
+        "generatorName": "circle",
+        "generatorConfiguration":
+        {
+          "commonDisplacementInPixels":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "linearVelocityInPixelsPerSecond":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "radiusInPixels": 105,
+          "totalParticlesOnCircle": 60,
+          "angularVelocityInPixelRadiansPerSecond": 0.09,
+          "inertialMassInMassUnits": 1,
+          "inverseSquaredChargeInDimensionlessUnits": 1,
+          "inverseFourthChargeInDimensionlessUnits": 0.001,
+          "redPixelStrength": 0,
+          "greenPixelStrength": 50,
+          "bluePixelStrength": 50
+        }
+      },
+      {
+        "generatorName": "circle",
+        "generatorConfiguration":
+        {
+          "commonDisplacementInPixels":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "linearVelocityInPixelsPerSecond":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "radiusInPixels": 110,
+          "totalParticlesOnCircle": 60,
+          "angularVelocityInPixelRadiansPerSecond": 0.08,
+          "inertialMassInMassUnits": 1,
+          "inverseSquaredChargeInDimensionlessUnits": 1,
+          "inverseFourthChargeInDimensionlessUnits": 0.001,
+          "redPixelStrength": 0,
+          "greenPixelStrength": 0,
+          "bluePixelStrength": 100
+        }
+      },
+      {
+        "generatorName": "circle",
+        "generatorConfiguration":
+        {
+          "commonDisplacementInPixels":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "linearVelocityInPixelsPerSecond":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "radiusInPixels": 200,
+          "totalParticlesOnCircle": 120,
+          "angularVelocityInPixelRadiansPerSecond": -0.025,
+          "inertialMassInMassUnits": 1,
+          "inverseSquaredChargeInDimensionlessUnits": 1,
+          "inverseFourthChargeInDimensionlessUnits": 0.0001,
+          "redPixelStrength": 0,
+          "greenPixelStrength": 100,
+          "bluePixelStrength": 0
+        }
+      },
+      {
+        "generatorName": "circle",
+        "generatorConfiguration":
+        {
+          "commonDisplacementInPixels":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "linearVelocityInPixelsPerSecond":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "radiusInPixels": 205,
+          "totalParticlesOnCircle": 120,
+          "angularVelocityInPixelRadiansPerSecond": -0.023,
+          "inertialMassInMassUnits": 1,
+          "inverseSquaredChargeInDimensionlessUnits": 1,
+          "inverseFourthChargeInDimensionlessUnits": 0.001,
+          "redPixelStrength": 0,
+          "greenPixelStrength": 50,
+          "bluePixelStrength": 50
+        }
+      },
+      {
+        "generatorName": "circle",
+        "generatorConfiguration":
+        {
+          "commonDisplacementInPixels":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "linearVelocityInPixelsPerSecond":
+          {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "radiusInPixels": 210,
+          "totalParticlesOnCircle": 120,
+          "angularVelocityInPixelRadiansPerSecond": -0.021,
+          "inertialMassInMassUnits": 1,
+          "inverseSquaredChargeInDimensionlessUnits": 1,
+          "inverseFourthChargeInDimensionlessUnits": 0.001,
+          "redPixelStrength": 0,
+          "greenPixelStrength": 0,
+          "bluePixelStrength": 100
+        }
+      }
+    ]
+  }
