@@ -3,7 +3,6 @@ extern crate serde_json;
 extern crate visual_representation;
 
 use data_structure::particle::contiguous_struct as contiguous_particle_struct;
-use time_evolution::ParticlesInTimeEvolver;
 use visual_representation::SequenceAnimator;
 
 fn print_help() -> Result<(), Box<dyn std::error::Error>> {
@@ -64,6 +63,51 @@ fn create_rgb_demonstration(
     demonstration_animator.animate_sequence(dummy_sequence.into_iter(), 100, output_filename)
 }
 
+fn evolve_and_animate(
+    parsed_configuration: &configuration_parsing::ParsedConfiguration,
+    particles_in_time_evolver: &mut impl time_evolution::ParticlesInTimeEvolver,
+    initial_particle_configuration: impl std::iter::ExactSizeIterator<
+        Item = impl data_structure::particle::IndividualRepresentation,
+    >,
+    should_draw_offscreen_on_border: bool,
+    output_filename: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let instant_before_evolution = std::time::Instant::now();
+    let particle_set_evolution = particles_in_time_evolver.create_time_sequence(
+        &parsed_configuration.evolution_configuration,
+        initial_particle_configuration,
+    )?;
+
+    println!(
+        "Calculation of time evolution took {}ms",
+        instant_before_evolution.elapsed().as_millis()
+    );
+
+    let picture_configuration = &parsed_configuration.picture_configuration;
+    let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(
+        visual_representation::HorizontalPixelAmount(picture_configuration.right_border_coordinate),
+        visual_representation::VerticalPixelAmount(picture_configuration.upper_border_coordinate),
+        visual_representation::HorizontalPixelAmount(picture_configuration.left_border_coordinate),
+        visual_representation::VerticalPixelAmount(picture_configuration.lower_border_coordinate),
+        should_draw_offscreen_on_border,
+    )?;
+    let particle_animator = visual_representation::apng::new(pixel_brightness_aggregator, 1);
+
+    let instant_before_animation = std::time::Instant::now();
+    particle_animator.animate_sequence(
+        particle_set_evolution.particle_configurations,
+        particle_set_evolution.milliseconds_between_configurations,
+        output_filename,
+    )?;
+
+    println!(
+        "Animation took {}ms",
+        instant_before_animation.elapsed().as_millis()
+    );
+
+    Ok(())
+}
+
 fn run_from_configuration_file(
     command_line_arguments: &[String],
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -98,7 +142,7 @@ fn run_from_configuration_file(
         serde_json::from_str(&configuration_content)?;
     let parsed_configuration =
         configuration_parsing::parse_deserialized_configuration(&deserialized_configuration)?;
-    for generator_configuration in parsed_configuration.generator_configurations {
+    for generator_configuration in parsed_configuration.generator_configurations.iter() {
         let initial_particles_from_configuration = match generator_configuration.generator_name {
             "single" => initial_conditions::single::from_json(
                 generator_configuration.generator_configuration,
@@ -131,40 +175,13 @@ fn run_from_configuration_file(
                 .number_of_steps_per_time_slice,
             contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator {},
         )?;
-    let instant_before_evolution = std::time::Instant::now();
-    let particle_set_evolution = particles_in_time_evolver.create_time_sequence(
-        &parsed_configuration.evolution_configuration,
+    evolve_and_animate(
+        &parsed_configuration,
+        &mut particles_in_time_evolver,
         initial_particle_map.iter(),
-    )?;
-
-    println!(
-        "Calculation of time evolution took {}ms",
-        instant_before_evolution.elapsed().as_millis()
-    );
-
-    let picture_configuration = parsed_configuration.picture_configuration;
-    let pixel_brightness_aggregator = visual_representation::brightness_aggregator::new(
-        visual_representation::HorizontalPixelAmount(picture_configuration.right_border_coordinate),
-        visual_representation::VerticalPixelAmount(picture_configuration.upper_border_coordinate),
-        visual_representation::HorizontalPixelAmount(picture_configuration.left_border_coordinate),
-        visual_representation::VerticalPixelAmount(picture_configuration.lower_border_coordinate),
         should_draw_offscreen_on_border,
-    )?;
-    let particle_animator = visual_representation::apng::new(pixel_brightness_aggregator, 1);
-
-    let instant_before_animation = std::time::Instant::now();
-    particle_animator.animate_sequence(
-        particle_set_evolution.particle_configurations,
-        particle_set_evolution.milliseconds_between_configurations,
         output_filename,
-    )?;
-
-    println!(
-        "Animation took {}ms",
-        instant_before_animation.elapsed().as_millis()
-    );
-
-    Ok(())
+    )
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
