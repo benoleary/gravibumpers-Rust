@@ -1,8 +1,5 @@
 /// This crate provides structs, traits, and functions for turning sequences of particle
 /// collections into an animated visual representation.
-///
-/// There is has no #[cfg(test)] in the main file of the library because it just introduces traits
-/// and structs, along with a few trivial implementations of some standard traits.
 extern crate data_structure;
 pub mod apng;
 pub mod brightness_aggregator;
@@ -141,4 +138,49 @@ pub trait ColoredPixelMatrix {
 
     fn width_in_pixels(&self) -> &HorizontalPixelAmount;
     fn height_in_pixels(&self) -> &VerticalPixelAmount;
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_pixel_rounding() -> Result<(), String> {
+        let mut failure_messages: std::vec::Vec<String> = vec![];
+        for (input_float, expected_int) in vec![
+            (-101.1, -102),
+            (-10.0, -10),
+            (-1.5, -2),
+            (-0.9, -1),
+            (0.0, 0),
+            (0.11, 0),
+            (1.11, 1),
+            (2.99, 2),
+            (9000.001, 9000),
+        ] {
+            let actual_horizontal = super::new_horizontal_pixel_unit_rounding_to_negative_infinity(
+                data_structure::position::HorizontalUnit(input_float),
+            );
+            if actual_horizontal.0 != expected_int {
+                failure_messages.push(String::from(format!(
+                    "input f64 = {}, actual_horizontal = {:?}, expected_int = {}",
+                    input_float, actual_horizontal, expected_int
+                )));
+            }
+            let actual_vertical = super::new_vertical_pixel_unit_rounding_to_negative_infinity(
+                data_structure::position::VerticalUnit(input_float),
+            );
+            if actual_vertical.0 != expected_int {
+                failure_messages.push(String::from(format!(
+                    "input f64 = {}, actual_vertical = {:?}, expected_int = {}",
+                    input_float, actual_vertical, expected_int
+                )));
+            }
+        }
+
+        if failure_messages.is_empty() {
+            Ok(())
+        } else {
+            Err(failure_messages.join("\n"))
+        }
+    }
 }
