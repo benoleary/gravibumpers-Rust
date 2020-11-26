@@ -54,10 +54,11 @@ pub struct HorizontalPixelAmount(pub i32);
 pub fn new_horizontal_pixel_unit_rounding_to_negative_infinity(
     horizontal_coordinate: data_structure::position::HorizontalUnit,
 ) -> HorizontalPixelAmount {
-    if horizontal_coordinate.0 < 0.0 {
-        HorizontalPixelAmount(horizontal_coordinate.0 as i32 - 1)
+    let rounded_amount = horizontal_coordinate.0 as i32;
+    if rounded_amount as f64 > horizontal_coordinate.0 {
+        HorizontalPixelAmount(rounded_amount - 1)
     } else {
-        HorizontalPixelAmount(horizontal_coordinate.0 as i32)
+        HorizontalPixelAmount(rounded_amount)
     }
 }
 
@@ -94,10 +95,11 @@ pub struct VerticalPixelAmount(pub i32);
 pub fn new_vertical_pixel_unit_rounding_to_negative_infinity(
     vertical_coordinate: data_structure::position::VerticalUnit,
 ) -> VerticalPixelAmount {
-    if vertical_coordinate.0 < 0.0 {
-        VerticalPixelAmount(vertical_coordinate.0 as i32 - 1)
+    let rounded_amount = vertical_coordinate.0 as i32;
+    if rounded_amount as f64 > vertical_coordinate.0 {
+        VerticalPixelAmount(rounded_amount - 1)
     } else {
-        VerticalPixelAmount(vertical_coordinate.0 as i32)
+        VerticalPixelAmount(rounded_amount)
     }
 }
 
