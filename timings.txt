@@ -1,0 +1,45 @@
+DEBUG:
+
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_no_boxing.json, will write to brief_big_ring_saturn_with_one_moon_no_boxing.apng
+Reading configuration took 0ms
+Calculation of time evolution took 505497ms
+Animation took 2696ms
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_single_boxed.json, will write to brief_big_ring_saturn_with_one_moon_single_boxed.apng
+Reading configuration took 0ms
+Calculation of time evolution took 568289ms
+Animation took 2663ms
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_double_boxed.json, will write to brief_big_ring_saturn_with_one_moon_double_boxed.apng
+Reading configuration took 1ms
+Calculation of time evolution took 566186ms
+Animation took 2690ms
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_mixed_boxed.json, will write to brief_big_ring_saturn_with_one_moon_mixed_boxed.apng
+Reading configuration took 0ms
+Calculation of time evolution took 634447ms
+Animation took 2690ms
+
+
+RELEASE:
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_no_boxing.json, will write to brief_big_ring_saturn_with_one_moon_no_boxing.apng
+Reading configuration took 0ms
+Calculation of time evolution took 87338ms
+Animation took 332ms
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_single_boxed.json, will write to brief_big_ring_saturn_with_one_moon_single_boxed.apng
+Reading configuration took 0ms
+Calculation of time evolution took 85757ms
+Animation took 335ms
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_double_boxed.json, will write to brief_big_ring_saturn_with_one_moon_double_boxed.apng
+Reading configuration took 0ms
+Calculation of time evolution took 88637ms
+Animation took 341ms
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_mixed_boxed.json, will write to brief_big_ring_saturn_with_one_moon_mixed_boxed.apng
+Reading configuration took 0ms
+Calculation of time evolution took 108490ms
+Animation took 257ms
