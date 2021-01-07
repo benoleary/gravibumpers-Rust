@@ -1,15 +1,15 @@
 {
-  "memoryLayout": "VecOfPureStruct",
+  "memoryLayout": "VecOfMixedBoxed",
   "numberOfStepsPerFrame": 100,
   "deadZoneRadius": 0.001,
   "inverseSquaredCoupling": -1.0,
   "inverseFourthCoupling": 1.0,
   "millisecondsPerFrame": 200,
-  "numberOfFrames": 300,
-  "rightBorderCoordinate": 400,
-  "upperBorderCoordinate": 400,
-  "leftBorderCoordinate": -400,
-  "lowerBorderCoordinate": -400,
+  "numberOfFrames": 15,
+  "rightBorderCoordinate": 200,
+  "upperBorderCoordinate": 200,
+  "leftBorderCoordinate": -200,
+  "lowerBorderCoordinate": -200,
   "generatorConfigurations":
   [
     {
@@ -41,12 +41,12 @@
         "commonDisplacementInPixels":
         {
           "x": 50.0,
-          "y": 0.0
+          "y": 50.0
         },
         "linearVelocityInPixelsPerSecond":
         {
           "x": 0.0,
-          "y": 15.0
+          "y": 20.0
         },
         "inertialMassInMassUnits": 100.0,
         "inverseSquaredChargeInDimensionlessUnits": 100.0,
@@ -71,7 +71,7 @@
           "y": 0.0
         },
         "radiusInPixels": 100,
-        "totalParticlesOnCircle": 60,
+        "totalParticlesOnCircle": 600,
         "angularVelocityInPixelRadiansPerSecond": 0.1,
         "inertialMassInMassUnits": 1,
         "inverseSquaredChargeInDimensionlessUnits": 1,
@@ -96,7 +96,7 @@
           "y": 0.0
         },
         "radiusInPixels": 105,
-        "totalParticlesOnCircle": 60,
+        "totalParticlesOnCircle": 600,
         "angularVelocityInPixelRadiansPerSecond": 0.09,
         "inertialMassInMassUnits": 1,
         "inverseSquaredChargeInDimensionlessUnits": 1,
@@ -121,7 +121,7 @@
           "y": 0.0
         },
         "radiusInPixels": 110,
-        "totalParticlesOnCircle": 60,
+        "totalParticlesOnCircle": 600,
         "angularVelocityInPixelRadiansPerSecond": 0.08,
         "inertialMassInMassUnits": 1,
         "inverseSquaredChargeInDimensionlessUnits": 1,
@@ -146,7 +146,7 @@
           "y": 0.0
         },
         "radiusInPixels": 200,
-        "totalParticlesOnCircle": 120,
+        "totalParticlesOnCircle": 12000,
         "angularVelocityInPixelRadiansPerSecond": -0.025,
         "inertialMassInMassUnits": 1,
         "inverseSquaredChargeInDimensionlessUnits": 1,
@@ -171,7 +171,7 @@
           "y": 0.0
         },
         "radiusInPixels": 205,
-        "totalParticlesOnCircle": 120,
+        "totalParticlesOnCircle": 1200,
         "angularVelocityInPixelRadiansPerSecond": -0.023,
         "inertialMassInMassUnits": 1,
         "inverseSquaredChargeInDimensionlessUnits": 1,
@@ -196,7 +196,7 @@
           "y": 0.0
         },
         "radiusInPixels": 210,
-        "totalParticlesOnCircle": 120,
+        "totalParticlesOnCircle": 1200,
         "angularVelocityInPixelRadiansPerSecond": -0.021,
         "inertialMassInMassUnits": 1,
         "inverseSquaredChargeInDimensionlessUnits": 1,
