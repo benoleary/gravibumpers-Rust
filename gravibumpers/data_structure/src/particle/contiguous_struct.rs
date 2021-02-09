@@ -131,11 +131,19 @@ impl super::CollectionInForceFieldGenerator
     }
 }
 
+const NUMBER_OF_JUNK_COPIES: usize = 10000;
+
 pub struct MassNormalizedWithForceFieldAndJunk {
-    particle_descriptions: [super::BasicIndividual; 10000],
+    particle_descriptions: [super::BasicIndividual; NUMBER_OF_JUNK_COPIES],
     experienced_force: super::super::force::DimensionfulVector,
     timestep_over_inertial_mass: super::super::time::OverMassUnit,
     current_index: usize,
+}
+
+fn create_array_of_copied_individuals_from_representation(
+    particle_to_add: &impl super::IndividualRepresentation,
+) -> [super::BasicIndividual; NUMBER_OF_JUNK_COPIES] {
+    [super::create_individual_from_representation(particle_to_add); NUMBER_OF_JUNK_COPIES]
 }
 
 pub fn new_mass_normalized_with_force_field_and_junk(
@@ -143,28 +151,31 @@ pub fn new_mass_normalized_with_force_field_and_junk(
     timestep_over_inertial_mass: &super::super::time::OverMassUnit,
 ) -> MassNormalizedWithForceFieldAndJunk {
     MassNormalizedWithForceFieldAndJunk {
-        particle_description: super::create_individual_from_representation(particle_to_add),
+        particle_descriptions: create_array_of_copied_individuals_from_representation(
+            particle_to_add,
+        ),
         experienced_force: super::super::force::DimensionfulVector {
             horizontal_component: super::super::force::HorizontalUnit(0.0),
             vertical_component: super::super::force::VerticalUnit(0.0),
         },
         timestep_over_inertial_mass: *timestep_over_inertial_mass,
+        current_index: 0,
     }
 }
 
 impl super::IndividualRepresentation for MassNormalizedWithForceFieldAndJunk {
     fn read_intrinsics<'a>(&'a self) -> &'a super::IntrinsicPart {
-        self.particle_description.read_intrinsics()
+        self.particle_descriptions[self.current_index].read_intrinsics()
     }
 
     fn read_variables<'a>(&'a self) -> &'a super::VariablePart {
-        self.particle_description.read_variables()
+        self.particle_descriptions[self.current_index].read_variables()
     }
 }
 
 impl super::ReadOnlyInForceField for MassNormalizedWithForceFieldAndJunk {
     fn into_individual_particle(&self) -> super::BasicIndividual {
-        self.particle_description
+        self.particle_descriptions[self.current_index]
     }
 
     fn read_experienced_force<'a>(&'a self) -> &'a super::super::force::DimensionfulVector {
@@ -178,7 +189,10 @@ impl super::ReadOnlyInForceField for MassNormalizedWithForceFieldAndJunk {
 
 impl super::WritableInForceField for MassNormalizedWithForceFieldAndJunk {
     fn write_particle_variables<'a>(&'a mut self) -> &'a mut super::VariablePart {
-        &mut self.particle_description.variable_values
+        let next_index = self.current_index + 1;
+        self.particle_descriptions[next_index] = self.particle_descriptions[self.current_index];
+        self.current_index = next_index;
+        &mut self.particle_descriptions[self.current_index].variable_values
     }
 
     fn write_experienced_force<'a>(
@@ -242,12 +256,15 @@ impl super::CollectionInForceField for VectorOfDynamicBoxedMassNormalizedWithFor
     ) {
         self.0
             .push(std::boxed::Box::new(MassNormalizedWithForceFieldAndJunk {
-                particle_description: super::create_individual_from_representation(particle_to_add),
+                particle_descriptions: create_array_of_copied_individuals_from_representation(
+                    particle_to_add,
+                ),
                 experienced_force: super::super::force::DimensionfulVector {
                     horizontal_component: super::super::force::HorizontalUnit(0.0),
                     vertical_component: super::super::force::VerticalUnit(0.0),
                 },
                 timestep_over_inertial_mass: *timestep_over_inertial_mass,
+                current_index: 0,
             }));
     }
 }

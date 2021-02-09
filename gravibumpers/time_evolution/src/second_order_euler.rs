@@ -263,14 +263,14 @@ mod tests {
 
     fn new_maximally_contiguous_for_test() -> Result<
         SecondOrderEuler<
-            contiguous_particle_struct::MassNormalizedWithForceField,
-            contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator,
+            contiguous_particle_struct::MassNormalizedWithForceFieldAndJunk,
+            contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldAndJunkGenerator,
         >,
         String,
     > {
         new_given_memory_strategy(
             100,
-            contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator {},
+            contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldAndJunkGenerator {},
         )
         .or_else(|construction_error| {
             Err(String::from(format!(
@@ -283,13 +283,13 @@ mod tests {
     fn new_contiguous_pointers_for_test() -> Result<
         SecondOrderEuler<
             std::boxed::Box<dyn data_structure::particle::WritableInForceField>,
-            contiguous_particle_struct::VectorOfDynamicBoxedMassNormalizedWithForceFieldGenerator,
+            contiguous_particle_struct::VectorOfDynamicBoxedMassNormalizedWithForceFieldAndJunkGenerator,
         >,
         String,
-    > {
+>{
         new_given_memory_strategy(
             100,
-            contiguous_particle_struct::VectorOfDynamicBoxedMassNormalizedWithForceFieldGenerator {},
+            contiguous_particle_struct::VectorOfDynamicBoxedMassNormalizedWithForceFieldAndJunkGenerator {},
         )
         .or_else(|construction_error| {
             Err(String::from(format!(
