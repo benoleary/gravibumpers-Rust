@@ -3,9 +3,11 @@ extern crate serde_json;
 extern crate visual_representation;
 
 use contiguous_particle_struct::VectorOfDynamicBoxedMassNormalizedWithForceFieldGenerator;
+use contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldAndJunkGenerator;
 use contiguous_particle_struct::VectorOfMassNormalizedWithForceFieldGenerator;
 use data_structure::particle::contiguous_struct as contiguous_particle_struct;
 use data_structure::particle::mixture::VectorOfDynamicBoxedMassNormalizedStructsAndBoxesGenerator;
+use data_structure::particle::mixture::VectorOfDynamicBoxedMassNormalizedStructsWithAndWithoutJunkGenerator;
 use data_structure::particle::struct_of_boxes as particle_struct_of_boxes;
 use particle_struct_of_boxes::VectorOfDynamicBoxedMassNormalizedBoxesWithForceFieldGenerator;
 use visual_representation::SequenceAnimator;
@@ -228,6 +230,41 @@ fn run_from_configuration_file(
                         .evolver_configuration
                         .number_of_steps_per_time_slice,
                     VectorOfDynamicBoxedMassNormalizedStructsAndBoxesGenerator {},
+                )?;
+            evolve_and_animate(
+                &parsed_configuration,
+                &mut particles_in_time_evolver,
+                initial_particle_map.iter(),
+                should_draw_offscreen_on_border,
+                output_filename,
+            )
+        }
+        "VecOfPureStructWithJunk" => {
+            let mut particles_in_time_evolver =
+                time_evolution::second_order_euler::new_given_memory_strategy(
+                    parsed_configuration
+                        .evolver_configuration
+                        .number_of_steps_per_time_slice,
+                    VectorOfMassNormalizedWithForceFieldAndJunkGenerator {},
+                )?;
+            evolve_and_animate(
+                &parsed_configuration,
+                &mut particles_in_time_evolver,
+                initial_particle_map.iter(),
+                should_draw_offscreen_on_border,
+                output_filename,
+            )
+        }
+        "VecOfMixedBoxedWithJunk" => {
+            // It's not worth making the ratio of structs with junk to those without configurable.
+            let mut particles_in_time_evolver =
+                time_evolution::second_order_euler::new_given_memory_strategy(
+                    parsed_configuration
+                        .evolver_configuration
+                        .number_of_steps_per_time_slice,
+                    VectorOfDynamicBoxedMassNormalizedStructsWithAndWithoutJunkGenerator {
+                        number_with_junk_per_without_junk: 10,
+                    },
                 )?;
             evolve_and_animate(
                 &parsed_configuration,
