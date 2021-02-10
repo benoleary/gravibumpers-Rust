@@ -43,3 +43,17 @@ Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_
 Reading configuration took 0ms
 Calculation of time evolution took 108490ms
 Animation took 257ms
+
+
+DEBUG with junk value 1000:
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_no_boxing_with_junk.json, will write to brief_big_ring_saturn_with_one_moon_no_boxing_with_junk.apng
+Reading configuration took 1ms
+Calculation of time evolution took 596351ms
+Animation took 3589ms
+GraviBumpers!
+Reading configuration from ./configuration_files/brief_big_ring_saturn_with_one_moon_mixed_boxed_with_junk.json, will write to brief_big_ring_saturn_with_one_moon_mixed_boxed_with_junk.apng
+Reading configuration took 1ms
+Calculation of time evolution took 689358ms
+Animation took 2773ms
+

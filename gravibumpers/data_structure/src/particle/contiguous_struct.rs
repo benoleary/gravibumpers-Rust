@@ -131,7 +131,7 @@ impl super::CollectionInForceFieldGenerator
     }
 }
 
-const NUMBER_OF_JUNK_COPIES: usize = 10000;
+const NUMBER_OF_JUNK_COPIES: usize = 1000;
 
 pub struct MassNormalizedWithForceFieldAndJunk {
     particle_descriptions: [super::BasicIndividual; NUMBER_OF_JUNK_COPIES],
